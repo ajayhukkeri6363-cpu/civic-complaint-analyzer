@@ -280,6 +280,14 @@ class SpaRouter {
              if(script.parentNode) script.parentNode.removeChild(script);
         });
         this.activeScripts = [];
+
+        // Clean up SlimSelect lingering body elements
+        document.querySelectorAll('.ss-content, .ss-main').forEach(el => {
+            // Only remove if they are outside the current #app-content to avoid double-init issues
+            if (!this.appContent.contains(el)) {
+                el.remove();
+            }
+        });
     }
 
     updateActiveNavLinks(url) {
