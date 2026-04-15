@@ -1173,3 +1173,15 @@ textarea.form-control {
     from { opacity: 0; transform: translateY(30px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* --- Bulletproof SlimSelect Fix --- */
+/* Hide all search content by default unless the library explicitly opens them */
+.ss-content {
+    display: none !important;
+}
+.ss-content.ss-open {
+    display: block !important;
+}
+.ss-main {
+    margin-top: 5px;
+}
