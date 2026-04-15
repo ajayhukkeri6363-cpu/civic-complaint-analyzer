@@ -116,16 +116,16 @@ def init_db():
         )
     """)
     
-    # Check for admin
-    cursor.execute("SELECT * FROM users WHERE email IN ('admin@example.com', 'ajayhukkeri6363@gmail.com', 'amitkiresur24@gmail.com')")
-    existing_admins = [r['email'] for r in cursor.fetchall()]
-    
-    if 'admin@example.com' not in existing_admins:
-        cursor.execute("INSERT INTO users (name, email, role) VALUES ('Admin', 'admin@example.com', 'admin')")
-    if 'ajayhukkeri6363@gmail.com' not in existing_admins:
-        cursor.execute("INSERT INTO users (name, email, role) VALUES ('Ajay (Admin)', 'ajayhukkeri6363@gmail.com', 'admin')")
-    if 'amitkiresur24@gmail.com' not in existing_admins:
-        cursor.execute("INSERT INTO users (name, email, role) VALUES ('Akash (Admin)', 'amitkiresur24@gmail.com', 'admin')")
+    # --- FORCE ADMIN PROMOTION ---
+    admin_emails = ('admin@example.com', 'ajayhukkeri6363@gmail.com', 'amitkiresur24@gmail.com')
+    for email in admin_emails:
+        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+        if not cursor.fetchone():
+            cursor.execute("INSERT INTO users (name, email, role) VALUES (?, ?, 'admin')", 
+                           (email.split('@')[0].capitalize(), email))
+        else:
+            # Ensure the role is set to 'admin' even if they already exist
+            cursor.execute("UPDATE users SET role = 'admin' WHERE email = ?", (email,))
     
     # --- PROPER SEED DATA FOR DASHBOARD ---
     # Only add if the database is empty
