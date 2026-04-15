@@ -95,6 +95,11 @@
                                 <a href="{{ url_for('profile') }}" style="display: flex; align-items: center; gap: 10px; padding: 0.75rem 1rem; color: var(--text-main); font-size: 0.9rem; transition: var(--transition);" onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'" onmouseout="this.style.background='transparent'">
                                     <i class="fa-solid fa-user" style="width: 16px; color: var(--secondary-color);"></i> My Profile
                                 </a>
+                                {% if user.role == 'admin' %}
+                                <a href="{{ url_for('dashboard') }}" style="display: flex; align-items: center; gap: 10px; padding: 0.75rem 1rem; color: var(--text-main); font-size: 0.9rem; transition: var(--transition);" onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'" onmouseout="this.style.background='transparent'">
+                                    <i class="fa-solid fa-table-list" style="width: 16px; color: var(--primary-color);"></i> Admin Dashboard
+                                </a>
+                                {% endif %}
                                 <a href="{{ url_for('logout') }}" data-no-spa style="display: flex; align-items: center; gap: 10px; padding: 0.75rem 1rem; color: #ff2a55; font-size: 0.9rem; border-top: 1px solid var(--border-color); transition: var(--transition);" onmouseover="this.style.background='rgba(255, 42, 85, 0.1)'" onmouseout="this.style.background='transparent'">
                                     <i class="fa-solid fa-right-from-bracket" style="width: 16px;"></i> Sign Out
                                 </a>

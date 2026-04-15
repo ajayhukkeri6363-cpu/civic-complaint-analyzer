@@ -98,9 +98,13 @@ def init_db():
     """)
     
     # Check for admin
-    cursor.execute("SELECT * FROM users WHERE email = 'admin@example.com'")
-    if not cursor.fetchone():
+    cursor.execute("SELECT * FROM users WHERE email IN ('admin@example.com', 'ajayhukkeri6363@gmail.com')")
+    existing_admins = [r['email'] for r in cursor.fetchall()]
+    
+    if 'admin@example.com' not in existing_admins:
         cursor.execute("INSERT INTO users (name, email, role) VALUES ('Admin', 'admin@example.com', 'admin')")
+    if 'ajayhukkeri6363@gmail.com' not in existing_admins:
+        cursor.execute("INSERT INTO users (name, email, role) VALUES ('Ajay (Admin)', 'ajayhukkeri6363@gmail.com', 'admin')")
     
     # --- PROPER SEED DATA FOR DASHBOARD ---
     # Only add if the database is empty
