@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import smtplib
 from email.mime.text import MIMEText
 from authlib.integrations.flask_client import OAuth
-import mysql.connector
+import sqlite3
 from dotenv import load_dotenv
 from area_coords import area_coords
 from india_locations import india_locations
@@ -32,12 +32,71 @@ google = oauth.register(
 
 # Database Connection
 def get_db_connection():
-    return mysql.connector.connect(
-        host=os.getenv('DB_HOST', 'localhost'),
-        user=os.getenv('DB_USER', 'root'),
-        password=os.getenv('DB_PASSWORD', '1234'),
-        database=os.getenv('DB_NAME', 'civic_complaints')
-    )
+    os.makedirs('database', exist_ok=True)
+    conn = sqlite3.connect('database/database.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Create tables
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            role TEXT DEFAULT 'citizen',
+            profile_pic TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS complaints (
+            complaint_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            citizen_name TEXT NOT NULL,
+            citizen_email TEXT NOT NULL,
+            state TEXT NOT NULL,
+            district TEXT NOT NULL,
+            area TEXT NOT NULL,
+            issue_type TEXT NOT NULL,
+            description TEXT NOT NULL,
+            image_path TEXT,
+            latitude REAL,
+            longitude REAL,
+            date_submitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            status TEXT DEFAULT 'Pending'
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS votes (
+            vote_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            complaint_id INTEGER NOT NULL,
+            voter_identifier TEXT NOT NULL,
+            date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (complaint_id) REFERENCES complaints(complaint_id) ON DELETE CASCADE
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS resolution (
+            resolution_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            complaint_id INTEGER NOT NULL UNIQUE,
+            action_taken TEXT NOT NULL,
+            resolved_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (complaint_id) REFERENCES complaints(complaint_id) ON DELETE CASCADE
+        )
+    """)
+    
+    # Check for admin
+    cursor.execute("SELECT * FROM users WHERE email = 'admin@example.com'")
+    if not cursor.fetchone():
+        cursor.execute("INSERT INTO users (name, email, role) VALUES ('Admin', 'admin@example.com', 'admin')")
+    
+    conn.commit()
+    conn.close()
+
+# Initialize DB on start
+init_db()
 
 # Logic Helpers
 def format_display_id(c_id):
@@ -57,7 +116,7 @@ def get_local_ip():
 
 def get_stats():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     
     cursor.execute("SELECT COUNT(*) as total FROM complaints")
     total = cursor.fetchone()['total']
@@ -83,7 +142,7 @@ def get_stats():
 
 def get_intelligence():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     
     # Clusters: >2 active same-type issues in same area
     # Normalize issue_type grouping to handle variations (Road vs Road Damage)
@@ -116,7 +175,7 @@ def get_intelligence():
     cursor.execute("""
         SELECT area, COUNT(*) as recent_volume 
         FROM complaints 
-        WHERE date_submitted > DATE_SUB(NOW(), INTERVAL 7 DAY)
+        WHERE date_submitted > datetime('now', '-7 days')
         GROUP BY area 
         ORDER BY recent_volume DESC
     """)
@@ -192,7 +251,7 @@ def inject_user():
 @app.route('/')
 def index():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     
     # Top Priority Issues (by votes)
     cursor.execute("""
@@ -269,8 +328,8 @@ def submit():
             return redirect(url_for('submit'))
             
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT complaint_id FROM complaints WHERE description = %s OR (citizen_email = %s AND issue_type = %s AND status = 'Pending')", (description, email, issue_type))
+        cursor = conn.cursor()
+        cursor.execute("SELECT complaint_id FROM complaints WHERE description = ? OR (citizen_email = ? AND issue_type = ? AND status = 'Pending')", (description, email, issue_type))
         if cursor.fetchone():
             conn.close()
             flash('This complaint looks invalid or duplicate', 'warning')
@@ -311,7 +370,7 @@ def submit():
         try:
             cursor.execute("""
                 INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (name, email, state, district, area, issue_type, description, image_path, lat, lng))
             complaint_id = cursor.lastrowid
             conn.commit()
@@ -333,7 +392,7 @@ def live_map():
 def api_live_complaints():
     import random as rng
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     cursor.execute("SELECT complaint_id, state, district, area, issue_type, description, status, image_path, latitude, longitude FROM complaints ORDER BY date_submitted DESC LIMIT 100")
     complaints = cursor.fetchall()
     conn.close()
@@ -392,8 +451,8 @@ def login():
         email = request.form.get('email')
         
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
         user = cursor.fetchone()
         conn.close()
         
@@ -427,29 +486,29 @@ def google_callback():
         picture = user_info.get('picture', '')
         
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
         user = cursor.fetchone()
         
         if not user:
             # Auto-register Google users as citizens
             try:
                 cursor.execute(
-                    "INSERT INTO users (name, email, role, profile_pic) VALUES (%s, %s, 'citizen', %s)",
+                    "INSERT INTO users (name, email, role, profile_pic) VALUES (?, ?, 'citizen', ?)",
                     (name, email, picture)
                 )
                 conn.commit()
-                cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+                cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
                 user = cursor.fetchone()
-            except mysql.connector.Error as err:
+            except sqlite3.Error as err:
                 conn.close()
                 flash(f'Google registration failed: {err}', 'error')
                 return redirect(url_for('login'))
         else:
             # Update profile pic on every login in case it changed
-            cursor.execute("UPDATE users SET profile_pic = %s WHERE email = %s", (picture, email))
+            cursor.execute("UPDATE users SET profile_pic = ? WHERE email = ?", (picture, email))
             conn.commit()
-            cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
             user = cursor.fetchone()
         
         conn.close()
@@ -476,11 +535,11 @@ def register():
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("INSERT INTO users (name, email, role) VALUES (%s, %s, 'citizen')", (name, email))
+            cursor.execute("INSERT INTO users (name, email, role) VALUES (?, ?, 'citizen')", (name, email))
             conn.commit()
             flash('Account created successfully! Please login.', 'success')
             return redirect(url_for('login'))
-        except mysql.connector.Error as err:
+        except sqlite3.Error as err:
             flash(f'Registration failed: {err}', 'error')
         finally:
             conn.close()
@@ -500,15 +559,15 @@ def dashboard():
     issue_filter = request.args.get('issue_type')
     
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     
     query = "SELECT * FROM complaints WHERE 1=1"
     params = []
     if area_filter:
-        query += " AND (area LIKE %s OR district LIKE %s OR state LIKE %s)"
+        query += " AND (area LIKE ? OR district LIKE ? OR state LIKE ?)"
         params.extend([f"%{area_filter}%", f"%{area_filter}%", f"%{area_filter}%"])
     if issue_filter:
-        query += " AND issue_type = %s"
+        query += " AND issue_type = ?"
         params.append(issue_filter)
         
     query += " ORDER BY date_submitted DESC"
@@ -537,7 +596,7 @@ def analytics():
 @app.route('/api/analytics')
 def api_analytics():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     
     stats = get_stats()
     
@@ -549,7 +608,7 @@ def api_analytics():
     
     # Trends (last 6 months)
     cursor.execute("""
-        SELECT DATE_FORMAT(date_submitted, '%Y-%m') as month, COUNT(*) as count 
+        SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count 
         FROM complaints 
         GROUP BY month 
         ORDER BY month ASC 
@@ -569,7 +628,7 @@ def api_analytics():
 @app.route('/api/heatmap')
 def api_heatmap():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     cursor.execute("SELECT area, district, state, COUNT(*) as volume FROM complaints GROUP BY area, district, state")
     areas = cursor.fetchall()
     conn.close()
@@ -610,12 +669,12 @@ def update_status():
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            UPDATE complaints SET status = %s WHERE complaint_id = %s
+            UPDATE complaints SET status = ? WHERE complaint_id = ?
         """, (status, c_id))
         
         if status == 'Resolved' and action:
-            # Check if resolution exists
-            cursor.execute("INSERT INTO resolution (complaint_id, action_taken) VALUES (%s, %s) ON DUPLICATE KEY UPDATE action_taken = %s", (c_id, action, action))
+            # SQLite "INSERT OR REPLACE" for simplified resolution update
+            cursor.execute("INSERT OR REPLACE INTO resolution (complaint_id, action_taken) VALUES (?, ?)", (c_id, action))
             
         conn.commit()
         return jsonify({'success': True, 'message': f'Status updated to {status}.'})
@@ -644,12 +703,12 @@ def track(id=None):
                 c_id = c_id - 1000
                 
             conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
+            cursor = conn.cursor()
             cursor.execute("""
                 SELECT c.*, r.action_taken 
                 FROM complaints c
                 LEFT JOIN resolution r ON c.complaint_id = r.complaint_id
-                WHERE c.complaint_id = %s
+                WHERE c.complaint_id = ?
             """, (c_id,))
             complaint = cursor.fetchone()
             if complaint:
@@ -668,16 +727,16 @@ def track(id=None):
 @admin_required
 def delete_complaint(complaint_id):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     try:
         # Fetch image path before deleting so we can clean it up
-        cursor.execute("SELECT image_path FROM complaints WHERE complaint_id = %s", (complaint_id,))
+        cursor.execute("SELECT image_path FROM complaints WHERE complaint_id = ?", (complaint_id,))
         row = cursor.fetchone()
         if not row:
             return jsonify({'success': False, 'message': 'Complaint not found.'})
 
         # Delete from DB (resolution cascades via FK)
-        cursor.execute("DELETE FROM complaints WHERE complaint_id = %s", (complaint_id,))
+        cursor.execute("DELETE FROM complaints WHERE complaint_id = ?", (complaint_id,))
         conn.commit()
 
         # Clean up uploaded image file if it exists
@@ -703,12 +762,12 @@ def vote(complaint_id):
     cursor = conn.cursor()
     try:
         # Check if complaint exists
-        cursor.execute("SELECT complaint_id FROM complaints WHERE complaint_id = %s", (complaint_id,))
+        cursor.execute("SELECT complaint_id FROM complaints WHERE complaint_id = ?", (complaint_id,))
         if not cursor.fetchone():
             return jsonify({'success': False, 'message': 'Issue not found.'})
             
         # Record vote (using voter_identifier as a simplified string for demo)
-        cursor.execute("INSERT INTO votes (complaint_id, voter_identifier) VALUES (%s, %s)", 
+        cursor.execute("INSERT INTO votes (complaint_id, voter_identifier) VALUES (?, ?)", 
                        (complaint_id, f"anon-{random.randint(1000, 9999)}"))
         conn.commit()
         session[voted_key] = True
