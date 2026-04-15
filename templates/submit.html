@@ -54,8 +54,10 @@
             window.initHierarchyRunning = true;
 
             function runInit() {
+                const formEl = document.getElementById('complaintForm');
                 const stateEl = document.getElementById('state');
-                if (!stateEl) {
+                
+                if (!formEl || !stateEl) {
                     window.initHierarchyRunning = false;
                     return;
                 }
@@ -70,7 +72,7 @@
                 if (window.districtSS) try { window.districtSS.destroy(); } catch(e){}
                 if (window.areaSS) try { window.areaSS.destroy(); } catch(e){}
 
-                console.log("LOG: Bootstrapping Hierarchy System...");
+                console.log("LOG: Bootstrapping Hierarchy System inside #complaintForm...");
 
                 fetch("{{ url_for('static', filename='data/india_locations.json') }}")
                     .then(r => r.json())
@@ -78,31 +80,27 @@
                         const locationData = data;
                         const states = Object.keys(locationData).sort();
                         
+                        const ssSettings = (placeholder) => ({
+                            placeholderText: placeholder,
+                            contentLocation: formEl
+                        });
+
                         window.stateSS = new SlimSelect({
                             select: '#state',
                             data: [{text: 'Select State...', value: '', placeholder: true}, ...states.map(s=>({text:s, value:s}))],
-                            settings: { 
-                                placeholderText: 'Search State...',
-                                contentLocation: document.getElementById('complaintForm')
-                            },
+                            settings: ssSettings('Search State...'),
                             events: { afterChange: v => updateDistricts(v[0]?.value, locationData) }
                         });
 
                         window.districtSS = new SlimSelect({
                             select: '#district',
-                            settings: { 
-                                placeholderText: 'Search District...',
-                                contentLocation: document.getElementById('complaintForm')
-                            },
+                            settings: ssSettings('Search District...'),
                             events: { afterChange: v => updateAreas(v[0]?.value, locationData) }
                         });
 
                         window.areaSS = new SlimSelect({
                             select: '#area',
-                            settings: { 
-                                placeholderText: 'Search Area / Taluk...',
-                                contentLocation: document.getElementById('complaintForm')
-                            }
+                            settings: ssSettings('Search Area / Taluk...')
                         });
                         
                         window.initHierarchyRunning = false;
