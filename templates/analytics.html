@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}City Analytics - Civic Complaint Analyzer{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-header mb-2">
+    <div>
+        <h2><i class="fa-solid fa-chart-pie"></i> City Analytics</h2>
+        <p style="color: var(--text-muted);">Data-driven insights to identify issue hotspots and track departmental efficiency.</p>
+    </div>
+    <div>
+        <button class="btn btn-secondary" onclick="fetchAnalyticsData()">
+            <i class="fa-solid fa-rotate-right"></i> Refresh Data
+        </button>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Complaints</div>
+        <div class="stat-value" id="statTotal">{{ stats.total or '0' }}</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-label">Pending / In Progress</div>
+        <div class="stat-value" id="statActive">{{ stats.active or '0' }}</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-label">Resolved Issues</div>
+        <div class="stat-value" id="statResolved">{{ stats.resolved or '0' }}</div>
+    </div>
+</div>
+
+<div class="analytics-grid">
+    <div class="card" style="grid-column: span 1;">
+        <h3><i class="fa-solid fa-chart-column glow-icon" style="color: var(--primary-color);"></i> Active Issue Subsystems</h3>
+        <div class="chart-container">
+            <canvas id="issueTypeChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="card" style="grid-column: span 1; display: flex; flex-direction: column;">
+        <h3><i class="fa-solid fa-satellite-dish glow-icon" style="color: #ff2a55;"></i> Live Spatial Ping Map</h3>
+        <p class="mb-2" style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.2rem;">Geospatial mapping of high-volume event anomalies.</p>
+        <div class="heatmap-container" id="issueMap" style="flex:1; border: 1px solid rgba(0,245,255,0.2); border-radius: 8px; box-shadow: inset 0 0 20px rgba(0,245,255,0.1);"></div>
+    </div>
+    
+    <div class="card" style="grid-column: 1 / -1;">
+        <h3><i class="fa-solid fa-waveform glow-icon" style="color: #7f5af0;"></i> Volume Trajectory Projection</h3>
+        <div class="chart-container">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Intelligence Insights Section -->
+<div class="dashboard-header mt-4">
+    <div>
+        <h2><i class="fa-solid fa-brain"></i> Intelligent Insights</h2>
+        <p style="color: var(--text-muted);">AI-driven pattern detection and predictive risk assessment.</p>
+    </div>
+</div>
+
+<div class="insights-grid">
+    <div class="card insight-card" id="predictionContainer">
+        <h3 class="mb-2"><i class="fa-solid fa-triangle-exclamation"></i> Predicted High-Risk Areas</h3>
+        <div id="predictionList" class="insight-list">
+            <p class="text-muted">Analyzing trends...</p>
+        </div>
+    </div>
+    
+    <div class="card insight-card" id="clusterContainer">
+        <h3 class="mb-2"><i class="fa-solid fa-layer-group"></i> Major Issue Clusters</h3>
+        <div id="clusterList" class="insight-list">
+            <p class="text-muted">Identifying clusters...</p>
+        </div>
+    </div>
+    
+    <div class="card insight-card" style="grid-column: 1 / -1;" id="recommendationContainer">
+        <h3 class="mb-2"><i class="fa-solid fa-lightbulb"></i> Suggested Actions</h3>
+        <div id="recommendationList" class="recommendation-grid">
+            <p class="text-muted">Generating suggestions...</p>
+        </div>
+    </div>
+</div>
+
+
+<!-- Analytics Logic -->
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+{% endblock %}

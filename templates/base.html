@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Civic Complaint Analyzer{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=range(1, 100000) | random) }}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Particles.js for 3D Background -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <!-- Leaflet Mapping System -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Cinematic Background Glow & Particles -->
+    <div style="position: fixed; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at 50% 50%, rgba(0, 245, 255, 0.05) 0%, rgba(11, 15, 25, 0) 50%); z-index: -2; pointer-events: none;"></div>
+    <div id="particles-js" style="position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0; pointer-events: none;"></div>
+
+    <header class="site-header">
+        <div class="container nav-container">
+            <a href="{{ url_for('index') }}" class="brand">
+                <i class="fa-solid fa-building-columns brand-icon"></i>
+                <h1 class="brand-title">Civic Analyzer</h1>
+            </a>
+            
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <ul class="nav-links" id="navLinks">
+                <li>
+                    <a href="{{ url_for('index') }}" class="nav-link {% if active_page == 'index' %}active{% endif %}">
+                        <i class="fa-solid fa-house"></i> Home
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('submit') }}" class="nav-link {% if active_page == 'submit' %}active{% endif %}">
+                        <i class="fa-solid fa-pen-to-square"></i> Report Issue
+                    </a>
+                </li>
+                {% if user and user.role == 'admin' %}
+                <li>
+                    <a href="{{ url_for('dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+                        <i class="fa-solid fa-table-list"></i> Dashboard
+                    </a>
+                </li>
+                {% endif %}
+                <li>
+                    <a href="{{ url_for('analytics') }}" class="nav-link {% if active_page == 'analytics' %}active{% endif %}">
+                        <i class="fa-solid fa-chart-pie"></i> Analytics
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('track') }}" class="nav-link {% if active_page == 'track' %}active{% endif %}" data-spa="true">
+                        <i class="fa-solid fa-magnifying-glass-location"></i> Track Status
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('live_map') }}" class="nav-link {% if active_page == 'live_map' %}active{% endif %}" data-no-spa>
+                        <i class="fa-solid fa-map-location-dot"></i> Live Map
+                    </a>
+                </li>
+                
+                <li class="nav-auth">
+                    {% if user %}
+                        <div class="user-profile" style="position: relative;">
+                            <button id="avatarBtn" onclick="document.getElementById('userDropdown').classList.toggle('show')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 0.3rem 0.5rem; border-radius: 50px; transition: var(--transition);">
+                                {% if user.get('profile_pic') %}
+                                    <img src="{{ user.profile_pic }}" alt="Profile" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--primary-color); object-fit: cover;">
+                                {% else %}
+                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--primary-color); display:flex; align-items:center; justify-content:center; color: white; font-weight: 700; font-size: 0.95rem;">
+                                        {{ user.name[0].upper() }}
+                                    </div>
+                                {% endif %}
+                                <span class="user-name" style="font-weight: 600; font-size: 0.9rem;">{{ user.name.split(' ')[0] }}</span>
+                                <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; color: var(--text-muted);"></i>
+                            </button>
+                            <div id="userDropdown" style="display: none; position: absolute; right: 0; top: 110%; background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid rgba(0, 245, 255, 0.2); border-radius: 12px; box-shadow: 0 8px 32px 0 rgba(0,0,0,0.5); min-width: 200px; z-index: 500; overflow: hidden;">
+                                <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                                    <div style="font-weight: 600; color: #00f5ff; font-size: 0.9rem;">{{ user.name }}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">{{ user.email }}</div>
+                                    <span style="display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; background: {% if user.role == 'admin' %}rgba(0, 245, 255, 0.1); color: #00f5ff; border: 1px solid rgba(0, 245, 255, 0.3);{% else %}rgba(127, 90, 240, 0.1); color: #7f5af0; border: 1px solid rgba(127, 90, 240, 0.3);{% endif %}">{{ user.role }}</span>
+                                </div>
+                                <a href="{{ url_for('profile') }}" style="display: flex; align-items: center; gap: 10px; padding: 0.75rem 1rem; color: var(--text-main); font-size: 0.9rem; transition: var(--transition);" onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'" onmouseout="this.style.background='transparent'">
+                                    <i class="fa-solid fa-user" style="width: 16px; color: var(--secondary-color);"></i> My Profile
+                                </a>
+                                <a href="{{ url_for('logout') }}" data-no-spa style="display: flex; align-items: center; gap: 10px; padding: 0.75rem 1rem; color: #ff2a55; font-size: 0.9rem; border-top: 1px solid var(--border-color); transition: var(--transition);" onmouseover="this.style.background='rgba(255, 42, 85, 0.1)'" onmouseout="this.style.background='transparent'">
+                                    <i class="fa-solid fa-right-from-bracket" style="width: 16px;"></i> Sign Out
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-sm btn-primary">
+                            <i class="fa-solid fa-lock"></i> Admin Login
+                        </a>
+                    {% endif %}
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Global Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Main Content wrapper for SPA -->
+    <main id="app-content">
+        <div class="container">
+            <!-- Flash Messages -->
+            <div class="alerts-container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                <span><i class="fa-solid {% if category == 'success' %}fa-check-circle{% else %}fa-circle-exclamation{% endif %}"></i> {{ message }}</span>
+                                <button type="button" class="close-alert" style="background:none;border:none;cursor:pointer;font-size:1.2rem;" onclick="this.parentElement.remove();">&times;</button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3><i class="fa-solid fa-building-columns"></i> Civic Analyzer</h3>
+                <p>A unified platform for citizens to report civic issues and for administrators to analyze patterns and streamline resolutions.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact Us</h3>
+                <ul>
+                    <li><i class="fa-solid fa-envelope"></i> support@civicanalyzer.gov</li>
+                    <li><i class="fa-solid fa-phone"></i> 7975226006</li>
+                    <li><i class="fa-solid fa-location-dot"></i> 100 City Hall Square</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom mt-4" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+            <p>&copy; 2026 Civic Complaint Analyzer. Built for the community, by the community.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js', v=range(1, 100000) | random) }}"></script>
+    <script>
+        // Close avatar dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('userDropdown');
+            const btn = document.getElementById('avatarBtn');
+            if (dropdown && !btn.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+        // Toggle display using the 'show' class trick
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdown = document.getElementById('userDropdown');
+            if (dropdown) {
+                const observer = new MutationObserver(() => {
+                    dropdown.style.display = dropdown.classList.contains('show') ? 'block' : 'none';
+                });
+                observer.observe(dropdown, { attributes: true, attributeFilter: ['class'] });
+            }
+            
+            // Initialize 3D AI Network Particles
+            if(window.particlesJS) {
+                particlesJS('particles-js', {
+                  "particles": {
+                    "number": { "value": 60, "density": { "enable": true, "value_area": 800 } },
+                    "color": { "value": ["#00f5ff", "#7f5af0"] },
+                    "shape": { "type": "circle" },
+                    "opacity": { "value": 0.5, "random": true },
+                    "size": { "value": 3, "random": true },
+                    "line_linked": {
+                      "enable": true,
+                      "distance": 150,
+                      "color": "#00f5ff",
+                      "opacity": 0.2,
+                      "width": 1
+                    },
+                    "move": {
+                      "enable": true,
+                      "speed": 1,
+                      "direction": "none",
+                      "random": true,
+                      "straight": false,
+                      "out_mode": "out",
+                      "bounce": false
+                    }
+                  },
+                  "interactivity": {
+                    "detect_on": "canvas",
+                    "events": {
+                      "onhover": { "enable": false }, /* Disabled hover for performance/distraction */
+                      "onclick": { "enable": false },
+                      "resize": true
+                    }
+                  },
+                  "retina_detect": true
+                });
+            }
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

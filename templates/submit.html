@@ -1,0 +1,214 @@
+{% block head %}
+    <!-- Page specific library (loaded contextual to prevent head pollution) -->
+    <link href="https://cdn.jsdelivr.net/npm/slim-select@2.8.2/dist/slimselect.css" rel="stylesheet">
+    <style>
+        .location-loading { font-size: 0.9rem; color: var(--text-muted); margin-left: 0.5rem; }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h2><i class="fa-solid fa-pen-to-square"></i> Report a Civic Issue</h2>
+    <p class="mb-2" style="color: var(--text-muted);">Please provide accurate details to help us resolve the issue efficiently.</p>
+
+    <form action="{{ url_for('submit') }}" method="POST" id="complaintForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="name" class="form-label">Full Name</label>
+            <input type="text" id="name" name="name" class="form-control" required placeholder="John Doe">
+        </div>
+
+        <div class="form-group">
+            <label for="email" class="form-label">Email Address</label>
+            <input type="email" id="email" name="email" class="form-control" required placeholder="john.doe@example.com">
+        </div>
+
+        <!-- Hierarchical Location Section -->
+        <div class="form-group">
+            <label for="state" class="form-label">Select State</label>
+            <select id="state" name="state" class="form-control" required>
+                <option value="" disabled selected>Loading States...</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="district-container" style="display: none;">
+            <label for="district" class="form-label">Select District</label>
+            <select id="district" name="district" class="form-control" required>
+                <option value="" disabled selected>Search District...</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="area-container" style="display: none;">
+            <label for="area" class="form-label">Select Area / Taluk</label>
+            <select id="area" name="area" class="form-control" required>
+                <option value="" disabled selected>Search Area / Taluk...</option>
+            </select>
+        </div>
+        
+        <!-- Library Script (The SPA router will wait for this) -->
+        <script src="https://cdn.jsdelivr.net/npm/slim-select@2.8.2/dist/slimselect.min.js" id="ss-lib"></script>
+
+        <script>
+        (function() {
+            // Guard against multiple executions in SPA
+            if (window.initHierarchyRunning) return;
+            window.initHierarchyRunning = true;
+
+            function runInit() {
+                const stateEl = document.getElementById('state');
+                if (!stateEl) {
+                    window.initHierarchyRunning = false;
+                    return;
+                }
+
+                if (typeof SlimSelect === 'undefined') {
+                    setTimeout(runInit, 50);
+                    return;
+                }
+
+                // Cleanup any stale global instances
+                if (window.stateSS) try { window.stateSS.destroy(); } catch(e){}
+                if (window.districtSS) try { window.districtSS.destroy(); } catch(e){}
+                if (window.areaSS) try { window.areaSS.destroy(); } catch(e){}
+
+                console.log("LOG: Bootstrapping Hierarchy System...");
+
+                fetch("{{ url_for('static', filename='data/india_locations.json') }}")
+                    .then(r => r.json())
+                    .then(data => {
+                        const locationData = data;
+                        const states = Object.keys(locationData).sort();
+                        
+                        window.stateSS = new SlimSelect({
+                            select: '#state',
+                            data: [{text: 'Select State...', value: '', placeholder: true}, ...states.map(s=>({text:s, value:s}))],
+                            settings: { placeholderText: 'Search State...' },
+                            events: { afterChange: v => updateDistricts(v[0]?.value, locationData) }
+                        });
+
+                        window.districtSS = new SlimSelect({
+                            select: '#district',
+                            settings: { placeholderText: 'Search District...' },
+                            events: { afterChange: v => updateAreas(v[0]?.value, locationData) }
+                        });
+
+                        window.areaSS = new SlimSelect({
+                            select: '#area',
+                            settings: { placeholderText: 'Search Area / Taluk...' }
+                        });
+                        
+                        window.initHierarchyRunning = false;
+                    });
+
+                function updateDistricts(state, data) {
+                    document.getElementById('district-container').style.display = 'none';
+                    document.getElementById('area-container').style.display = 'none';
+                    if (state && data[state]) {
+                        window.districtSS.setData([{text: 'Select District...', value: '', placeholder: true}, ...Object.keys(data[state]).sort().map(d=>({text:d, value:d}))]);
+                        document.getElementById('district-container').style.display = 'block';
+                    }
+                }
+
+                function updateAreas(district, data) {
+                    const state = window.stateSS.getSelected()[0];
+                    document.getElementById('area-container').style.display = 'none';
+                    if (state && district && data[state][district]) {
+                        window.areaSS.setData([{text: 'Select Area...', value: '', placeholder: true}, ...data[state][district].sort().map(a=>({text:a, value:a}))]);
+                        document.getElementById('area-container').style.display = 'block';
+                    }
+                }
+            }
+
+            // Start check
+            runInit();
+        })();
+        </script>
+
+        <style>
+            .ss-main {
+                background-color: var(--secondary-bg) !important;
+                border: 1px solid var(--border-color) !important;
+                border-radius: var(--border-radius) !important;
+                color: var(--text-main) !important;
+                padding: 4px !important;
+                margin-top: 5px;
+                box-shadow: 0 4px 15px rgba(0, 245, 255, 0.1) !important;
+            }
+            .ss-dropdown {
+                background-color: var(--secondary-bg) !important;
+                border: 1px solid var(--border-color) !important;
+                color: var(--text-main) !important;
+                backdrop-filter: blur(15px);
+            }
+            .ss-option:hover {
+                background-color: var(--primary-color) !important;
+                color: #000 !important;
+            }
+            .ss-search input {
+                background-color: #1a1f2e !important;
+                color: var(--text-main) !important;
+                border: 1px solid var(--border-color) !important;
+            }
+            .ss-list {
+                max-height: 250px !important;
+            }
+        </style>
+
+        <div class="form-group">
+            <label for="issue_type" class="form-label">Issue Type</label>
+            <select id="issue_type" name="issue_type" class="form-control" required>
+                <option value="" disabled selected>Select the type of issue...</option>
+                <option value="Road Damage">Road Damage (Potholes, Broken roads)</option>
+                <option value="Water Supply">Water Supply Issues</option>
+                <option value="Electricity">Electricity Problems (Power cuts, Faulty lines)</option>
+                <option value="Garbage Management">Garbage / Waste Management</option>
+                <option value="Drainage Sewage">Drainage / Sewage Issues</option>
+                <option value="Street Light">Street Light Not Working</option>
+                <option value="Traffic">Traffic Problems</option>
+                <option value="Public Transport">Public Transport Issues</option>
+                <option value="Pollution">Pollution (Air, Noise)</option>
+                <option value="Illegal Construction">Illegal Construction</option>
+                <option value="Water Leakage">Water Leakage</option>
+                <option value="Network">Internet / Network Issues</option>
+                <option value="Animal Problems">Animal Problems (Stray dogs, cattle)</option>
+                <option value="Park Maintenance">Park Maintenance Issues</option>
+                <option value="Government Office">Government Office Complaints</option>
+                <option value="Safety Security">Safety / Security Issues</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="description" class="form-label">Description of Issue</label>
+            <textarea id="description" name="description" class="form-control" required
+                placeholder="Please describe the issue in detail..."></textarea>
+        </div>
+        <div class="form-group" style="display: none;">
+            <label for="honeypot" class="form-label">Ignore this field</label>
+            <input type="text" id="honeypot" name="confirm_identity" value="">
+        </div>
+
+        <div class="form-group">
+            <label for="image" class="form-label"><i class="fa-solid fa-camera" style="color:var(--primary-color);"></i>
+                Attach Evidence Photo <span style="color:var(--text-muted); font-size:0.8rem;">(Optional)</span></label>
+            <input type="file" id="image" name="image" accept="image/*" class="form-control"
+                style="padding: 0.6rem; cursor:pointer;">
+            <small style="color:var(--text-muted); margin-top:0.3rem; display:block;">Upload a photo showing the issue.
+                Max 5MB.</small>
+        </div>
+
+        <div class="form-group checkbox-group"
+            style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem;">
+            <input type="checkbox" id="confirm" name="confirm" required style="width: auto;">
+            <label for="confirm" class="form-label" style="margin-bottom: 0; cursor: pointer;">
+                I confirm that the details provided above are accurate to the best of my knowledge.
+            </label>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                <i class="fa-regular fa-paper-plane"></i> Submit Complaint
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

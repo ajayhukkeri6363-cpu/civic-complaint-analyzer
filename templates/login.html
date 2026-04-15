@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Civic Complaint Analyzer{% endblock %}
+
+{% block content %}
+<div class="login-container" style="max-width: 450px; margin: 4rem auto;">
+    <div class="card login-card" style="padding: 2.5rem; border-top: 5px solid var(--primary-color);">
+        <div class="text-center mb-4">
+            <i class="fa-solid fa-user-shield" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+            <h2 style="margin-bottom: 0.5rem;">Admin Login</h2>
+            <p style="color: var(--text-muted);">Access the city management dashboard.</p>
+        </div>
+
+        <form action="{{ url_for('login', next=request.args.get('next')) }}" method="POST" id="loginForm" data-no-spa>
+            <div class="form-group">
+                <label for="email" class="form-label">Admin Email</label>
+                <input type="email" id="email" name="email" class="form-control" required placeholder="admin@civic.gov">
+            </div>
+            
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="form-control" required placeholder="••••••••">
+            </div>
+            
+            <div class="form-group">
+                <label for="govt_id" class="form-label">Government ID</label>
+                <input type="text" id="govt_id" name="govt_id" class="form-control" required placeholder="GOVT-ADM-XXX">
+                <small style="display: block; margin-top: 0.5rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-circle-info"></i> Mandatory for administrator verification.
+                </small>
+            </div>
+            
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                </button>
+            </div>
+        </form>
+
+        <div class="divider-text" style="display: flex; align-items: center; text-align: center; margin: 1.5rem 0; color: var(--text-muted); font-size: 0.85rem;">
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+            <div style="padding: 0 10px;">OR</div>
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+        </div>
+
+        <div class="d-grid">
+            <a href="{{ url_for('google_login') }}" class="btn btn-secondary btn-lg" style="width: 100%; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(255,255,255,0.05); color: var(--text-main); font-weight: 500; transition: var(--transition);">
+                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google Logo" style="width: 20px; height: 20px;">
+                Sign in with Google
+            </a>
+        </div>
+        
+        <div class="text-center mt-4" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+            <p style="font-size: 0.9rem;">New to the team? 
+                <a href="{{ url_for('register') }}" style="color: var(--secondary-color); text-decoration: none; font-weight: 600;">
+                    Create Account
+                </a>
+            </p>
+            <div class="mt-2">
+                <a href="{{ url_for('index') }}" style="color: var(--text-muted); text-decoration: none; font-size: 0.85rem;">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

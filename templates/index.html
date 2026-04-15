@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Civic Complaint Analyzer{% endblock %}
+
+{% block content %}
+<section class="hero" style="background: radial-gradient(circle at center, rgba(127, 90, 240, 0.2) 0%, rgba(11, 15, 25, 0.9) 100%), url('https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') center/cover; position: relative; overflow: hidden; padding: 6rem 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow-lg), inset 0 0 50px rgba(0,0,0,0.8); text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+    <div style="position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(180deg, rgba(11,15,25,0.1) 0%, #0b0f19 100%); z-index: 1;"></div>
+    <div style="position: relative; z-index: 2;">
+        <h1 style="font-size: 3.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);">
+            <div class="typewriter" style="display: inline-block; max-width: max-content; padding-right: 5px;">
+                <span style="color: var(--primary-color);">Civic</span> Complaint Analyzer
+            </div>
+        </h1>
+        <p style="font-size: 1.25rem; max-width: 600px; margin: 1rem auto 2.5rem; color: #b3c5db;">Smart Public Issue Tracking System. A unified platform for citizens to report civic issues and for administrators to analyze patterns and streamline resolutions.</p>
+        <a href="{{ url_for('submit') }}" class="btn btn-primary btn-lg" style="box-shadow: 0 0 20px rgba(0, 245, 255, 0.4); border-color: transparent;">
+            <i class="fa-solid fa-bullhorn glow-icon"></i> Report an Issue Now
+        </a>
+        <a href="{{ url_for('analytics') }}" class="btn btn-secondary btn-lg" style="margin-left: 1rem; backdrop-filter: blur(10px);">
+            <i class="fa-solid fa-chart-line"></i> View City Analytics
+        </a>
+    </div>
+</section>
+
+<div class="priority-section mt-4">
+    <div class="dashboard-header">
+        <h2><i class="fa-solid fa-fire-flame-curved"></i> Top Priority Issues</h2>
+        <p style="color: var(--text-muted);">Issues with the most crowd-priority votes from citizens.</p>
+    </div>
+    
+    {% if top_priority %}
+        <div class="netflix-slider" style="margin-top: 1.5rem;">
+            {% for complaint in top_priority %}
+            <div class="card netflix-card">
+                <div class="vote-control" style="background: rgba(0, 245, 255, 0.1); border-radius: 8px; padding: 0.5rem; text-align: center; border: 1px solid rgba(0, 245, 255, 0.2);">
+                    <span class="vote-count" id="vote-count-{{ complaint.complaint_id }}" style="font-size: 1.5rem; color: var(--primary-color);">{{ complaint.vote_count }}</span>
+                    <button class="vote-btn" onclick="voteIssue({{ complaint.complaint_id }})" style="color: var(--primary-color);">
+                        <i class="fa-solid fa-caret-up"></i>
+                    </button>
+                    <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">VOTES</div>
+                </div>
+                <div class="priority-content" style="flex: 1; padding-left: 1.5rem;">
+                    <div class="priority-meta" style="margin-bottom: 0.5rem;">
+                        <span class="status-badge status-{{ complaint.status.split(' ')[0] }}">{{ complaint.status }}</span>
+                        <span class="date-text" style="color: var(--text-muted); float: right;">{{ complaint.date_submitted.strftime('%b %d, %Y') }}</span>
+                    </div>
+                    <h4 style="margin-top: 0.5rem; color: var(--text-main);">
+                        {% if complaint.issue_type == 'Road' %}<i class="fa-solid fa-road issue-icon" style="color: #f1c40f;"></i>
+                        {% elif complaint.issue_type == 'Water' %}<i class="fa-solid fa-faucet-drip issue-icon" style="color: #3498db;"></i>
+                        {% elif complaint.issue_type == 'Electricity' %}<i class="fa-solid fa-bolt issue-icon" style="color: #f39c12;"></i>
+                        {% elif complaint.issue_type == 'Garbage' %}<i class="fa-solid fa-trash-can issue-icon" style="color: #7f8c8d;"></i>
+                        {% else %}<i class="fa-solid fa-circle-exclamation issue-icon"></i>{% endif %}
+                        {{ complaint.area }}, {{ complaint.district }}, {{ complaint.state }}
+                    </h4>
+                    <p class="text-muted" style="font-size: 0.9rem;">Tracking ID: <span style="color: var(--primary-color);">{{ complaint.display_id }}</span></p>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+                        <button class="btn btn-secondary btn-sm" onclick="voteIssue({{ complaint.complaint_id }})">
+                            <i class="fa-solid fa-hand-fist"></i> Me Too
+                        </button>
+                        <a href="{{ url_for('track', id=complaint.display_id) }}" class="btn btn-primary btn-sm">
+                            <i class="fa-solid fa-magnifying-glass-location"></i> Track
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted text-center pt-2">No priority issues reported yet.</p>
+    {% endif %}
+</div>
+
+<div class="categories-section mt-4">
+    {% for category_name, complaints in categories.items() %}
+        {% if complaints|length > 0 %}
+        <div class="category-row" style="margin-bottom: 2rem;">
+            <h3>
+                {% if 'Road' in category_name %}<i class="fa-solid fa-road issue-icon" style="color: #00f5ff;"></i>
+                {% elif 'Water' in category_name %}<i class="fa-solid fa-faucet-drip issue-icon" style="color: #3498db;"></i>
+                {% elif 'Electricity' in category_name %}<i class="fa-solid fa-bolt issue-icon" style="color: #ffb700;"></i>
+                {% elif 'Garbage' in category_name %}<i class="fa-solid fa-trash-can issue-icon" style="color: #7f5af0;"></i>
+                {% else %}<i class="fa-solid fa-circle-exclamation issue-icon" style="color: var(--text-muted);"></i>{% endif %}
+                {{ category_name }}
+            </h3>
+            
+            <div class="netflix-slider" style="margin-top: 1rem;">
+                {% for complaint in complaints %}
+                <div class="card netflix-card">
+                    <div class="card-img-wrapper" style="width: 100%; height: 120px; overflow: hidden; background: #000;">
+                        <img src="{% if complaint.image_path %}/static/uploads/{{ complaint.image_path }}{% else %}/static/img/placeholder.png{% endif %}" 
+                             style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: opacity 0.3s;"
+                             onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'"
+                             onerror="this.src='/static/img/placeholder.png'">
+                    </div>
+                    <div class="priority-content" style="flex: 1; padding: 1rem;">
+                        <div class="priority-meta" style="margin-bottom: 0.5rem;">
+                            <span class="status-badge status-{{ complaint.status.split(' ')[0] }}">{{ complaint.status }}</span>
+                            <span class="date-text" style="color: var(--text-muted); float: right;">{{ complaint.date_submitted.strftime('%b %d, %Y') }}</span>
+                        </div>
+                        <h4 style="margin-top: 0.5rem; color: var(--text-main); font-size: 1.1rem;">
+                            {{ complaint.area }}, {{ complaint.district }}, {{ complaint.state }}
+                        </h4>
+                        <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1rem; flex-grow: 1;">
+                            {{ complaint.description[:60] }}{% if complaint.description|length > 60 %}...{% endif %}
+                        </p>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                            <button class="btn btn-secondary btn-sm" onclick="voteIssue({{ complaint.complaint_id }})">
+                                <i class="fa-solid fa-hand-fist"></i> Support <span class="vote-count" id="list-vote-{{ complaint.complaint_id }}" style="margin-left: 4px; color: var(--primary-color);">{{ complaint.vote_count }}</span>
+                            </button>
+                            <a href="{{ url_for('track', id=complaint.display_id) }}" class="btn btn-primary btn-sm">
+                                Track Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+    
+    {% if not categories.values()|length %}
+        <div class="card text-center" style="margin-top: 2rem;">
+            <i class="fa-regular fa-folder-open" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+            <p>No complaints found in the system. The city is running smoothly!</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Inline voting logic for SPA compatibility -->
+<script>
+function voteIssue(complaintId) {
+    const btn = event.currentTarget;
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+    fetch(`/api/vote/${complaintId}`, { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Flash success logic integrated with SPA
+                const alertContainer = document.querySelector('.alerts-container');
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success';
+                alert.innerHTML = `<span><i class="fa-solid fa-check-circle"></i> ${data.message}</span>`;
+                alertContainer.appendChild(alert);
+                
+                // Update counts on page
+                ['vote-count-', 'list-vote-'].forEach(prefix => {
+                    const el = document.getElementById(prefix + complaintId);
+                    if (el) el.textContent = parseInt(el.textContent) + 1;
+                });
+
+                setTimeout(() => { alert.style.opacity = '0'; setTimeout(() => alert.remove(), 300); }, 3000);
+            } else {
+                alert(data.message);
+            }
+        })
+        .finally(() => {
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        });
+}
+</script>
+{% endblock %}
