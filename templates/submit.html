@@ -79,19 +79,28 @@
                         window.stateSS = new SlimSelect({
                             select: '#state',
                             data: [{text: 'Select State...', value: '', placeholder: true}, ...states.map(s=>({text:s, value:s}))],
-                            settings: { placeholderText: 'Search State...' },
+                            settings: { 
+                                placeholderText: 'Search State...',
+                                contentLocation: document.getElementById('complaintForm')
+                            },
                             events: { afterChange: v => updateDistricts(v[0]?.value, locationData) }
                         });
 
                         window.districtSS = new SlimSelect({
                             select: '#district',
-                            settings: { placeholderText: 'Search District...' },
+                            settings: { 
+                                placeholderText: 'Search District...',
+                                contentLocation: document.getElementById('complaintForm')
+                            },
                             events: { afterChange: v => updateAreas(v[0]?.value, locationData) }
                         });
 
                         window.areaSS = new SlimSelect({
                             select: '#area',
-                            settings: { placeholderText: 'Search Area / Taluk...' }
+                            settings: { 
+                                placeholderText: 'Search Area / Taluk...',
+                                contentLocation: document.getElementById('complaintForm')
+                            }
                         });
                         
                         window.initHierarchyRunning = false;

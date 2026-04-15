@@ -1173,19 +1173,3 @@ textarea.form-control {
     from { opacity: 0; transform: translateY(30px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
-/* --- SlimSelect Global Fix --- */
-/* Force lingering dropdowns and lists to be hidden if they aren't part of the current active page */
-.ss-content, .ss-main, .ss-list, .ss-search {
-    display: none;
-}
-/* Only allow them to function when inside the Report Issue form */
-#complaintForm .ss-main {
-    display: flex;
-}
-#complaintForm .ss-content {
-    display: block; /* Library will manage actual visibility with .ss-open */
-}
-#complaintForm .ss-list, #complaintForm .ss-search {
-    display: block;
-}
