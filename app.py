@@ -20,6 +20,25 @@ from area_coords import area_coords
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-123')
 
+# --- SESSION SYNC (Ensures Admin status is always up to date) ---
+@app.before_request
+def sync_user_session():
+    if 'user' in session:
+        try:
+            conn = sqlite3.connect('database/database.db')
+            conn.row_factory = dict_factory
+            cursor = conn.cursor()
+            # Fetch latest data for the logged in user
+            cursor.execute("SELECT * FROM users WHERE email = ?", (session['user']['email'],))
+            updated_user = cursor.fetchone()
+            conn.close()
+            
+            if updated_user:
+                # Update session with latest role/name from DB
+                session['user'] = dict(updated_user)
+        except Exception as e:
+            print(f"Session sync error: {e}")
+
 # Google OAuth Configuration
 oauth = OAuth(app)
 google = oauth.register(
