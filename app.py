@@ -102,6 +102,33 @@ def init_db():
     if not cursor.fetchone():
         cursor.execute("INSERT INTO users (name, email, role) VALUES ('Admin', 'admin@example.com', 'admin')")
     
+    # --- PROPER SEED DATA FOR DASHBOARD ---
+    # Only add if the database is empty
+    cursor.execute("SELECT COUNT(*) as count FROM complaints")
+    if cursor.fetchone()['count'] == 0:
+        print("LOG: Seeding initial complaints for Dashboard features...")
+        sample_complaints = [
+            ('John Doe', 'john@example.com', 'Karnataka', 'Bangalore', 'Indiranagar', 'Potholes', 'Major potholes on 100ft road causing traffic.', 'Pending', 12.9784, 77.6408),
+            ('Sara Smith', 'sara@example.com', 'Karnataka', 'Bangalore', 'Koramangala', 'Water Leakage', 'Main pipe burst near 5th Block.', 'In Progress', 12.9352, 77.6245),
+            ('Amit Kumar', 'amit@example.com', 'Delhi', 'New Delhi', 'Connaught Place', 'Electricity', 'Power outage for 6 hours daily.', 'Resolved', 28.6289, 77.2150),
+            ('Ravi Singh', 'ravi@example.com', 'Maharashtra', 'Mumbai', 'Andheri', 'Garbage', 'Uncollected waste near metro station.', 'Resolved', 19.1136, 72.8697),
+            ('Priya Das', 'priya@example.com', 'West Bengal', 'Kolkata', 'Salt Lake', 'Street Lights', 'Dark streets near Sector 5 causing safety issues.', 'Pending', 22.5726, 88.3639)
+        ]
+        
+        for comp in sample_complaints:
+            cursor.execute("""
+                INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, status, latitude, longitude)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, comp)
+            c_id = cursor.lastrowid
+            
+            # Add some resolutions for the 'Resolved' ones
+            if comp[7] == 'Resolved':
+                cursor.execute("""
+                    INSERT INTO resolution (complaint_id, action_taken)
+                    VALUES (?, ?)
+                """, (c_id, f"Issue fixed on {datetime.now().strftime('%Y-%m-%d')} by municipal team."))
+
     conn.commit()
     conn.close()
 
