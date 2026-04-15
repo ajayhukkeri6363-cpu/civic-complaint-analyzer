@@ -40,7 +40,10 @@ def dict_factory(cursor, row):
 
 def get_db_connection():
     os.makedirs('database', exist_ok=True)
-    conn = sqlite3.connect('database/database.db', check_same_thread=False)
+    # detect_types ensures TIMESTAMP columns return Python datetime objects
+    conn = sqlite3.connect('database/database.db', 
+                           detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+                           check_same_thread=False)
     conn.row_factory = dict_factory
     return conn
 
