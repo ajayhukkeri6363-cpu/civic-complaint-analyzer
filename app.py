@@ -20,13 +20,28 @@ from area_coords import area_coords
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-123')
 
+# Database Connection Helper (returns editable dictionaries)
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+def get_db_connection():
+    os.makedirs('database', exist_ok=True)
+    # detect_types ensures TIMESTAMP columns return Python datetime objects
+    conn = sqlite3.connect('database/database.db', 
+                           detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+                           check_same_thread=False)
+    conn.row_factory = dict_factory
+    return conn
+
 # --- SESSION SYNC (Ensures Admin status is always up to date) ---
 @app.before_request
 def sync_user_session():
     if 'user' in session:
         try:
-            conn = sqlite3.connect('database/database.db')
-            conn.row_factory = dict_factory
+            conn = get_db_connection() # Now uses the correct detect_types
             cursor = conn.cursor()
             # Fetch latest data for the logged in user
             cursor.execute("SELECT * FROM users WHERE email = ?", (session['user']['email'],))
@@ -50,21 +65,6 @@ google = oauth.register(
 )
 
 # Database Connection
-# Database Connection Helper (returns editable dictionaries)
-def dict_factory(cursor, row):
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
-
-def get_db_connection():
-    os.makedirs('database', exist_ok=True)
-    # detect_types ensures TIMESTAMP columns return Python datetime objects
-    conn = sqlite3.connect('database/database.db', 
-                           detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
-                           check_same_thread=False)
-    conn.row_factory = dict_factory
-    return conn
 
 def init_db():
     conn = get_db_connection()
