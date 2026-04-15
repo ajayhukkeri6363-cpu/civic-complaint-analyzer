@@ -31,10 +31,17 @@ google = oauth.register(
 )
 
 # Database Connection
+# Database Connection Helper (returns editable dictionaries)
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
 def get_db_connection():
     os.makedirs('database', exist_ok=True)
     conn = sqlite3.connect('database/database.db', check_same_thread=False)
-    conn.row_factory = sqlite3.Row
+    conn.row_factory = dict_factory
     return conn
 
 def init_db():
@@ -778,10 +785,5 @@ def vote(complaint_id):
         conn.close()
 
 if __name__ == '__main__':
-    local_ip = get_local_ip()
-    print("\n" + "="*50)
-    print("  Civic Complaint Analyzer is running!")
-    print(f"  Local Access:   http://127.0.0.1:5000")
-    print(f"  Network Access: http://{local_ip}:5000")
-    print("="*50 + "\n")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
