@@ -281,9 +281,9 @@ class SpaRouter {
         });
         this.activeScripts = [];
 
-        // Clean up SlimSelect lingering body elements
-        document.querySelectorAll('.ss-content, .ss-main').forEach(el => {
-            // Only remove if they are outside the current #app-content to avoid double-init issues
+        // Clean up SlimSelect lingering body elements aggressively
+        document.body.querySelectorAll('.ss-content, .ss-main, .ss-list, .ss-search').forEach(el => {
+            // Remove everything outside the current main app container
             if (!this.appContent.contains(el)) {
                 el.remove();
             }
