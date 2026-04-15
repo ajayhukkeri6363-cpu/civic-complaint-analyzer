@@ -498,7 +498,15 @@ def login():
         conn.close()
         
         if user:
-            # Bypass OTP and log in admin directly
+            # Special validation for Admin Government ID (3 letters + 5 numbers)
+            if user['role'] == 'admin':
+                govt_id = request.form.get('govt_id', '').strip()
+                import re
+                if not re.match(r'^[a-zA-Z]{3}[0-9]{5}$', govt_id):
+                    flash('Incorrect Government ID. Access Denied.', 'error')
+                    return redirect(url_for('login'))
+            
+            # Successful validation
             session['user'] = user
             flash(f'Welcome back, {user["name"]}.', 'success')
             if user['role'] == 'admin':
