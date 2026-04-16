@@ -1128,14 +1128,24 @@ textarea.form-control {
         margin: -1.5rem -1rem 2rem !important;
     }
 
+    .typewriter {
+        white-space: normal !important;
+        border-right: none !important;
+        animation: none !important;
+        width: auto !important;
+        display: block !important;
+    }
+
     .hero h1 {
         font-size: 2.2rem !important;
         line-height: 1.2;
+        text-align: center;
     }
 
     .hero p {
         font-size: 1rem !important;
         margin-bottom: 2rem !important;
+        text-align: center;
     }
 
     .hero-btn-group {
@@ -1182,18 +1192,41 @@ textarea.form-control {
     /* Cards */
     .netflix-card {
         flex-direction: column;
+        text-align: center;
     }
 
     .priority-content {
         padding-left: 0 !important;
         padding-top: 1rem;
+        text-align: center;
+    }
+
+    .priority-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .date-text {
+        float: none !important;
+        display: block;
     }
 
     .vote-control {
-        flex-direction: row !important;
+        flex-direction: column !important;
         justify-content: center;
-        gap: 1rem;
+        gap: 0.5rem;
         width: 100%;
+        padding: 1rem !important;
+    }
+
+    .priority-content h4, .priority-content p {
+        text-align: center;
+        justify-content: center;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 }
 
