@@ -20,7 +20,53 @@
         <div class="form-group">
             <label for="email" class="form-label">Email Address</label>
             <input type="email" id="email" name="email" class="form-control" required placeholder="john.doe@example.com">
+            <div id="emailError" class="error-msg" style="color: var(--accent-color); font-size: 0.8rem; margin-top: 0.4rem; display: none;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Fake or temporary email not allowed
+            </div>
         </div>
+
+        <script>
+            // Real-time Email Validation
+            const emailInput = document.getElementById('email');
+            const emailError = document.getElementById('emailError');
+            const blockedDomains = ['mailinator.com', '10minutemail.com', 'tempmail.com', 'guerrillamail.com', 'sharklasers.com', 'getnada.com', 'dispostable.com', 'yopmail.com'];
+
+            emailInput.addEventListener('input', function() {
+                const email = this.value.trim().toLowerCase();
+                if (!email) {
+                    hideError();
+                    return;
+                }
+
+                // Regex check
+                const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                if (!emailRegex.test(email)) {
+                    showError("Invalid email format");
+                    return;
+                }
+
+                // Domain check
+                const domain = email.split('@')[1];
+                if (blockedDomains.includes(domain)) {
+                    showError("Fake or temporary email not allowed");
+                } else {
+                    hideError();
+                }
+            });
+
+            function showError(msg) {
+                emailError.textContent = msg;
+                emailError.style.display = 'block';
+                emailInput.style.borderColor = 'var(--accent-color)';
+                emailInput.style.boxShadow = '0 0 10px rgba(255, 42, 85, 0.2)';
+            }
+
+            function hideError() {
+                emailError.style.display = 'none';
+                emailInput.style.borderColor = '';
+                emailInput.style.boxShadow = '';
+            }
+        </script>
 
         <!-- Hierarchical Location Section -->
         <div class="form-group">

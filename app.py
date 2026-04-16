@@ -64,6 +64,31 @@ google = oauth.register(
     client_kwargs={'scope': 'openid email profile'}
 )
 
+# Email Validation Constants
+BLOCKED_DOMAINS = {
+    'mailinator.com', '10minutemail.com', 'tempmail.com', 'guerrillamail.com', 
+    'sharklasers.com', 'getnada.com', 'dispostable.com', 'yopmail.com',
+    'trashmail.com', 'fake-email.com', 'example.com', 'test.com'
+}
+
+def validate_email_rigorous(email):
+    import re
+    # 1. Basic Format
+    if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email):
+        return False, "Invalid email format"
+    
+    # 2. Extract Domain
+    try:
+        domain = email.split('@')[1].lower()
+    except IndexError:
+        return False, "Invalid email structure"
+        
+    # 3. Blocked Domains
+    if domain in BLOCKED_DOMAINS:
+        return False, "Fake or temporary email not allowed"
+        
+    return True, ""
+
 # Database Connection
 
 def init_db():
@@ -117,7 +142,7 @@ def init_db():
     """)
     
     # --- FORCE ADMIN PROMOTION ---
-    admin_emails = ('admin@example.com', 'ajayhukkeri6363@gmail.com', 'amitkiresur24@gmail.com', 'ajayhukkeri2006@gmail.com')
+    admin_emails = ('admin@example.com', 'ajayhukkeri2006@gmail.com')
     for email in admin_emails:
         cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
         if not cursor.fetchone():
@@ -379,9 +404,9 @@ def submit():
             flash('All fields are required.', 'error')
             return redirect(url_for('submit'))
             
-        import re
-        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-            flash('This complaint looks invalid or duplicate', 'warning')
+        is_valid, error_msg = validate_email_rigorous(email)
+        if not is_valid:
+            flash(error_msg, 'warning')
             return redirect(url_for('submit'))
             
         spam_words = ['fake', 'test', 'hello', 'random', 'asdf']
