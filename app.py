@@ -117,7 +117,7 @@ def init_db():
     """)
     
     # --- FORCE ADMIN PROMOTION ---
-    admin_emails = ('admin@example.com', 'ajayhukkeri6363@gmail.com', 'amitkiresur24@gmail.com')
+    admin_emails = ('admin@example.com', 'ajayhukkeri6363@gmail.com', 'amitkiresur24@gmail.com', 'ajayhukkeri2006@gmail.com')
     for email in admin_emails:
         cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
         if not cursor.fetchone():
