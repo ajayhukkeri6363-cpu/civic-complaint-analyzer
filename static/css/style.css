@@ -33,6 +33,13 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
 }
 
 /* Typography */
@@ -1072,38 +1079,134 @@ textarea.form-control {
 }
 
 /* Responsive */
+/* --- Responsive Design (Mobile First Media Queries) --- */
 @media (max-width: 768px) {
+    .container {
+        padding: 0 1rem;
+    }
+
+    main {
+        padding: 1.5rem 0;
+    }
+
+    /* Navigation Fixes */
     .nav-links {
-        display: none;
+        display: flex;
         flex-direction: column;
-        position: absolute;
-        top: 70px;
-        left: 0;
-        right: 0;
-        background: var(--white);
-        padding: 1rem;
-        box-shadow: var(--shadow-md);
+        position: fixed;
+        top: 0;
+        right: -100%; /* Start off-screen */
+        width: 280px;
+        height: 100vh;
+        background: #0b0f19;
+        padding: 80px 1.5rem 2rem;
+        box-shadow: -5px 0 25px rgba(0,0,0,0.5);
+        transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        z-index: 999;
+        border-left: 1px solid var(--border-color);
+        backdrop-filter: blur(20px);
     }
     
     .nav-links.show {
-        display: flex;
+        right: 0; /* Slide in */
     }
     
     .mobile-menu-btn {
         display: block;
+        z-index: 1000;
+        transition: var(--transition);
     }
-    
-    .analytics-grid {
+
+    .mobile-menu-btn i {
+        font-size: 1.8rem;
+    }
+
+    /* Hero Section Mobile Overrides */
+    .hero {
+        padding: 4rem 1.5rem !important; /* Force override of inline styles */
+        border-radius: 0; 
+        margin: -1.5rem -1rem 2rem !important;
+    }
+
+    .hero h1 {
+        font-size: 2.2rem !important;
+        line-height: 1.2;
+    }
+
+    .hero p {
+        font-size: 1rem !important;
+        margin-bottom: 2rem !important;
+    }
+
+    .hero-btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .hero .btn {
+        margin: 0 !important;
+        width: 100%;
+    }
+
+    /* Grid Layouts to 1 Column */
+    .analytics-grid, .stats-grid, .priority-section .netflix-slider {
         grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
     }
     
-    .stats-grid {
-        grid-template-columns: 1fr;
+    .netflix-card {
+        min-width: 100%;
     }
-    
+
     .filters-bar {
         flex-direction: column;
         align-items: stretch;
+        padding: 1.5rem;
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        text-align: center;
+        align-items: center;
+    }
+
+    /* Global Button Responsiveness */
+    .btn-lg {
+        width: 100%;
+        margin-left: 0 !important;
+        display: flex;
+    }
+
+    /* Cards */
+    .netflix-card {
+        flex-direction: column;
+    }
+
+    .priority-content {
+        padding-left: 0 !important;
+        padding-top: 1rem;
+    }
+
+    .vote-control {
+        flex-direction: row !important;
+        justify-content: center;
+        gap: 1rem;
+        width: 100%;
+    }
+}
+
+/* Tablet Optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .container {
+        max-width: 95%;
+    }
+    .hero h1 {
+        font-size: 2.8rem;
+    }
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
