@@ -1,24 +1,42 @@
 import os
 import random
 import functools
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import smtplib
 from email.mime.text import MIMEText
 from authlib.integrations.flask_client import OAuth
 import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
-from area_coords import area_coords
-from india_locations import india_locations
-import random
-import re
-import socket
 
 load_dotenv()
-from area_coords import area_coords
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-123')
+
+# --- DATABASE CONFIG ---
+DATABASE_URL = os.getenv('DATABASE_URL')
+IS_POSTGRES = DATABASE_URL and DATABASE_URL.startswith('postgres')
+
+def get_db_connection():
+    if IS_POSTGRES:
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn
+    else:
+        os.makedirs('database', exist_ok=True)
+        conn = sqlite3.connect('database/database.db', 
+                               detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+                               check_same_thread=False)
+        conn.row_factory = dict_factory
+        return conn
+
+def execute_db(cursor, query, params=()):
+    """Helper to handle Postgres (%s) vs SQLite (?) parameters"""
+    if IS_POSTGRES:
+        query = query.replace('?', '%s')
+    return cursor.execute(query, params)
 
 # Database Connection Helper (returns editable dictionaries)
 def dict_factory(cursor, row):
@@ -27,24 +45,19 @@ def dict_factory(cursor, row):
         d[col[0]] = row[idx]
     return d
 
-def get_db_connection():
-    os.makedirs('database', exist_ok=True)
-    # detect_types ensures TIMESTAMP columns return Python datetime objects
-    conn = sqlite3.connect('database/database.db', 
-                           detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
-                           check_same_thread=False)
-    conn.row_factory = dict_factory
-    return conn
-
 # --- SESSION SYNC (Ensures Admin status is always up to date) ---
 @app.before_request
 def sync_user_session():
     if 'user' in session:
         try:
-            conn = get_db_connection() # Now uses the correct detect_types
-            cursor = conn.cursor()
-            # Fetch latest data for the logged in user
-            cursor.execute("SELECT * FROM users WHERE email = ?", (session['user']['email'],))
+            conn = get_db_connection()
+            if IS_POSTGRES:
+                cursor = conn.cursor(cursor_factory=RealDictCursor)
+            else:
+                cursor = conn.cursor()
+            
+            # Use the helper for cross-DB compatibility
+            execute_db(cursor, "SELECT * FROM users WHERE email = ?", (session['user']['email'],))
             updated_user = cursor.fetchone()
             conn.close()
             
@@ -95,7 +108,7 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     # Create tables
-    cursor.execute("""
+    execute_db(cursor, """
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -105,7 +118,7 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    cursor.execute("""
+    execute_db(cursor, """
         CREATE TABLE IF NOT EXISTS complaints (
             complaint_id INTEGER PRIMARY KEY AUTOINCREMENT,
             citizen_name TEXT NOT NULL,
@@ -122,7 +135,7 @@ def init_db():
             status TEXT DEFAULT 'Pending'
         )
     """)
-    cursor.execute("""
+    execute_db(cursor, """
         CREATE TABLE IF NOT EXISTS votes (
             vote_id INTEGER PRIMARY KEY AUTOINCREMENT,
             complaint_id INTEGER NOT NULL,
@@ -131,7 +144,7 @@ def init_db():
             FOREIGN KEY (complaint_id) REFERENCES complaints(complaint_id) ON DELETE CASCADE
         )
     """)
-    cursor.execute("""
+    execute_db(cursor, """
         CREATE TABLE IF NOT EXISTS resolution (
             resolution_id INTEGER PRIMARY KEY AUTOINCREMENT,
             complaint_id INTEGER NOT NULL UNIQUE,
@@ -144,17 +157,17 @@ def init_db():
     # --- FORCE ADMIN PROMOTION ---
     admin_emails = ('admin@example.com', 'ajayhukkeri2006@gmail.com')
     for email in admin_emails:
-        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+        execute_db(cursor, "SELECT id FROM users WHERE email = ?", (email,))
         if not cursor.fetchone():
-            cursor.execute("INSERT INTO users (name, email, role) VALUES (?, ?, 'admin')", 
+            execute_db(cursor, "INSERT INTO users (name, email, role) VALUES (?, ?, 'admin')", 
                            (email.split('@')[0].capitalize(), email))
         else:
             # Ensure the role is set to 'admin' even if they already exist
-            cursor.execute("UPDATE users SET role = 'admin' WHERE email = ?", (email,))
+            execute_db(cursor, "UPDATE users SET role = 'admin' WHERE email = ?", (email,))
     
     # --- PROPER SEED DATA FOR DASHBOARD ---
     # Only add if the database is empty
-    cursor.execute("SELECT COUNT(*) as count FROM complaints")
+    execute_db(cursor, "SELECT COUNT(*) as count FROM complaints")
     if cursor.fetchone()['count'] == 0:
         print("LOG: Seeding initial complaints for Dashboard features...")
         sample_complaints = [
@@ -166,7 +179,7 @@ def init_db():
         ]
         
         for comp in sample_complaints:
-            cursor.execute("""
+            execute_db(cursor, """
                 INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, status, latitude, longitude, date_submitted)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, comp)
@@ -174,7 +187,7 @@ def init_db():
             
             # Add some resolutions for the 'Resolved' ones
             if comp[7] == 'Resolved':
-                cursor.execute("""
+                execute_db(cursor, """
                     INSERT INTO resolution (complaint_id, action_taken)
                     VALUES (?, ?)
                 """, (c_id, f"Issue fixed on {datetime.now().strftime('%Y-%m-%d')} by municipal team."))
@@ -203,18 +216,21 @@ def get_local_ip():
 
 def get_stats():
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if IS_POSTGRES:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    else:
+        cursor = conn.cursor()
     
-    cursor.execute("SELECT COUNT(*) as total FROM complaints")
+    execute_db(cursor, "SELECT COUNT(*) as total FROM complaints")
     total = cursor.fetchone()['total']
     
-    cursor.execute("SELECT COUNT(*) as pending FROM complaints WHERE status IN ('Pending', 'In Progress')")
+    execute_db(cursor, "SELECT COUNT(*) as pending FROM complaints WHERE status IN ('Pending', 'In Progress')")
     active = cursor.fetchone()['pending']
     
-    cursor.execute("SELECT COUNT(*) as resolved FROM complaints WHERE status = 'Resolved'")
+    execute_db(cursor, "SELECT COUNT(*) as resolved FROM complaints WHERE status = 'Resolved'")
     resolved = cursor.fetchone()['resolved']
     
-    cursor.execute("SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type ORDER BY count DESC LIMIT 1")
+    execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type ORDER BY count DESC LIMIT 1")
     top_issue_row = cursor.fetchone()
     top_issue = top_issue_row['issue_type'] if top_issue_row else "None"
     
@@ -233,7 +249,7 @@ def get_intelligence():
     
     # Clusters: >2 active same-type issues in same area
     # Normalize issue_type grouping to handle variations (Road vs Road Damage)
-    cursor.execute("""
+    execute_db(cursor, """
         SELECT area, 
                CASE 
                    WHEN issue_type LIKE 'Road%' THEN 'Road Damage'
@@ -246,7 +262,7 @@ def get_intelligence():
         FROM complaints 
         WHERE status IN ('Pending', 'In Progress')
         GROUP BY area, normalized_issue 
-        HAVING count >= 2
+        HAVING COUNT(*) >= 2
     """)
     clusters_raw = cursor.fetchall()
     clusters = []
@@ -259,13 +275,13 @@ def get_intelligence():
     
     # Predictions: Significant volume or growth
     # Reduced volume threshold from 10 to 3 for better test visibility
-    cursor.execute("""
+    execute_db(cursor, """
         SELECT area, COUNT(*) as recent_volume 
         FROM complaints 
-        WHERE date_submitted > datetime('now', '-7 days')
+        WHERE date_submitted > (CASE WHEN ? = 1 THEN NOW() - INTERVAL '7 days' ELSE datetime('now', '-7 days') END)
         GROUP BY area 
         ORDER BY recent_volume DESC
-    """)
+    """, (1 if IS_POSTGRES else 0,))
     areas = cursor.fetchall()
     predictions = []
     for a in areas:
@@ -341,7 +357,7 @@ def index():
     cursor = conn.cursor()
     
     # Top Priority Issues (by votes)
-    cursor.execute("""
+    execute_db(cursor, """
         SELECT c.*, COUNT(v.vote_id) as vote_count 
         FROM complaints c 
         LEFT JOIN votes v ON c.complaint_id = v.complaint_id 
@@ -353,7 +369,7 @@ def index():
         c['display_id'] = format_display_id(c['complaint_id'])
     
     # Fetch recent complaints for categorization
-    cursor.execute("""
+    execute_db(cursor, """
         SELECT c.*, COUNT(v.vote_id) as vote_count 
         FROM complaints c 
         LEFT JOIN votes v ON c.complaint_id = v.complaint_id 
@@ -416,7 +432,7 @@ def submit():
             
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT complaint_id FROM complaints WHERE description = ? OR (citizen_email = ? AND issue_type = ? AND status = 'Pending')", (description, email, issue_type))
+        execute_db(cursor, "SELECT complaint_id FROM complaints WHERE description = ? OR (citizen_email = ? AND issue_type = ? AND status = 'Pending')", (description, email, issue_type))
         if cursor.fetchone():
             conn.close()
             flash('This complaint looks invalid or duplicate', 'warning')
@@ -455,7 +471,7 @@ def submit():
         print(f"DEBUG MAP: Hierarchy='{area}, {district}, {state}', Resolved Lat={lat}, Lng={lng}")
 
         try:
-            cursor.execute("""
+            execute_db(cursor, """
                 INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (name, email, state, district, area, issue_type, description, image_path, lat, lng))
@@ -479,8 +495,11 @@ def live_map():
 def api_live_complaints():
     import random as rng
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT complaint_id, state, district, area, issue_type, description, status, image_path, latitude, longitude FROM complaints ORDER BY date_submitted DESC LIMIT 100")
+    if IS_POSTGRES:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    else:
+        cursor = conn.cursor()
+    execute_db(cursor, "SELECT complaint_id, state, district, area, issue_type, description, status, image_path, latitude, longitude FROM complaints ORDER BY date_submitted DESC LIMIT 100")
     complaints = cursor.fetchall()
     conn.close()
     
@@ -588,12 +607,12 @@ def google_callback():
         if not user:
             # Auto-register Google users as citizens
             try:
-                cursor.execute(
+                execute_db(cursor, 
                     "INSERT INTO users (name, email, role, profile_pic) VALUES (?, ?, 'citizen', ?)",
                     (name, email, picture)
                 )
                 conn.commit()
-                cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+                execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,))
                 user = cursor.fetchone()
             except sqlite3.Error as err:
                 conn.close()
@@ -601,9 +620,9 @@ def google_callback():
                 return redirect(url_for('login'))
         else:
             # Update profile pic on every login in case it changed
-            cursor.execute("UPDATE users SET profile_pic = ? WHERE email = ?", (picture, email))
+            execute_db(cursor, "UPDATE users SET profile_pic = ? WHERE email = ?", (picture, email))
             conn.commit()
-            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+            execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,))
             user = cursor.fetchone()
         
         conn.close()
@@ -628,13 +647,16 @@ def register():
         email = request.form.get('email')
         
         conn = get_db_connection()
-        cursor = conn.cursor()
+        if IS_POSTGRES:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+        else:
+            cursor = conn.cursor()
         try:
-            cursor.execute("INSERT INTO users (name, email, role) VALUES (?, ?, 'citizen')", (name, email))
+            execute_db(cursor, "INSERT INTO users (name, email, role) VALUES (?, ?, 'citizen')", (name, email))
             conn.commit()
             flash('Account created successfully! Please login.', 'success')
             return redirect(url_for('login'))
-        except sqlite3.Error as err:
+        except Exception as err:
             flash(f'Registration failed: {err}', 'error')
         finally:
             conn.close()
@@ -654,19 +676,25 @@ def dashboard():
     issue_filter = request.args.get('issue_type')
     
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if IS_POSTGRES:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    else:
+        cursor = conn.cursor()
     
     query = "SELECT * FROM complaints WHERE 1=1"
     params = []
     if area_filter:
-        query += " AND (area LIKE ? OR district LIKE ? OR state LIKE ?)"
+        if IS_POSTGRES:
+            query += " AND (area ILIKE ? OR district ILIKE ? OR state ILIKE ?)"
+        else:
+            query += " AND (area LIKE ? OR district LIKE ? OR state LIKE ?)"
         params.extend([f"%{area_filter}%", f"%{area_filter}%", f"%{area_filter}%"])
     if issue_filter:
         query += " AND issue_type = ?"
         params.append(issue_filter)
         
     query += " ORDER BY date_submitted DESC"
-    cursor.execute(query, params)
+    execute_db(cursor, query, params)
     complaints = cursor.fetchall()
     for c in complaints:
         c['display_id'] = format_display_id(c['complaint_id'])
@@ -691,24 +719,36 @@ def analytics():
 @app.route('/api/analytics')
 def api_analytics():
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if IS_POSTGRES:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    else:
+        cursor = conn.cursor()
     
     stats = get_stats()
     
-    cursor.execute("SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type")
+    execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type")
     by_issue = cursor.fetchall()
     
-    cursor.execute("SELECT area, COUNT(*) as count FROM complaints GROUP BY area ORDER BY count DESC LIMIT 10")
+    execute_db(cursor, "SELECT area, COUNT(*) as count FROM complaints GROUP BY area ORDER BY count DESC LIMIT 10")
     by_area = cursor.fetchall()
     
     # Trends (last 6 months)
-    cursor.execute("""
-        SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count 
-        FROM complaints 
-        GROUP BY month 
-        ORDER BY month ASC 
-        LIMIT 6
-    """)
+    if IS_POSTGRES:
+        execute_db(cursor, """
+            SELECT TO_CHAR(date_submitted, 'YYYY-MM') as month, COUNT(*) as count 
+            FROM complaints 
+            GROUP BY month 
+            ORDER BY month ASC 
+            LIMIT 6
+        """)
+    else:
+        execute_db(cursor, """
+            SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count 
+            FROM complaints 
+            GROUP BY month 
+            ORDER BY month ASC 
+            LIMIT 6
+        """)
     trends = cursor.fetchall()
     
     conn.close()
@@ -723,8 +763,11 @@ def api_analytics():
 @app.route('/api/heatmap')
 def api_heatmap():
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT area, district, state, COUNT(*) as volume FROM complaints GROUP BY area, district, state")
+    if IS_POSTGRES:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    else:
+        cursor = conn.cursor()
+    execute_db(cursor, "SELECT area, district, state, COUNT(*) as volume FROM complaints GROUP BY area, district, state")
     areas = cursor.fetchall()
     conn.close()
     
@@ -761,15 +804,23 @@ def update_status():
     action = data.get('action_taken', '')
     
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if IS_POSTGRES:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    else:
+        cursor = conn.cursor()
     try:
-        cursor.execute("""
+        execute_db(cursor, """
             UPDATE complaints SET status = ? WHERE complaint_id = ?
         """, (status, c_id))
         
         if status == 'Resolved' and action:
-            # SQLite "INSERT OR REPLACE" for simplified resolution update
-            cursor.execute("INSERT OR REPLACE INTO resolution (complaint_id, action_taken) VALUES (?, ?)", (c_id, action))
+            if IS_POSTGRES:
+                execute_db(cursor, """
+                    INSERT INTO resolution (complaint_id, action_taken) VALUES (?, ?)
+                    ON CONFLICT (complaint_id) DO UPDATE SET action_taken = EXCLUDED.action_taken
+                """, (c_id, action))
+            else:
+                execute_db(cursor, "INSERT OR REPLACE INTO resolution (complaint_id, action_taken) VALUES (?, ?)", (c_id, action))
             
         conn.commit()
         return jsonify({'success': True, 'message': f'Status updated to {status}.'})
@@ -798,8 +849,11 @@ def track(id=None):
                 c_id = c_id - 1000
                 
             conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
+            if IS_POSTGRES:
+                cursor = conn.cursor(cursor_factory=RealDictCursor)
+            else:
+                cursor = conn.cursor()
+            execute_db(cursor, """
                 SELECT c.*, r.action_taken 
                 FROM complaints c
                 LEFT JOIN resolution r ON c.complaint_id = r.complaint_id
@@ -822,16 +876,19 @@ def track(id=None):
 @admin_required
 def delete_complaint(complaint_id):
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if IS_POSTGRES:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    else:
+        cursor = conn.cursor()
     try:
         # Fetch image path before deleting so we can clean it up
-        cursor.execute("SELECT image_path FROM complaints WHERE complaint_id = ?", (complaint_id,))
+        execute_db(cursor, "SELECT image_path FROM complaints WHERE complaint_id = ?", (complaint_id,))
         row = cursor.fetchone()
         if not row:
             return jsonify({'success': False, 'message': 'Complaint not found.'})
 
         # Delete from DB (resolution cascades via FK)
-        cursor.execute("DELETE FROM complaints WHERE complaint_id = ?", (complaint_id,))
+        execute_db(cursor, "DELETE FROM complaints WHERE complaint_id = ?", (complaint_id,))
         conn.commit()
 
         # Clean up uploaded image file if it exists
