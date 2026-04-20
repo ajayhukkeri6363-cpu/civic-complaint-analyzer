@@ -1,6 +1,9 @@
 import os
 import random
 import functools
+import threading
+import time
+import requests
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import smtplib
@@ -195,8 +198,30 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Initialize DB on start
-init_db()
+# --- KEEP-ALIVE MECHANISM ---
+def keep_alive():
+    """Background task to ping the server to prevent Render Free Tier from sleeping."""
+    time.sleep(60) # Wait for server to fully start
+    url = os.getenv('RENDER_EXTERNAL_URL', 'https://civic-complaint-analyzer.onrender.com')
+    print(f"LOG: Keep-Alive system active. Targeting: {url}")
+    while True:
+        try:
+            requests.get(url, timeout=10)
+            print(f"LOG: Self-ping successful at {datetime.now()}")
+        except Exception as e:
+            print(f"LOG: Self-ping failed: {e}")
+        time.sleep(600) # Sleep for 10 minutes
+
+# Initialize DB and Keep-Alive on start
+if __name__ == "__main__":
+    init_db()
+    # Start the keep-alive thread
+    threading.Thread(target=keep_alive, daemon=True).start()
+    app.run(host='0.0.0.0', port=5000)
+else:
+    # When running with gunicorn or similar
+    init_db()
+    threading.Thread(target=keep_alive, daemon=True).start()
 
 # Logic Helpers
 def format_display_id(c_id):
