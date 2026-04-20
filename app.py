@@ -588,12 +588,15 @@ def login():
         conn.close()
         
         if user:
-            # Special validation for Admin Government ID (3 letters + 5 numbers)
+            # Special validation for Admin Access Code
             if user['role'] == 'admin':
-                govt_id = request.form.get('govt_id', '').strip()
-                import re
-                if not re.match(r'^[a-zA-Z]{3}[0-9]{5}$', govt_id):
-                    flash('Incorrect Government ID. Access Denied.', 'error')
+                # The secret code is stored in your Render Environment Variables
+                # We use a fallback 'CIVIC_ADMIN_2024' if not set
+                SECRET_CODE = os.getenv('ADMIN_ACCESS_CODE', 'CIVIC_ADMIN_2024')
+                entered_code = request.form.get('govt_id', '').strip() # We keep the form field name for now to avoid breaking the front-end mapping
+                
+                if entered_code != SECRET_CODE:
+                    flash('Invalid Admin Access Code. Please contact the lead administrator.', 'error')
                     return redirect(url_for('login'))
             
             # Successful validation
