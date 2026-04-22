@@ -597,10 +597,12 @@ def login():
         if user:
             # Special validation for Admin Access Code
             if user['role'] == 'admin':
-                # The secret code is stored in your Render Environment Variables
-                # We use a fallback 'CIVIC_ADMIN_2024' if not set
+                # Grab from env, if missing or completely empty, fallback explicitly
                 SECRET_CODE = os.getenv('ADMIN_ACCESS_CODE', 'CIVIC_ADMIN_2024')
-                entered_code = request.form.get('govt_id', '').strip() # We keep the form field name for now to avoid breaking the front-end mapping
+                if not SECRET_CODE.strip():
+                    SECRET_CODE = 'CIVIC_ADMIN_2024'
+                    
+                entered_code = request.form.get('govt_id', '').strip()
                 
                 if entered_code != SECRET_CODE:
                     flash('Invalid Admin Access Code. Please contact the lead administrator.', 'error')
@@ -687,6 +689,9 @@ def register():
         # Verify the Secret Enrollment Key for Admin status
         if role == 'admin':
             SECRET_ENROLL_KEY = os.getenv('ADMIN_ENROLLMENT_CODE', 'TEAM_ENROLL_2024')
+            if not SECRET_ENROLL_KEY.strip():
+                SECRET_ENROLL_KEY = 'TEAM_ENROLL_2024'
+                
             if entered_key != SECRET_ENROLL_KEY:
                 flash('Invalid Admin Enrollment Key. Access denied.', 'error')
                 return redirect(url_for('register'))
