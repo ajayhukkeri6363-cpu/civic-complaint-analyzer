@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}System Error - Civic Analyzer{% endblock %}
+
+{% block content %}
+<section class="error-section" style="padding-top: 120px; padding-bottom: 80px; min-height: 100vh; background: #0b0f19; overflow: hidden; position: relative;">
+    <!-- Abstract Particle Effect -->
+    <div style="position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0.1; pointer-events: none;">
+        <svg width="100%" height="100%">
+            <pattern id="pattern-grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#00f5ff" stroke-width="1"></path>
+            </pattern>
+            <rect width="100%" height="100%" fill="url(#pattern-grid)"></rect>
+        </svg>
+    </div>
+
+    <div class="container text-center" style="position: relative; z-index: 2;">
+        <div class="glass-card p-5 mx-auto" style="max-width: 700px; border: 1px solid rgba(255, 42, 85, 0.2); border-radius: 20px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px);">
+            <div class="mb-4">
+                <div class="icon-pulse mx-auto mb-4" style="width: 100px; height: 100px; background: rgba(255, 42, 85, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #ff2a55;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: #ff2a55;"></i>
+                </div>
+                <h1 style="font-weight: 800; color: #fff; font-size: 2.5rem; letter-spacing: -1px;">500 Internal Error</h1>
+                <p style="color: #94a3b8; font-size: 1.1rem;">The system encountered an unexpected dialect or transaction collision. Our municipal engineers have been notified.</p>
+            </div>
+
+            {% if error %}
+            <div class="error-details text-start mt-4 mb-4" id="debugInfo" style="display: none;">
+                <label style="color: #ff2a55; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Technical Traceback</label>
+                <div style="background: #000; color: #00f5ff; padding: 20px; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; overflow-x: auto; border: 1px solid rgba(0, 245, 255, 0.2); max-height: 300px;">
+                    <pre style="margin: 0;">{{ error }}</pre>
+                </div>
+            </div>
+            <button onclick="document.getElementById('debugInfo').style.display='block'; this.style.display='none';" class="btn btn-outline-secondary mb-3" style="font-size: 0.8rem;">
+                <i class="fa-solid fa-bug"></i> Show Technical Info
+            </button>
+            {% endif %}
+
+            <div class="actions">
+                <a href="{{ url_for('index') }}" class="btn btn-primary px-5 py-3" style="border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #00f5ff 0%, #7f5af0 100%); border: none; box-shadow: 0 5px 15px rgba(0, 245, 255, 0.3);">
+                    Return to Mission Control
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .icon-pulse {
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 42, 85, 0.4); }
+        70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(255, 42, 85, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 42, 85, 0); }
+    }
+</style>
+{% endblock %}
