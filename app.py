@@ -3,6 +3,7 @@ import random
 import functools
 import threading
 import time
+import socket
 import requests
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
@@ -17,6 +18,14 @@ except ImportError:
     psycopg2 = None
     RealDictCursor = None
 from dotenv import load_dotenv
+import logging
+
+# Configure Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[logging.StreamHandler()]
+)
 
 load_dotenv()
 
@@ -29,8 +38,12 @@ IS_POSTGRES = DATABASE_URL and DATABASE_URL.startswith('postgres')
 
 def get_db_connection():
     if IS_POSTGRES:
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-        return conn
+        try:
+            conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+            return conn
+        except Exception as e:
+            logging.error(f"PostgreSQL Connection Failed: {e}")
+            raise
     else:
         os.makedirs('database', exist_ok=True)
         conn = sqlite3.connect('database/database.db', 
@@ -39,11 +52,26 @@ def get_db_connection():
         conn.row_factory = dict_factory
         return conn
 
-def execute_db(cursor, query, params=()):
-    """Helper to handle Postgres (%s) vs SQLite (?) parameters"""
+def execute_db(cursor, query, params=(), fetch_id=False):
+    """Helper to handle Postgres (%s) vs SQLite (?) and ID retrieval"""
     if IS_POSTGRES:
         query = query.replace('?', '%s')
-    return cursor.execute(query, params)
+        if fetch_id and "INSERT" in query.upper() and "RETURNING" not in query.upper():
+            # Auto-append RETURNING for common tables
+            table = "complaints" if "complaints" in query.lower() else "users"
+            id_col = "complaint_id" if table == "complaints" else "id"
+            query += f" RETURNING {id_col}"
+            
+        cursor.execute(query, params)
+        if fetch_id:
+            res = cursor.fetchone()
+            return res[id_col] if res else None
+        return cursor
+    else:
+        cursor.execute(query, params)
+        if fetch_id:
+            return cursor.lastrowid
+        return cursor
 
 # Database Connection Helper (returns editable dictionaries)
 def dict_factory(cursor, row):
@@ -233,7 +261,8 @@ else:
 # Logic Helpers
 def format_display_id(c_id):
     """Helper to format numerical ID to user-friendly string (e.g. 1 -> CIV-1001)"""
-    return f"CIV-{1000 + c_id}"
+    if c_id is None: return "CIV-ERROR"
+    return f"CIV-{1000 + int(c_id)}"
 
 def get_local_ip():
     """Helper to detect local network IP for easy sharing"""
@@ -370,22 +399,6 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Helper for Display ID (CIV-XXXX)
-def format_display_id(complaint_id):
-    return f"CIV-{1000 + complaint_id}"
-
-def get_local_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # doesn't even have to be reachable
-        s.connect(('10.255.255.255', 1))
-        ip = s.getsockname()[0]
-    except Exception:
-        ip = '127.0.0.1'
-    finally:
-        s.close()
-    return ip
-
 @app.context_processor
 def inject_user():
     return dict(user=session.get('user'))
@@ -512,15 +525,17 @@ def submit():
         print(f"DEBUG MAP: Hierarchy='{area}, {district}, {state}', Resolved Lat={lat}, Lng={lng}")
 
         try:
-            execute_db(cursor, """
+            complaint_id = execute_db(cursor, """
                 INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (name, email, state, district, area, issue_type, description, image_path, lat, lng))
-            complaint_id = cursor.lastrowid
+            """, (name, email, state, district, area, issue_type, description, image_path, lat, lng), fetch_id=True)
+            
             conn.commit()
+            logging.info(f"Complaint successfully stored. ID: {complaint_id}")
             flash(f'Complaint submitted successfully! Your Tracking ID: {format_display_id(complaint_id)}', 'success')
             return redirect(url_for('index'))
         except Exception as e:
+            logging.error(f"Database insertion failed: {e}")
             flash('Database error. Please try again.', 'error')
             return redirect(url_for('submit'))
         finally:
@@ -718,11 +733,13 @@ def register():
                 flash('Email already registered. Please login.', 'error')
                 return redirect(url_for('login'))
                 
-            execute_db(cursor, "INSERT INTO users (name, email, role) VALUES (?, ?, ?)", (name, email, role))
+            user_id = execute_db(cursor, "INSERT INTO users (name, email, role) VALUES (?, ?, ?)", (name, email, role), fetch_id=True)
             conn.commit()
+            logging.info(f"User registration successful. User ID: {user_id}")
             flash('Account created successfully! Please login.', 'success')
             return redirect(url_for('login'))
         except Exception as err:
+            logging.error(f"Registration failure: {err}")
             flash(f'Registration failed: {err}', 'error')
         finally:
             conn.close()
