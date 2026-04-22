@@ -190,17 +190,6 @@ def init_db():
         )
     """)
     execute_db(cursor, """
-        CREATE TABLE IF NOT EXISTS otp_verifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT NOT NULL,
-            otp_code TEXT NOT NULL,
-            payload TEXT NOT NULL,
-            attempts INTEGER DEFAULT 0,
-            expires_at TIMESTAMP NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    execute_db(cursor, """
         CREATE TABLE IF NOT EXISTS resolution (
             resolution_id INTEGER PRIMARY KEY AUTOINCREMENT,
             complaint_id INTEGER NOT NULL UNIQUE,
@@ -276,80 +265,6 @@ def internal_error(e):
     logging.error(f"500 ERROR INTERCEPTED: {err_trace}")
     return render_template('error_500.html', error=err_trace if app.debug else "Internal Server Error"), 500
 
-@app.route('/verify-otp', methods=['GET', 'POST'])
-def verify_otp():
-    email = request.args.get('email')
-    if not email:
-        return redirect(url_for('submit'))
-        
-    if request.method == 'POST':
-        otp_entered = request.form.get('otp')
-        conn = get_db_connection()
-        if IS_POSTGRES:
-            cursor = conn.cursor(cursor_factory=RealDictCursor)
-        else:
-            cursor = conn.cursor()
-            
-        try:
-            execute_db(cursor, "SELECT * FROM otp_verifications WHERE email = ?", (email,))
-            record = cursor.fetchone()
-            
-            if not record:
-                flash('No pending verification found. Please resubmit.', 'error')
-                return redirect(url_for('submit'))
-            
-            # Check Expiry
-            expiry = record['expires_at']
-            # Postgres returns datetime object, SQLite returns string
-            if isinstance(expiry, str):
-                try:
-                    expiry = datetime.strptime(expiry.split('.')[0], '%Y-%m-%d %H:%M:%S')
-                except:
-                    # Fallback for alternative formats
-                    expiry = datetime.now() - timedelta(minutes=10) # Force expire on parse error
-                
-            if datetime.now() > expiry:
-                flash('OTP has expired. Please request a new one.', 'error')
-                return redirect(url_for('submit'))
-            
-            # Check Attempts
-            if record['attempts'] >= 3:
-                flash('Maximum attempts reached. Please resubmit complaint.', 'error')
-                execute_db(cursor, "DELETE FROM otp_verifications WHERE email = ?", (email,))
-                conn.commit()
-                return redirect(url_for('submit'))
-                
-            if record['otp_code'] == otp_entered:
-                # SUCCESS: Move to Complaints Table
-                p = json.loads(record['payload'])
-                complaint_id = execute_db(cursor, """
-                    INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (p['name'], p['email'], p['state'], p['district'], p['area'], p['issue_type'], p['description'], p['image_path'], p['lat'], p['lng']), fetch_id=True)
-                
-                # Cleanup
-                execute_db(cursor, "DELETE FROM otp_verifications WHERE email = ?", (email,))
-                conn.commit()
-                
-                logging.info(f"OTP Verified. Complaint stored as {complaint_id}")
-                flash(f'Verification success! Complaint submitted. Your ID: {format_display_id(complaint_id)}', 'success')
-                return redirect(url_for('index'))
-            else:
-                # WRONG OTP
-                execute_db(cursor, "UPDATE otp_verifications SET attempts = attempts + 1 WHERE email = ?", (email,))
-                conn.commit()
-                flash(f"Invalid OTP. {2 - record['attempts']} attempts remaining.", 'error')
-                return redirect(url_for('verify_otp', email=email))
-                
-        except Exception as e:
-            logging.error(f"Verification route error: {e}")
-            flash('Verification system error. Please try again.', 'error')
-            return redirect(url_for('submit'))
-        finally:
-            conn.close()
-            
-    return render_template('verify_otp.html', email=email)
-
 # Logic Helpers
 def format_display_id(c_id):
     """Helper to format numerical ID to user-friendly string (e.g. 1 -> CIV-1001)"""
@@ -367,25 +282,37 @@ def get_local_ip():
     except:
         return "127.0.0.1"
 
-def send_otp_email(target_email, otp):
-    """SMTP Helper to send verification OTP via Gmail"""
+def send_confirmation_email(p):
+    """SMTP Helper to send successful registration confirmation via Gmail"""
     EMAIL_USER = os.getenv('EMAIL_USER')
     EMAIL_PASS = os.getenv('EMAIL_PASS')
     
-    msg = MIMEText(f"Your OTP for complaint verification is: {otp}\n\nNote: This OTP is valid for 2 minutes.")
-    msg['Subject'] = "Complaint Verification OTP"
+    body = f"""Hello {p['name']},
+
+Your complaint has been successfully registered.
+
+Details:
+* Issue Type: {p['issue_type']}
+* Location: {p['state']}, {p['district']}, {p['area']}
+
+Our team will review and take necessary action.
+
+Thank you for helping improve your city."""
+
+    msg = MIMEText(body)
+    msg['Subject'] = "Complaint Registered Successfully"
     msg['From'] = EMAIL_USER
-    msg['To'] = target_email
+    msg['To'] = p['email']
     
     try:
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
             server.login(EMAIL_USER, EMAIL_PASS)
             server.send_message(msg)
-            logging.info(f"OTP Email sent to {target_email}")
+            logging.info(f"Confirmation Email sent to {p['email']}")
             return True
     except Exception as e:
-        logging.error(f"Failed to send email to {target_email}: {e}")
+        logging.error(f"Failed to send confirmation email to {p['email']}: {e}")
         return False
 
 def get_stats():
@@ -637,34 +564,29 @@ def submit():
             
         print(f"DEBUG MAP: Hierarchy='{area}, {district}, {state}', Resolved Lat={lat}, Lng={lng}")
 
-        # Start OTP Verification Flow
-        otp = str(random.randint(100000, 999999))
-        expiry = datetime.now() + timedelta(minutes=2)
-        
-        payload = json.dumps({
-            'name': name, 'email': email, 'state': state, 'district': district, 
-            'area': area, 'issue_type': issue_type, 'description': description,
-            'image_path': image_path, 'lat': lat, 'lng': lng
-        })
-        
         try:
-            # Cleanup any existing pending OTPs for this email first
-            execute_db(cursor, "DELETE FROM otp_verifications WHERE email = ?", (email,))
-            
-            # Store New OTP and Payload
-            execute_db(cursor, "INSERT INTO otp_verifications (email, otp_code, payload, expires_at) VALUES (?, ?, ?, ?)", 
-                       (email, otp, payload, expiry))
+            # 1. Insert Complaint Record Directly
+            complaint_id = execute_db(cursor, """
+                INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (name, email, state, district, area, issue_type, description, image_path, lat, lng), fetch_id=True)
             conn.commit()
             
-            if send_otp_email(email, otp):
-                flash('Verification OTP sent to your email. Please verify to complete submission.', 'success')
-                return redirect(url_for('verify_otp', email=email))
-            else:
-                flash('Failed to send verification email. Please try again later.', 'error')
-                return redirect(url_for('submit'))
+            logging.info(f"Complaint successfully registered with ID: {complaint_id}")
+            
+            # 2. Trigger Confirmation Email (Async/Non-blocking pattern)
+            p_data = {
+                'name': name, 'email': email, 'issue_type': issue_type,
+                'state': state, 'district': district, 'area': area
+            }
+            threading.Thread(target=send_confirmation_email, args=(p_data,), daemon=True).start()
+            
+            flash('Complaint submitted successfully. A confirmation email has been sent.', 'success')
+            return redirect(url_for('index'))
+            
         except Exception as e:
-            logging.error(f"OTP Flow sequence failure: {e}")
-            flash('System error during verification. Please try again.', 'error')
+            logging.error(f"Submission failure: {e}")
+            flash('System error during submission. Please try again.', 'error')
             return redirect(url_for('submit'))
         finally:
             conn.close()
