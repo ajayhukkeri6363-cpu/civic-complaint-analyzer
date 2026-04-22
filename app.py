@@ -157,16 +157,9 @@ def init_db():
         )
     """)
     
-    # --- FORCE ADMIN PROMOTION ---
-    admin_emails = ('admin@example.com', 'ajayhukkeri2006@gmail.com')
-    for email in admin_emails:
-        execute_db(cursor, "SELECT id FROM users WHERE email = ?", (email,))
-        if not cursor.fetchone():
-            execute_db(cursor, "INSERT INTO users (name, email, role) VALUES (?, ?, 'admin')", 
-                           (email.split('@')[0].capitalize(), email))
-        else:
-            # Ensure the role is set to 'admin' even if they already exist
-            execute_db(cursor, "UPDATE users SET role = 'admin' WHERE email = ?", (email,))
+    # --- ADMIN ACCESS SYSTEM ---
+    # We no longer auto-promote emails. 
+    # New admins must use the secret enrollment key during registration.
     
     # --- PROPER SEED DATA FOR DASHBOARD ---
     # Only add if the database is empty
@@ -583,7 +576,7 @@ def login():
         
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+        execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,))
         user = cursor.fetchone()
         conn.close()
         
@@ -629,7 +622,7 @@ def google_callback():
         
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+        execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,))
         user = cursor.fetchone()
         
         if not user:
@@ -673,14 +666,31 @@ def register():
     if request.method == 'POST':
         name = request.form.get('name')
         email = request.form.get('email')
+        password = request.form.get('password')
+        role = request.form.get('role', 'citizen')
+        entered_key = request.form.get('govt_id', '').strip()
         
+        # Verify the Secret Enrollment Key for Admin status
+        if role == 'admin':
+            SECRET_ENROLL_KEY = os.getenv('ADMIN_ENROLLMENT_CODE', 'TEAM_ENROLL_2024')
+            if entered_key != SECRET_ENROLL_KEY:
+                flash('Invalid Admin Enrollment Key. Access denied.', 'error')
+                return redirect(url_for('register'))
+            
         conn = get_db_connection()
         if IS_POSTGRES:
-            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         else:
             cursor = conn.cursor()
+            
         try:
-            execute_db(cursor, "INSERT INTO users (name, email, role) VALUES (?, ?, 'citizen')", (name, email))
+            # Check if email exists
+            execute_db(cursor, "SELECT id FROM users WHERE email = ?", (email,))
+            if cursor.fetchone():
+                flash('Email already registered. Please login.', 'error')
+                return redirect(url_for('login'))
+                
+            execute_db(cursor, "INSERT INTO users (name, email, role) VALUES (?, ?, ?)", (name, email, role))
             conn.commit()
             flash('Account created successfully! Please login.', 'success')
             return redirect(url_for('login'))
@@ -939,15 +949,18 @@ def vote(complaint_id):
         return jsonify({'success': False, 'message': 'You have already voted for this issue.'})
         
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if IS_POSTGRES:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    else:
+        cursor = conn.cursor()
     try:
         # Check if complaint exists
-        cursor.execute("SELECT complaint_id FROM complaints WHERE complaint_id = ?", (complaint_id,))
+        execute_db(cursor, "SELECT complaint_id FROM complaints WHERE complaint_id = ?", (complaint_id,))
         if not cursor.fetchone():
-            return jsonify({'success': False, 'message': 'Issue not found.'})
+            return jsonify({'success': False, 'message': 'Complaint not found.'})
             
         # Record vote (using voter_identifier as a simplified string for demo)
-        cursor.execute("INSERT INTO votes (complaint_id, voter_identifier) VALUES (?, ?)", 
+        execute_db(cursor, "INSERT INTO votes (complaint_id, voter_identifier) VALUES (?, ?)", 
                        (complaint_id, f"anon-{random.randint(1000, 9999)}"))
         conn.commit()
         session[voted_key] = True

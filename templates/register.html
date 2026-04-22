@@ -7,38 +7,68 @@
     <div class="card login-card" style="padding: 2.5rem; border-top: 5px solid var(--secondary-color);">
         <div class="text-center mb-4">
             <i class="fa-solid fa-user-plus" style="font-size: 3rem; color: var(--secondary-color); margin-bottom: 1rem;"></i>
-            <h2 style="margin-bottom: 0.5rem;">Create Admin Account</h2>
-            <p style="color: var(--text-muted);">Join the city management team.</p>
+            <h2 style="margin-bottom: 0.5rem;" id="regTitle">Create Account</h2>
+            <p style="color: var(--text-muted);" id="regSub">Join the civic analyzer community.</p>
         </div>
 
         <form action="{{ url_for('register') }}" method="POST" id="registerForm" data-no-spa>
+            <div class="form-group mb-4">
+                <label class="form-label">I am a...</label>
+                <div class="d-flex gap-3 mt-2">
+                    <div class="form-check role-btn">
+                        <input class="btn-check" type="radio" name="role" id="roleCitizen" value="citizen" checked>
+                        <label class="btn btn-outline-secondary w-100" for="roleCitizen">Citizen</label>
+                    </div>
+                    <div class="form-check role-btn">
+                        <input class="btn-check" type="radio" name="role" id="roleAdmin" value="admin">
+                        <label class="btn btn-outline-secondary w-100" for="roleAdmin">Official Admin</label>
+                    </div>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label for="name" class="form-label">Full Name</label>
                 <input type="text" id="name" name="name" class="form-control" required placeholder="John Doe">
             </div>
 
             <div class="form-group">
-                <label for="email" class="form-label">Admin Email</label>
-                <input type="email" id="email" name="email" class="form-control" required placeholder="admin@civic.gov">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" id="email" name="email" class="form-control" required placeholder="yourname@example.com">
             </div>
             
             <div class="form-group">
                 <label for="password" class="form-label">Password</label>
                 <input type="password" id="password" name="password" class="form-control" required placeholder="••••••••">
-                <small style="display: block; margin-top: 0.25rem; color: var(--text-muted);">Use a strong, unique password.</small>
             </div>
             
-            <div class="form-group">
-                <label for="govt_id" class="form-label">Government ID</label>
-                <input type="text" id="govt_id" name="govt_id" class="form-control" required placeholder="GOVT-ADM-XXX">
-                <small style="display: block; margin-top: 0.5rem; color: var(--text-muted);">
-                    <i class="fa-solid fa-circle-info"></i> This ID is unique and required for verification.
-                </small>
+            <div id="adminKeyBlock" style="display: none;">
+                <div class="form-group" style="padding: 1.5rem; border: 1px solid var(--secondary-color); border-radius: 12px; background: rgba(0, 243, 255, 0.05);">
+                    <label for="govt_id" class="form-label" style="color: var(--secondary-color);">Admin Enrollment Key</label>
+                    <input type="password" id="govt_id" name="govt_id" class="form-control" placeholder="Enter Secret Team Key">
+                    <p style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">
+                        <i class="fa-solid fa-shield-halved"></i> Only authorized officials can create Admin accounts.
+                    </p>
+                </div>
             </div>
+            
+            <script>
+                document.querySelectorAll('input[name="role"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        const isAdmin = e.target.value === 'admin';
+                        const keyBlock = document.getElementById('adminKeyBlock');
+                        const keyInput = document.getElementById('govt_id');
+                        const title = document.getElementById('regTitle');
+                        
+                        keyBlock.style.display = isAdmin ? 'block' : 'none';
+                        keyInput.required = isAdmin;
+                        title.innerText = isAdmin ? 'Create Admin Account' : 'Create Account';
+                    });
+                });
+            </script>
             
             <div class="mt-4">
                 <button type="submit" class="btn btn-secondary btn-lg" style="width: 100%; background-color: var(--secondary-color); border-color: var(--secondary-color);">
-                    <i class="fa-solid fa-user-check"></i> Create Account
+                    <i class="fa-solid fa-user-check"></i> Sign Up
                 </button>
             </div>
         </form>
