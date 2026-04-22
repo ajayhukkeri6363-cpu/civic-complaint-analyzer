@@ -29,7 +29,7 @@ IS_POSTGRES = DATABASE_URL and DATABASE_URL.startswith('postgres')
 
 def get_db_connection():
     if IS_POSTGRES:
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
         return conn
     else:
         os.makedirs('database', exist_ok=True)
