@@ -609,7 +609,7 @@ def login():
                     return redirect(url_for('login'))
             
             # Successful validation
-            session['user'] = user
+            session['user'] = dict(user)
             flash(f'Welcome back, {user["name"]}.', 'success')
             if user['role'] == 'admin':
                 return redirect(url_for('dashboard'))
@@ -663,7 +663,7 @@ def google_callback():
             user = cursor.fetchone()
         
         conn.close()
-        session['user'] = user
+        session['user'] = dict(user)
         flash(f'Successfully logged in via Google! Welcome, {name}.', 'success')
         if user['role'] == 'admin':
             return redirect(url_for('dashboard'))
