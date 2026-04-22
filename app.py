@@ -734,27 +734,31 @@ def dashboard():
 @app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
-    intel = get_intelligence()
-    stats = get_stats()
-    
-    conn = get_db_connection()
-    if IS_POSTGRES:
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-    else:
-        cursor = conn.cursor()
+    try:
+        intel = get_intelligence()
+        stats = get_stats()
         
-    # Find urgent complaints (Pending + High impact categories)
-    execute_db(cursor, "SELECT * FROM complaints WHERE status = 'Pending' AND (issue_type IN ('Road Damage', 'Water Supply', 'Electricity', 'Garbage Management')) ORDER BY date_submitted ASC LIMIT 7")
-    urgent_complaints = cursor.fetchall()
-    for c in urgent_complaints:
-        c['display_id'] = format_display_id(c['complaint_id'])
-    conn.close()
+        conn = get_db_connection()
+        if IS_POSTGRES:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+        else:
+            cursor = conn.cursor()
+            
+        # Find urgent complaints (Pending + High impact categories)
+        execute_db(cursor, "SELECT * FROM complaints WHERE status = 'Pending' AND (issue_type IN ('Road Damage', 'Water Supply', 'Electricity', 'Garbage Management')) ORDER BY date_submitted ASC LIMIT 7")
+        urgent_complaints = cursor.fetchall()
+        for c in urgent_complaints:
+            c['display_id'] = format_display_id(c['complaint_id'])
+        conn.close()
 
-    return render_template('admin/dashboard.html', 
-                           stats=stats,
-                           alerts=intel['predictions'],
-                           urgent_complaints=urgent_complaints,
-                           active_page='dashboard')
+        return render_template('admin/dashboard.html', 
+                               stats=stats,
+                               alerts=intel['predictions'],
+                               urgent_complaints=urgent_complaints,
+                               active_page='dashboard')
+    except Exception as e:
+        import traceback
+        return f"<div style='color:red; font-family:monospace; padding: 20px; background: #000; height: 100vh;'><h3>Dashboard Crash Traceback:</h3><pre>{traceback.format_exc()}</pre></div>", 500
 
 @app.route('/admin/complaints')
 @admin_required
