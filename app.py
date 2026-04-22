@@ -129,6 +129,37 @@ BLOCKED_DOMAINS = {
     'trashmail.com', 'fake-email.com', 'example.com', 'test.com'
 }
 
+# Geographical Fallback Coordinates (Smart Fallback Engine)
+area_coords = {
+    # Key States
+    'Karnataka': (15.3173, 75.7139),
+    'Delhi': (28.7041, 77.1025),
+    'Maharashtra': (19.7515, 75.7139),
+    'Tamil Nadu': (11.1271, 78.6569),
+    'West Bengal': (22.9868, 87.8550),
+    'Kerala': (10.8505, 76.2711),
+    'Andaman and Nicobar Islands': (11.7401, 92.6586),
+    
+    # Key Districts & Cities
+    'Bangalore': (12.9716, 77.5946),
+    'Bangalore Urban': (12.9716, 77.5946),
+    'New Delhi': (28.6139, 77.2090),
+    'Mumbai': (19.0760, 72.8777),
+    'Chennai': (13.0827, 80.2707),
+    'Kolkata': (22.5726, 88.3639),
+    'Kochi': (9.9312, 76.2673),
+    'Nicobar': (7.0, 93.0),
+    
+    # Specific Areas
+    'Indiranagar': (12.9784, 77.6408),
+    'Koramangala': (12.9352, 77.6245),
+    'Whitefield': (12.9698, 77.7499),
+    'Connaught Place': (28.6304, 77.2177),
+    'Andheri': (19.1136, 72.8697),
+    'Salt Lake': (22.5866, 88.4116),
+    'Campbell Bay': (7.0125, 93.9319)
+}
+
 def validate_email_rigorous(email):
     import re
     # 1. Basic Format
