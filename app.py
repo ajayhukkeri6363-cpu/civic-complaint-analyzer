@@ -679,7 +679,7 @@ def register():
             
         conn = get_db_connection()
         if IS_POSTGRES:
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
         else:
             cursor = conn.cursor()
             
