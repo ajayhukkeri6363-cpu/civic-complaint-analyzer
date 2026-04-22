@@ -10,8 +10,12 @@ import smtplib
 from email.mime.text import MIMEText
 from authlib.integrations.flask_client import OAuth
 import sqlite3
-import psycopg2
-from psycopg2.extras import RealDictCursor
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+except ImportError:
+    psycopg2 = None
+    RealDictCursor = None
 from dotenv import load_dotenv
 
 load_dotenv()
