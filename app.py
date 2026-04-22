@@ -194,26 +194,36 @@ def init_db():
 # --- KEEP-ALIVE MECHANISM ---
 def keep_alive():
     """Background task to ping the server to prevent Render Free Tier from sleeping."""
-    time.sleep(60) # Wait for server to fully start
+    time.sleep(180) # Increased to 3 minutes to avoid race conditions during boot
     url = os.getenv('RENDER_EXTERNAL_URL', 'https://civic-complaint-analyzer.onrender.com')
     print(f"LOG: Keep-Alive system active. Targeting: {url}")
     while True:
         try:
-            requests.get(url, timeout=10)
+            requests.get(url, timeout=15)
             print(f"LOG: Self-ping successful at {datetime.now()}")
         except Exception as e:
             print(f"LOG: Self-ping failed: {e}")
         time.sleep(600) # Sleep for 10 minutes
 
-# Initialize DB and Keep-Alive on start
+# --- INITIALIZATION ---
+def safe_init():
+    """Safe initialization to prevent crashes during Render deployments."""
+    try:
+        print("LOG: Starting safe database initialization...")
+        init_db()
+        print("LOG: Database initialized successfully.")
+    except Exception as e:
+        print(f"ERROR: Database initialization failed: {e}")
+        print("LOG: App will continue to start to prevent Render deployment failure.")
+
 if __name__ == "__main__":
-    init_db()
+    safe_init()
     # Start the keep-alive thread
     threading.Thread(target=keep_alive, daemon=True).start()
     app.run(host='0.0.0.0', port=5000)
 else:
-    # When running with gunicorn or similar
-    init_db()
+    # When running with gunicorn (Production)
+    safe_init()
     threading.Thread(target=keep_alive, daemon=True).start()
 
 # Logic Helpers
