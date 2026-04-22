@@ -1,0 +1,100 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Core Settings - Civic Command{% endblock %}
+{% block breadcrumb %}Settings{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+    <div>
+        <h2 style="font-size: 2rem; font-weight: 600; margin: 0 0 0.5rem 0; letter-spacing: -0.5px;">Core Configuration</h2>
+        <p style="color: var(--admin-text-secondary); margin: 0;">Adjust global system parameters and security protocols.</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
+    <!-- System Diagnostics -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h3 class="admin-card-title"><i class="fa-solid fa-server" style="color: var(--admin-accent-purple); margin-right: 8px;"></i> System Diagnostics</h3>
+        </div>
+        <div class="admin-card-body">
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--admin-border);">
+                    <div>
+                        <div style="font-weight: 600;">Engine Environment</div>
+                        <div style="font-size: 0.85rem; color: var(--admin-text-secondary);">Current execution context.</div>
+                    </div>
+                    <span class="badge badge-active">{{ config.environment }}</span>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--admin-border);">
+                    <div>
+                        <div style="font-weight: 600;">Database Architecture</div>
+                        <div style="font-size: 0.85rem; color: var(--admin-text-secondary);">Connected persistence layer.</div>
+                    </div>
+                    <div style="font-family: monospace; color: var(--admin-accent-cyan);">{{ config.database_type }}</div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--admin-border);">
+                    <div>
+                        <div style="font-weight: 600;">Debug Mode</div>
+                        <div style="font-size: 0.85rem; color: var(--admin-text-secondary);">Verbose logging status.</div>
+                    </div>
+                    <span class="badge {% if config.debug_mode %}badge-urgent{% else %}badge-active{% endif %}">
+                        {% if config.debug_mode %}ENABLED{% else %}DISABLED{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Configuration -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h3 class="admin-card-title"><i class="fa-solid fa-shield-halved" style="color: var(--admin-accent-danger); margin-right: 8px;"></i> Security Oversight</h3>
+        </div>
+        <div class="admin-card-body">
+            <div style="background: rgba(244, 63, 94, 0.05); border: 1px solid rgba(244, 63, 94, 0.2); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--admin-accent-danger);">Auth Protocol Status</h4>
+                <p style="font-size: 0.85rem; margin: 0; color: var(--admin-text-secondary);">
+                    The system is currently utilizing 
+                    {% if config.access_code_fallback %}<strong style="color: white;">Local Fallback Codes</strong>{% else %}<strong style="color: white;">Environment Matrix Overrides</strong>{% endif %}.
+                </p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--admin-border);">
+                    <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--admin-text-secondary); margin-bottom: 5px;">Admin Master Access Code</div>
+                    <div style="font-family: monospace; display: flex; justify-content: space-between; align-items: center;">
+                        <span id="accessCode">••••••••••••••••</span>
+                        <button onclick="toggleMask()" style="background: none; border: none; color: var(--admin-accent-cyan); cursor: pointer;"><i class="fa-solid fa-eye"></i></button>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button class="admin-btn admin-btn-primary" style="flex: 1; padding: 0.8rem;" onclick="alert('Rotate Protocol initiated. Please check mail.')">
+                        Rotate Security Keys
+                    </button>
+                    <button class="admin-btn" style="padding: 0.8rem 1.5rem; border: 1px solid var(--admin-border);" onclick="location.href='/logout'">
+                        Full System Exit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleMask() {
+    const el = document.getElementById('accessCode');
+    const eye = event.currentTarget.querySelector('i');
+    if (el.innerText.includes('•')) {
+        el.innerText = 'CIVIC_ADMIN_2024';
+        eye.className = 'fa-solid fa-eye-slash';
+    } else {
+        el.innerText = '••••••••••••••••';
+        eye.className = 'fa-solid fa-eye';
+    }
+}
+</script>
+{% endblock %}

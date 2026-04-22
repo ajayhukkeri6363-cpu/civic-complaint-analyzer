@@ -80,10 +80,10 @@
             
             <div style="margin: 2rem 1rem 0.5rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--admin-text-secondary); font-weight: 600;">System</div>
             
-            <a href="#" class="admin-nav-item {% if active_page == 'users' %}active{% endif %}" onclick="alert('User Management Module coming soon.')">
+            <a href="{{ url_for('admin_users') }}" class="admin-nav-item {% if active_page == 'users' %}active{% endif %}">
                 <i class="fa-solid fa-users-gear"></i> Official Users
             </a>
-            <a href="#" class="admin-nav-item {% if active_page == 'settings' %}active{% endif %}" onclick="alert('Core Settings Module coming soon.')">
+            <a href="{{ url_for('admin_settings') }}" class="admin-nav-item {% if active_page == 'settings' %}active{% endif %}">
                 <i class="fa-solid fa-gear"></i> Settings
             </a>
         </nav>

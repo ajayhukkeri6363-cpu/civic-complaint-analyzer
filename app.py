@@ -769,6 +769,40 @@ def admin_dashboard():
         import traceback
         return f"<div style='color:red; font-family:monospace; padding: 20px; background: #000; height: 100vh;'><h3>Dashboard Crash Traceback:</h3><pre>{traceback.format_exc()}</pre></div>", 500
 
+@app.route('/admin/users')
+@admin_required
+def admin_users():
+    conn = get_db_connection()
+    if IS_POSTGRES:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    else:
+        cursor = conn.cursor()
+    
+    execute_db(cursor, "SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC")
+    users = cursor.fetchall()
+    conn.close()
+    
+    return render_template('admin/users.html', 
+                           users=users,
+                           active_page='users')
+
+@app.route('/admin/settings')
+@admin_required
+def admin_settings():
+    # Gather system info
+    stats = get_stats()
+    config_info = {
+        'database_type': 'PostgreSQL (Render)' if IS_POSTGRES else 'SQLite (Local)',
+        'debug_mode': app.debug,
+        'environment': 'Production' if IS_POSTGRES else 'Development',
+        'access_code_fallback': os.getenv('ADMIN_ACCESS_CODE') is None
+    }
+    
+    return render_template('admin/settings.html', 
+                           stats=stats,
+                           config=config_info,
+                           active_page='settings')
+
 @app.route('/admin/complaints')
 @admin_required
 def admin_complaints():
