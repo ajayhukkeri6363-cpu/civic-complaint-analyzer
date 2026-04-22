@@ -307,13 +307,22 @@ def get_intelligence():
     
     # Predictions: Significant volume or growth
     # Reduced volume threshold from 10 to 3 for better test visibility
-    execute_db(cursor, """
-        SELECT area, COUNT(*) as recent_volume 
-        FROM complaints 
-        WHERE date_submitted > (CASE WHEN ? = 1 THEN NOW() - INTERVAL '7 days' ELSE datetime('now', '-7 days') END)
-        GROUP BY area 
-        ORDER BY recent_volume DESC
-    """, (1 if IS_POSTGRES else 0,))
+    if IS_POSTGRES:
+        execute_db(cursor, """
+            SELECT area, COUNT(*) as recent_volume 
+            FROM complaints 
+            WHERE date_submitted > NOW() - INTERVAL '7 days'
+            GROUP BY area 
+            ORDER BY recent_volume DESC
+        """)
+    else:
+        execute_db(cursor, """
+            SELECT area, COUNT(*) as recent_volume 
+            FROM complaints 
+            WHERE date_submitted > datetime('now', '-7 days')
+            GROUP BY area 
+            ORDER BY recent_volume DESC
+        """)
     areas = cursor.fetchall()
     predictions = []
     for a in areas:
