@@ -1,0 +1,159 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}System Analytics - Civic Command{% endblock %}
+{% block breadcrumb %}System Analytics{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+    <div>
+        <h2 style="font-size: 2rem; font-weight: 600; margin: 0 0 0.5rem 0; letter-spacing: -0.5px;"><i class="fa-solid fa-microchip" style="color: var(--admin-accent-purple); margin-right: 8px;"></i> Intelligence Engine</h2>
+        <p style="color: var(--admin-text-secondary); margin: 0;">Volumetric analysis of incoming report data vectors.</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 1.5rem;">
+    
+    <!-- Issue Types Configuration -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h3 class="admin-card-title">Anomaly Distribution</h3>
+        </div>
+        <div class="admin-card-body" style="height: 350px;">
+            <canvas id="issueTypeChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Location Vulnerability Map -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h3 class="admin-card-title">Regional Vulnerability Vector</h3>
+        </div>
+        <div class="admin-card-body" style="height: 350px;">
+            <canvas id="areaChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="admin-card" style="margin-bottom: 2rem;">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title"><i class="fa-solid fa-timeline" style="color: var(--admin-accent-cyan); margin-right: 8px;"></i> Chronological Volumetric Trend</h3>
+    </div>
+    <div class="admin-card-body" style="height: 300px;">
+        <canvas id="monthlyTrendChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inject Chart API Data formatting exactly as before but styled for Premium
+    const colors = [
+        'rgba(0, 245, 255, 0.7)',
+        'rgba(127, 90, 240, 0.7)',
+        'rgba(244, 63, 94, 0.7)',
+        'rgba(16, 185, 129, 0.7)',
+        'rgba(245, 158, 11, 0.7)',
+        'rgba(255, 255, 255, 0.3)'
+    ];
+    
+    const borders = [
+        '#00f5ff', '#7f5af0', '#f43f5e', '#10b981', '#f59e0b', '#ffffff'
+    ];
+
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = "'Poppins', sans-serif";
+
+    // Standard Grid Config
+    const darkGrid = {
+        color: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(255, 255, 255, 0.1)'
+    };
+
+    fetch('/api/analytics')
+        .then(response => response.json())
+        .then(data => {
+            // Priority Issue Types
+            new Chart(document.getElementById('issueTypeChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.issue_types.labels,
+                    datasets: [{
+                        label: 'Total Incidents',
+                        data: data.issue_types.data,
+                        backgroundColor: colors,
+                        borderColor: borders,
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: darkGrid },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Vulnerable Regions
+            new Chart(document.getElementById('areaChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: data.areas.labels,
+                    datasets: [{
+                        data: data.areas.data,
+                        backgroundColor: colors,
+                        borderColor: 'rgba(10, 17, 40, 0.8)',
+                        borderWidth: 2,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#f8fafc' } }
+                    },
+                    cutout: '65%'
+                }
+            });
+
+            // Timeline
+            if(document.getElementById('monthlyTrendChart') && data.monthly.labels) {
+                new Chart(document.getElementById('monthlyTrendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: data.monthly.labels,
+                        datasets: [{
+                            label: 'Incidents per Month',
+                            data: data.monthly.data,
+                            borderColor: '#00f5ff',
+                            backgroundColor: 'rgba(0, 245, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#00f5ff',
+                            pointBorderColor: '#0A1128',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: darkGrid },
+                            x: { grid: darkGrid }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error establishing telemetry:', error));
+});
+</script>
+{% endblock %}

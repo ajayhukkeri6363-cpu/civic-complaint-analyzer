@@ -1,0 +1,247 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Complaint Matrix - Civic Command{% endblock %}
+{% block breadcrumb %}Complaint Matrix{% endblock %}
+
+{% block content %}
+<div class="admin-card" style="margin-bottom: 2rem;">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title"><i class="fa-solid fa-filter" style="color: var(--admin-accent-cyan); margin-right: 8px;"></i> Tactical Filters</h3>
+    </div>
+    <div class="admin-card-body">
+        <form action="{{ url_for('admin_complaints') }}" method="GET" style="display: flex; gap: 1.5rem; align-items: flex-end; flex-wrap: wrap;" data-no-spa>
+            <div style="flex: 1; min-width: 200px;">
+                <label for="search" style="display: block; margin-bottom: 0.5rem; color: var(--admin-text-secondary); font-size: 0.85rem; font-weight: 500;">Search Vector (ID / Name)</label>
+                <div style="position: relative;">
+                    <i class="fa-solid fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--admin-text-secondary);"></i>
+                    <input type="text" id="search" name="search" class="admin-input" value="{{ request.args.get('search', '') }}" placeholder="Enter query..." style="width: 100%; padding-left: 2.5rem;">
+                </div>
+            </div>
+            
+            <div style="flex: 1; min-width: 200px;">
+                <label for="area" style="display: block; margin-bottom: 0.5rem; color: var(--admin-text-secondary); font-size: 0.85rem; font-weight: 500;">Location Parameters</label>
+                <input type="text" id="area" name="area" class="admin-input" value="{{ request.args.get('area', '') }}" placeholder="Area or District..." style="width: 100%;">
+            </div>
+            
+            <div style="flex: 1; min-width: 200px;">
+                <label for="issue_type" style="display: block; margin-bottom: 0.5rem; color: var(--admin-text-secondary); font-size: 0.85rem; font-weight: 500;">Anomaly Type</label>
+                <select id="issue_type" name="issue_type" class="admin-input" style="width: 100%; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto;">
+                    <option value="">Global Systems</option>
+                    <option value="Road Damage" {% if request.args.get('issue_type') == 'Road Damage' %}selected{% endif %}>Road Damage</option>
+                    <option value="Water Supply" {% if request.args.get('issue_type') == 'Water Supply' %}selected{% endif %}>Water Supply</option>
+                    <option value="Electricity" {% if request.args.get('issue_type') == 'Electricity' %}selected{% endif %}>Electricity</option>
+                    <option value="Garbage Management" {% if request.args.get('issue_type') == 'Garbage Management' %}selected{% endif %}>Garbage</option>
+                    <option value="Drainage Sewage" {% if request.args.get('issue_type') == 'Drainage Sewage' %}selected{% endif %}>Drainage/Sewage</option>
+                </select>
+            </div>
+            
+            <div style="flex: 1; min-width: 200px;">
+                <label for="status" style="display: block; margin-bottom: 0.5rem; color: var(--admin-text-secondary); font-size: 0.85rem; font-weight: 500;">Status State</label>
+                <select id="status" name="status" class="admin-input" style="width: 100%; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto;">
+                    <option value="">All States</option>
+                    <option value="Pending" {% if request.args.get('status') == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="In Progress" {% if request.args.get('status') == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Resolved" {% if request.args.get('status') == 'Resolved' %}selected{% endif %}>Resolved</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="admin-btn admin-btn-primary"><i class="fa-solid fa-play"></i> Execute</button>
+                <a href="{{ url_for('admin_complaints') }}" class="admin-btn"><i class="fa-solid fa-rotate-right"></i> Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title"><i class="fa-solid fa-database" style="color: var(--admin-accent-purple); margin-right: 8px;"></i> Live Data Matrix</h3>
+        <span style="font-size: 0.8rem; color: var(--admin-text-secondary); background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px;">{{ complaints|length }} Records Streamed</span>
+    </div>
+    <div class="admin-card-body" style="padding: 0;">
+        {% if complaints %}
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID/Date</th>
+                            <th>Target Vector</th>
+                            <th>Anomaly Type</th>
+                            <th>Evidence</th>
+                            <th>Status Matrix</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for complaint in complaints %}
+                        <tr {% if complaint.status == 'Pending' %}class="row-urgent"{% endif %}>
+                            <td>
+                                <div style="font-family: monospace; color: var(--admin-accent-cyan); font-weight: 600; letter-spacing: 1px;">{{ complaint.display_id }}</div>
+                                <div style="font-size: 0.75rem; color: var(--admin-text-secondary); margin-top: 4px;"><i class="fa-regular fa-clock"></i> {{ complaint.date_submitted.strftime('%y-%m-%d %H:%M') }}</div>
+                            </td>
+                            <td>
+                                <div style="font-weight: 500;">{{ complaint.citizen_name }}</div>
+                                <div style="font-size: 0.8rem; color: var(--admin-text-secondary); margin-top: 2px;">{{ complaint.area }}, {{ complaint.district }}</div>
+                            </td>
+                            <td>
+                                <div>{{ complaint.issue_type }}</div>
+                                <div style="font-size: 0.75rem; color: var(--admin-text-secondary); max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ complaint.description }}">{{ complaint.description }}</div>
+                            </td>
+                            <td>
+                                {% if complaint.image_path %}
+                                    <a href="/static/uploads/{{ complaint.image_path }}" target="_blank" style="display: block; width: 45px; height: 45px; border-radius: 8px; overflow: hidden; border: 1px solid var(--admin-border); position: relative;" class="evidence-link">
+                                        <img src="/static/uploads/{{ complaint.image_path }}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/static/img/placeholder.png'">
+                                        <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.7); text-align: center; color: white; font-size: 0.6rem; padding: 2px 0;"><i class="fa-solid fa-expand"></i></div>
+                                    </a>
+                                {% else %}
+                                    <div style="width: 45px; height: 45px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: var(--admin-text-secondary); font-size: 0.7rem;"><i class="fa-solid fa-eye-slash"></i></div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <select class="admin-input" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; width: 130px; 
+                                        {% if complaint.status == 'Pending' %}border-color: var(--admin-accent-warning); color: var(--admin-accent-warning);{% endif %}
+                                        {% if complaint.status == 'Resolved' %}border-color: var(--admin-accent-success); color: var(--admin-accent-success);{% endif %}
+                                        {% if complaint.status == 'In Progress' %}border-color: var(--admin-accent-cyan); color: var(--admin-accent-cyan);{% endif %}
+                                        " 
+                                        onchange="handleStatusChange({{ complaint.complaint_id }}, this.value)">
+                                        <option style="color:initial" value="Pending" {% if complaint.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                        <option style="color:initial" value="In Progress" {% if complaint.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                        <option style="color:initial" value="Resolved" {% if complaint.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                                    </select>
+                                    <div id="loader-{{ complaint.complaint_id }}" style="display: none; color: var(--admin-text-secondary);"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="admin-action-bar">
+                                    <button class="admin-btn" style="padding: 0.4rem 0.6rem; background: rgba(16, 185, 129, 0.1); color: var(--admin-accent-success); border-color: rgba(16, 185, 129, 0.3);" onclick="openResolveModal({{ complaint.complaint_id }}, '{{ complaint.display_id }}')" title="Finalize Resolution">
+                                        <i class="fa-solid fa-check-double"></i>
+                                    </button>
+                                    <button class="admin-btn" onclick="deleteComplaint({{ complaint.complaint_id }}, '{{ complaint.display_id }}')" title="Purge Record" style="padding: 0.4rem 0.6rem; background: rgba(244, 63, 94, 0.1); color: var(--admin-accent-danger); border-color: rgba(244, 63, 94, 0.3);">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div style="padding: 5rem 0; text-align: center; color: var(--admin-text-secondary);">
+                <i class="fa-solid fa-ban" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                <h4>No Matrix Data Found</h4>
+                <p style="font-size: 0.85rem;">Try adjusting the tactical filters above.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Premium Dark Modal -->
+<div id="resolveModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; align-items: center; justify-content: center;">
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(4, 8, 20, 0.8); backdrop-filter: blur(5px);" onclick="closeModal()"></div>
+    <div class="admin-card" style="width: 100%; max-width: 500px; position: relative; z-index: 1001; animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+        <div class="admin-card-header" style="border-bottom-color: rgba(16, 185, 129, 0.3);">
+            <h3 class="admin-card-title"><i class="fa-solid fa-shield-check" style="color: var(--admin-accent-success); margin-right: 8px;"></i> Finalize Document <span id="modalDisplayId" style="font-family: monospace; color: var(--admin-text-secondary); margin-left: 5px;"></span></h3>
+        </div>
+        <div class="admin-card-body">
+            <p style="color: var(--admin-text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem;">Please record the specific physical or digital actions taken to neutralize this anomaly. This report will be transmitted to the reporting citizen.</p>
+            <form id="resolveForm">
+                <input type="hidden" id="complaintIdInput">
+                <label for="action_taken" style="display: block; margin-bottom: 0.5rem; color: var(--admin-text-primary); font-size: 0.85rem; font-weight: 500;">Action Transcript</label>
+                <textarea id="action_taken" name="action_taken" class="admin-input" rows="4" style="width: 100%; margin-bottom: 1.5rem; resize: vertical;" required placeholder="e.g., Engineering unit dispatched to vector..."></textarea>
+                
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="admin-btn" onclick="closeModal()">Abort</button>
+                    <button type="submit" id="resolveSubmitBtn" class="admin-btn admin-btn-primary" style="background: linear-gradient(135deg, var(--admin-accent-success), #059669); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);"><i class="fa-solid fa-satellite-dish"></i> Transmit & Resolve</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes modalPop { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    .evidence-link:hover div { background: rgba(0, 245, 255, 0.5) !important; transition: var(--admin-transition); }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function handleStatusChange(complaintId, newStatus) {
+    if (newStatus === 'Resolved') {
+        openResolveModal(complaintId);
+        // Reset select visually until confirmed
+        const select = document.querySelector(`select[onchange*="${complaintId}"]`);
+        select.value = select.querySelector('option[selected]').value; // Revert visually
+        return;
+    }
+    updateStatusAPI(complaintId, newStatus);
+}
+
+function openResolveModal(complaintId, displayId) {
+    const el = document.getElementById('modalDisplayId');
+    if(el) el.textContent = displayId || '';
+    document.getElementById('complaintIdInput').value = complaintId;
+    document.getElementById('resolveModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('resolveModal').style.display = 'none';
+}
+
+function updateStatusAPI(complaintId, status, actionTaken = '') {
+    const loader = document.getElementById(`loader-${complaintId}`);
+    if(loader) loader.style.display = 'block';
+    
+    const btn = document.getElementById('resolveSubmitBtn');
+    if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Transmitting...'; }
+
+    fetch('/api/admin/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ complaint_id: complaintId, status: status, action_taken: actionTaken })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(loader) loader.style.display = 'none';
+        if (data.success) {
+            location.reload(); // Reload matrix to apply correct row-urgent coloring and selections securely
+        } else {
+            alert('Transmission Error: ' + data.message);
+        }
+    })
+    .catch(err => {
+        if(loader) loader.style.display = 'none';
+        console.error('Update failed:', err);
+        alert('Network interruption.');
+    })
+    .finally(() => {
+        if(btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Transmit & Resolve'; }
+    });
+}
+
+document.getElementById('resolveForm').onsubmit = function(e) {
+    e.preventDefault();
+    updateStatusAPI(
+        document.getElementById('complaintIdInput').value, 
+        'Resolved', 
+        document.getElementById('action_taken').value
+    );
+};
+
+function deleteComplaint(complaintId, displayId) {
+    if (!confirm(`CRITICAL WARNING: Purge data vector ${displayId}? This operation is irreversible.`)) return;
+
+    fetch(`/api/admin/delete-complaint/${complaintId}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Purge Error: ' + data.message);
+            }
+        });
+}
+</script>
+{% endblock %}

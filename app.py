@@ -724,8 +724,40 @@ def logout():
 @app.route('/dashboard')
 @admin_required
 def dashboard():
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    intel = get_intelligence()
+    stats = get_stats()
+    
+    conn = get_db_connection()
+    if IS_POSTGRES:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    else:
+        cursor = conn.cursor()
+        
+    # Find urgent complaints (Pending + High impact categories)
+    execute_db(cursor, "SELECT * FROM complaints WHERE status = 'Pending' AND (issue_type IN ('Road Damage', 'Water Supply', 'Electricity', 'Garbage Management')) ORDER BY date_submitted ASC LIMIT 7")
+    urgent_complaints = cursor.fetchall()
+    for c in urgent_complaints:
+        c['display_id'] = format_display_id(c['complaint_id'])
+    conn.close()
+
+    return render_template('admin/dashboard.html', 
+                           stats=stats,
+                           alerts=intel['predictions'],
+                           urgent_complaints=urgent_complaints,
+                           active_page='dashboard')
+
+@app.route('/admin/complaints')
+@admin_required
+def admin_complaints():
+    search = request.args.get('search')
     area_filter = request.args.get('area')
     issue_filter = request.args.get('issue_type')
+    status_filter = request.args.get('status')
     
     conn = get_db_connection()
     if IS_POSTGRES:
@@ -735,15 +767,37 @@ def dashboard():
     
     query = "SELECT * FROM complaints WHERE 1=1"
     params = []
+    
+    if search:
+        # Check if search resembles a display ID (CA-XXXX)
+        if search.startswith('CA-'):
+            try:
+                cid = int(search.replace('CA-', ''))
+                query += " AND complaint_id = ?"
+                params.append(cid)
+            except:
+                pass
+        else:
+            if IS_POSTGRES:
+                query += " AND (citizen_name ILIKE ? OR description ILIKE ?)"
+            else:
+                query += " AND (citizen_name LIKE ? OR description LIKE ?)"
+            params.extend([f"%{search}%", f"%{search}%"])
+            
     if area_filter:
         if IS_POSTGRES:
             query += " AND (area ILIKE ? OR district ILIKE ? OR state ILIKE ?)"
         else:
             query += " AND (area LIKE ? OR district LIKE ? OR state LIKE ?)"
         params.extend([f"%{area_filter}%", f"%{area_filter}%", f"%{area_filter}%"])
+    
     if issue_filter:
         query += " AND issue_type = ?"
         params.append(issue_filter)
+        
+    if status_filter:
+        query += " AND status = ?"
+        params.append(status_filter)
         
     query += " ORDER BY date_submitted DESC"
     execute_db(cursor, query, params)
@@ -753,15 +807,14 @@ def dashboard():
     
     conn.close()
     
-    intel = get_intelligence()
-    return render_template('dashboard.html', 
+    return render_template('admin/complaints.html', 
                           complaints=complaints, 
-                          stats=get_stats(),
-                          alerts=intel['predictions'],
-                          clusters=intel['clusters'],
-                          area_filter=area_filter,
-                          issue_filter=issue_filter,
-                          active_page='dashboard')
+                          active_page='complaints')
+
+@app.route('/admin/analytics')
+@admin_required
+def admin_analytics():
+    return render_template('admin/analytics.html', active_page='analytics')
 
 @app.route('/analytics')
 def analytics():

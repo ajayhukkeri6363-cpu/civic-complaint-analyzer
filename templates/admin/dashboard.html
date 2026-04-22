@@ -1,0 +1,165 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Dashboard Overview - Civic Command{% endblock %}
+{% block breadcrumb %}Overview{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+    <div>
+        <h2 style="font-size: 2rem; font-weight: 600; margin: 0 0 0.5rem 0; letter-spacing: -0.5px;">Global Overview</h2>
+        <p style="color: var(--admin-text-secondary); margin: 0;">Real-time diagnostics of city infrastructure reports.</p>
+    </div>
+    <div style="font-size: 0.85rem; color: var(--admin-text-secondary); background: rgba(0,0,0,0.3); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--admin-border);">
+        <i class="fa-solid fa-clock"></i> Live Sync Active
+    </div>
+</div>
+
+<!-- Key Metrics Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="admin-card stat-card-premium">
+        <div class="stat-content">
+            <h3>Total Impressions</h3>
+            <div class="stat-number animated-counter" data-target="{{ stats.total }}">0</div>
+        </div>
+        <div class="stat-icon-wrapper stat-icon-cyan">
+            <i class="fa-solid fa-satellite-dish"></i>
+        </div>
+    </div>
+    
+    <div class="admin-card stat-card-premium" style="--admin-accent-cyan: var(--admin-accent-warning); --admin-accent-purple: #f59e0b;">
+        <div class="stat-content">
+            <h3>Active / Pending</h3>
+            <div class="stat-number animated-counter" data-target="{{ stats.pending }}" style="color: var(--admin-accent-warning)">0</div>
+        </div>
+        <div class="stat-icon-wrapper" style="background: rgba(245, 158, 11, 0.1); color: var(--admin-accent-warning); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);">
+            <i class="fa-solid fa-hourglass-half"></i>
+        </div>
+    </div>
+    
+    <div class="admin-card stat-card-premium" style="--admin-accent-cyan: var(--admin-accent-success); --admin-accent-purple: #10b981;">
+        <div class="stat-content">
+            <h3>Resolved Incidents</h3>
+            <div class="stat-number animated-counter" data-target="{{ stats.resolved }}" style="color: var(--admin-accent-success)">0</div>
+        </div>
+        <div class="stat-icon-wrapper stat-icon-success">
+            <i class="fa-solid fa-check-double"></i>
+        </div>
+    </div>
+    
+    <div class="admin-card stat-card-premium" style="--admin-accent-cyan: var(--admin-accent-danger); --admin-accent-purple: #f43f5e;">
+        <div class="stat-content">
+            <h3>Primary Catalyst</h3>
+            <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-accent-danger); margin-top: 5px;">{{ stats.top_issue }}</div>
+        </div>
+        <div class="stat-icon-wrapper stat-icon-danger">
+            <i class="fa-solid fa-fire"></i>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 350px; gap: 1.5rem;">
+    <!-- Critical Queue -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h3 class="admin-card-title"><i class="fa-solid fa-triangle-exclamation" style="color: var(--admin-accent-danger); margin-right: 8px;"></i> Critical Action Queue</h3>
+            <a href="{{ url_for('admin_complaints') }}" style="font-size: 0.85rem; color: var(--admin-accent-cyan); text-decoration: none;">View Matrix &rarr;</a>
+        </div>
+        <div class="admin-card-body" style="padding: 0;">
+            {% if urgent_complaints %}
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Target ID</th>
+                                <th>Category</th>
+                                <th>Location Vector</th>
+                                <th>Time Elapsed</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in urgent_complaints %}
+                            <tr class="row-urgent">
+                                <td style="font-family: monospace; color: var(--admin-text-secondary);">{{ c.display_id }}</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--admin-accent-danger); box-shadow: var(--admin-glow-danger);"></div>
+                                        {{ c.issue_type }}
+                                    </div>
+                                </td>
+                                <td>{{ c.area }}</td>
+                                <td><span class="badge badge-urgent">URGENT</span></td>
+                                <td>
+                                    <a href="{{ url_for('admin_complaints') }}?search={{ c.display_id }}" class="admin-btn admin-btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                                        Intercept
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div style="padding: 4rem 2rem; text-align: center; color: var(--admin-text-secondary);">
+                    <i class="fa-solid fa-shield-check" style="font-size: 3rem; color: var(--admin-accent-success); opacity: 0.7; margin-bottom: 1rem;"></i>
+                    <p>System Nominal. No critical action required.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- System Analytics Mini -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h3 class="admin-card-title"><i class="fa-solid fa-microchip" style="color: var(--admin-accent-purple); margin-right: 8px;"></i> AI Predictors</h3>
+        </div>
+        <div class="admin-card-body">
+            {% if alerts %}
+                {% for alert in alerts %}
+                <div style="padding: 1rem; background: rgba(127, 90, 240, 0.05); border: 1px solid rgba(127, 90, 240, 0.2); border-radius: 8px; margin-bottom: 1rem;">
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <i class="fa-solid fa-radar" style="color: var(--admin-accent-purple); margin-top: 3px;"></i>
+                        <div>
+                            <div style="font-size: 0.8rem; color: var(--admin-text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">{{ alert.risk_level }} Threat</div>
+                            <div style="font-weight: 500; margin: 4px 0;">{{ alert.area }}</div>
+                            <div style="font-size: 0.85rem; color: var(--admin-text-secondary);">{{ alert.recent_volume }} anomalies tracking (+{{ alert.growth }}%).</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="text-align: center; padding: 2rem 0; color: var(--admin-text-secondary);">
+                    <i class="fa-solid fa-satellite" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <p style="font-size: 0.85rem;">Predictive models lack sufficient data vectors for anomaly detection.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Animated Number Counter Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const counters = document.querySelectorAll('.animated-counter');
+    const speed = 150; // The lower the slower
+    
+    counters.forEach(counter => {
+        const updateCount = () => {
+            const target = +counter.getAttribute('data-target');
+            const count = +counter.innerText;
+            const inc = target / speed;
+            
+            if (count < target) {
+                counter.innerText = Math.ceil(count + inc);
+                setTimeout(updateCount, 10);
+            } else {
+                counter.innerText = target;
+            }
+        };
+        updateCount();
+    });
+});
+</script>
+{% endblock %}
