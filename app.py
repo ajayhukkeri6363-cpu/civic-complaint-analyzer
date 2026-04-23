@@ -750,57 +750,6 @@ def login():
 
 
 
-@app.route('/google-login')
-def google_login():
-    redirect_uri = url_for('google_callback', _external=True)
-    return google.authorize_redirect(redirect_uri)
-
-@app.route('/google/callback')
-def google_callback():
-    token = google.authorize_access_token()
-    user_info = google.parse_id_token(token, nonce=None)
-    
-    if user_info:
-        email = user_info['email']
-        name = user_info['name']
-        picture = user_info.get('picture', '')
-        
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,))
-        user = cursor.fetchone()
-        
-        if not user:
-            # Auto-register Google users as citizens
-            try:
-                execute_db(cursor, 
-                    "INSERT INTO users (name, email, role, profile_pic) VALUES (?, ?, 'citizen', ?)",
-                    (name, email, picture)
-                )
-                conn.commit()
-                execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,))
-                user = cursor.fetchone()
-            except sqlite3.Error as err:
-                conn.close()
-                flash(f'Google registration failed: {err}', 'error')
-                return redirect(url_for('login'))
-        else:
-            # Update profile pic on every login in case it changed
-            execute_db(cursor, "UPDATE users SET profile_pic = ? WHERE email = ?", (picture, email))
-            conn.commit()
-            execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,))
-            user = cursor.fetchone()
-        
-        conn.close()
-        session['user'] = dict(user)
-        flash(f'Successfully logged in via Google! Welcome, {name}.', 'success')
-        if user['role'] == 'admin':
-            return redirect(url_for('dashboard'))
-        return redirect(url_for('index'))
-    
-    flash('Google authentication failed.', 'error')
-    return redirect(url_for('login'))
-
 @app.route('/profile')
 @login_required
 def profile():

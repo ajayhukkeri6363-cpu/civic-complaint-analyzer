@@ -37,19 +37,7 @@
             </div>
         </form>
 
-        <div class="divider-text" style="display: flex; align-items: center; text-align: center; margin: 1.5rem 0; color: var(--text-muted); font-size: 0.85rem;">
-            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
-            <div style="padding: 0 10px;">OR</div>
-            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
-        </div>
 
-        <div class="d-grid">
-            <a href="{{ url_for('google_login') }}" class="btn btn-secondary btn-lg" style="width: 100%; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(255,255,255,0.05); color: var(--text-main); font-weight: 500; transition: var(--transition);">
-                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google Logo" style="width: 20px; height: 20px;">
-                Sign in with Google
-            </a>
-        </div>
-        
         <div class="text-center mt-4" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
             <p style="font-size: 0.9rem;">New to the team? 
                 <a href="{{ url_for('register') }}" style="color: var(--secondary-color); text-decoration: none; font-weight: 600;">
