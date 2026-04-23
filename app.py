@@ -994,13 +994,18 @@ def api_analytics():
         """)
     trends = cursor.fetchall()
     
+    # Format data for frontend (Chart.js expects separate labels and data arrays)
+    formatted_issue = {'labels': [r['issue_type'] for r in by_issue], 'data': [r['count'] for r in by_issue]}
+    formatted_area = {'labels': [r['area'] for r in by_area], 'data': [r['count'] for r in by_area]}
+    formatted_monthly = {'labels': [r['month'] for r in trends], 'data': [r['count'] for r in trends]}
+
     conn.close()
     return jsonify({
         'total_complaints': stats['total'],
         'resolved_complaints': stats['resolved'],
-        'by_issue': by_issue,
-        'by_area': by_area,
-        'trends': trends
+        'issue_types': formatted_issue,
+        'areas': formatted_area,
+        'monthly': formatted_monthly
     })
 
 @app.route('/api/heatmap')
