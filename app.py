@@ -316,7 +316,8 @@ def internal_error(e):
     import traceback
     err_trace = traceback.format_exc()
     logging.error(f"500 ERROR INTERCEPTED: {err_trace}")
-    return render_template('error_500.html', error=err_trace if app.debug else "Internal Server Error"), 500
+    # Temporarily always show error trace to help user debug live site
+    return render_template('error_500.html', error=err_trace), 500
 
 # Logic Helpers
 def format_display_id(c_id):
