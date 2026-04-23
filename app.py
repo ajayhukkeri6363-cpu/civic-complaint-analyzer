@@ -11,6 +11,7 @@ import smtplib
 import json
 from email.mime.text import MIMEText
 from authlib.integrations.flask_client import OAuth
+from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 try:
     import psycopg2
@@ -189,11 +190,22 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
+            password_hash TEXT,
             role TEXT DEFAULT 'citizen',
             profile_pic TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    
+    # Safe migration for legacy database (adding password_hash)
+    try:
+        execute_db(cursor, "ALTER TABLE users ADD COLUMN password_hash TEXT")
+        print("LOG: Migrated users table successfully (added password_hash).")
+    except Exception as e:
+        # Expected if column already exists
+        if IS_POSTGRES:
+            conn.rollback()
+            cursor = conn.cursor()
     execute_db(cursor, """
         CREATE TABLE IF NOT EXISTS complaints (
             complaint_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -692,14 +704,26 @@ def api_get_areas(state, district):
 def login():
     if request.method == 'POST':
         email = request.form.get('email')
+        password = request.form.get('password')
         
         conn = get_db_connection()
-        cursor = conn.cursor()
+        if IS_POSTGRES:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+        else:
+            cursor = conn.cursor()
+            
         execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,))
-        user = cursor.fetchone()
+        user_row = cursor.fetchone()
         conn.close()
         
-        if user:
+        if user_row:
+            user = dict(user_row)
+            
+            # Check Password First
+            stored_hash = user.get('password_hash')
+            if not stored_hash or not check_password_hash(stored_hash, password):
+                flash('Invalid email or password.', 'error')
+                return redirect(url_for('login'))
             # Special validation for Admin Access Code
             if user['role'] == 'admin':
                 # Grab from env, if missing or completely empty, fallback explicitly
@@ -814,7 +838,8 @@ def register():
                 flash('Email already registered. Please login.', 'error')
                 return redirect(url_for('login'))
                 
-            user_id = execute_db(cursor, "INSERT INTO users (name, email, role) VALUES (?, ?, ?)", (name, email, role), fetch_id=True)
+            hashed_pw = generate_password_hash(password)
+            user_id = execute_db(cursor, "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)", (name, email, hashed_pw, role), fetch_id=True)
             conn.commit()
             logging.info(f"User registration successful. User ID: {user_id}")
             flash('Account created successfully! Please login.', 'success')
