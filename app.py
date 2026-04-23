@@ -12,13 +12,9 @@ import json
 from email.mime.text import MIMEText
 from authlib.integrations.flask_client import OAuth
 from werkzeug.security import generate_password_hash, check_password_hash
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import sqlite3
-try:
-    import psycopg2
-    from psycopg2.extras import RealDictCursor
-except ImportError:
-    psycopg2 = None
-    RealDictCursor = None
 from dotenv import load_dotenv
 import logging
 
