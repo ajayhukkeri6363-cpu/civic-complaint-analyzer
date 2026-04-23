@@ -61,8 +61,9 @@ def get_db_connection():
 def execute_db(cursor, query, params=(), fetch_id=False):
     """Helper to handle Postgres (%s) vs SQLite (?) and ID retrieval"""
     if IS_POSTGRES:
-        # 1. Parameter Dialect
-        query = query.replace('?', '%s')
+        # 1. Parameter Dialect & escaping literal % for psycopg2
+        # We must escape existing % as %% first, then replace ? with %s
+        query = query.replace('%', '%%').replace('?', '%s')
         
         # 2. Schema Dialect (Translation for init_db)
         if "CREATE TABLE" in query.upper():
