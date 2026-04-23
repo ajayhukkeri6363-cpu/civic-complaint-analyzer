@@ -400,7 +400,6 @@ def get_stats():
 def get_intelligence():
     conn = get_db_connection()
     cursor = conn.cursor()
-    
     # Clusters: >2 active same-type issues in same area
     # Normalize issue_type grouping to handle variations (Road vs Road Damage)
     execute_db(cursor, """
@@ -415,7 +414,7 @@ def get_intelligence():
                COUNT(*) as count 
         FROM complaints 
         WHERE status IN ('Pending', 'In Progress')
-        GROUP BY area, normalized_issue 
+        GROUP BY 1, 2 
         HAVING COUNT(*) >= 2
     """)
     clusters_raw = cursor.fetchall()
@@ -434,7 +433,7 @@ def get_intelligence():
             SELECT area, COUNT(*) as recent_volume 
             FROM complaints 
             WHERE date_submitted > NOW() - INTERVAL '7 days'
-            GROUP BY area 
+            GROUP BY 1 
             ORDER BY recent_volume DESC
         """)
     else:
@@ -442,7 +441,7 @@ def get_intelligence():
             SELECT area, COUNT(*) as recent_volume 
             FROM complaints 
             WHERE date_submitted > datetime('now', '-7 days')
-            GROUP BY area 
+            GROUP BY 1 
             ORDER BY recent_volume DESC
         """)
     areas = cursor.fetchall()
@@ -505,10 +504,8 @@ def index():
     
     # Top Priority Issues (by votes)
     execute_db(cursor, """
-        SELECT c.*, COUNT(v.vote_id) as vote_count 
+        SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count 
         FROM complaints c 
-        LEFT JOIN votes v ON c.complaint_id = v.complaint_id 
-        GROUP BY c.complaint_id 
         ORDER BY vote_count DESC LIMIT 3
     """)
     top_priority = cursor.fetchall()
@@ -517,10 +514,8 @@ def index():
     
     # Fetch recent complaints for categorization
     execute_db(cursor, """
-        SELECT c.*, COUNT(v.vote_id) as vote_count 
+        SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count 
         FROM complaints c 
-        LEFT JOIN votes v ON c.complaint_id = v.complaint_id 
-        GROUP BY c.complaint_id 
         ORDER BY c.date_submitted DESC LIMIT 30
     """)
     all_complaints = cursor.fetchall()
@@ -976,16 +971,16 @@ def api_analytics():
         execute_db(cursor, """
             SELECT TO_CHAR(date_submitted, 'YYYY-MM') as month, COUNT(*) as count 
             FROM complaints 
-            GROUP BY month 
-            ORDER BY month ASC 
+            GROUP BY 1 
+            ORDER BY 1 ASC 
             LIMIT 6
         """)
     else:
         execute_db(cursor, """
             SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count 
             FROM complaints 
-            GROUP BY month 
-            ORDER BY month ASC 
+            GROUP BY 1 
+            ORDER BY 1 ASC 
             LIMIT 6
         """)
     trends = cursor.fetchall()
