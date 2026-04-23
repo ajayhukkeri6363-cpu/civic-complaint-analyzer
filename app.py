@@ -208,14 +208,25 @@ def init_db():
     """)
     
     # Safe migration for legacy database (adding password_hash)
-    try:
-        execute_db(cursor, "ALTER TABLE users ADD COLUMN password_hash TEXT")
-        print("LOG: Migrated users table successfully (added password_hash).")
-    except Exception as e:
-        # Expected if column already exists
-        if IS_POSTGRES:
-            conn.rollback()
-            cursor = conn.cursor()
+    if IS_POSTGRES:
+        # On Postgres, first check if column exists to avoid transaction poisoning
+        cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='users' AND column_name='password_hash'")
+        if not cursor.fetchone():
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
+                conn.commit()
+                print("LOG: Migrated users table successfully (added password_hash).")
+            except Exception as e:
+                conn.rollback()
+                print(f"LOG: Migration skipped or failed: {e}")
+        # Reset cursor after check
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    else:
+        try:
+            execute_db(cursor, "ALTER TABLE users ADD COLUMN password_hash TEXT")
+            print("LOG: Migrated users table successfully (added password_hash).")
+        except:
+            pass # SQLite ignores duplicate column error easily
     execute_db(cursor, """
         CREATE TABLE IF NOT EXISTS complaints (
             complaint_id INTEGER PRIMARY KEY AUTOINCREMENT,
