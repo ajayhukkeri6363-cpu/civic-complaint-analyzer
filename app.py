@@ -41,11 +41,19 @@ IS_POSTGRES = DATABASE_URL and DATABASE_URL.startswith('postgres')
 def get_db_connection():
     if IS_POSTGRES:
         try:
-            conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+            # Render's DATABASE_URL might start with postgres:// 
+            # Psycopg2 is usually fine, but let's be robust
+            protocol_fixed_url = DATABASE_URL.replace('postgres://', 'postgresql://')
+            conn = psycopg2.connect(protocol_fixed_url, cursor_factory=RealDictCursor)
             return conn
         except Exception as e:
-            logging.error(f"PostgreSQL Connection Failed: {e}")
-            raise
+            logging.error(f"Postgres Connection Error: {e}")
+            # Try adding SSL if plain connection fails
+            try:
+                conn = psycopg2.connect(protocol_fixed_url, cursor_factory=RealDictCursor, sslmode='require')
+                return conn
+            except:
+                raise e
     else:
         os.makedirs('database', exist_ok=True)
         conn = sqlite3.connect('database/database.db', 
@@ -67,10 +75,12 @@ def execute_db(cursor, query, params=(), fetch_id=False):
             
         # 3. ID Retrieval Dialect
         if fetch_id and "INSERT" in query.upper() and "RETURNING" not in query.upper():
-            table = "complaints" if "complaints" in query.lower() else "users"
-            if "otp_verifications" in query.lower(): table = "otp_verifications"
+            q_lower = query.lower()
+            if "complaints" in q_lower: id_col = "complaint_id"
+            elif "resolution" in q_lower: id_col = "resolution_id"
+            elif "votes" in q_lower: id_col = "vote_id"
+            else: id_col = "id" # Fallback for users, etc.
             
-            id_col = "complaint_id" if table == "complaints" else "id"
             query += f" RETURNING {id_col}"
             
         cursor.execute(query, params)
@@ -260,14 +270,14 @@ def init_db():
         ]
         
         for comp in sample_complaints:
-            execute_db(cursor, """
+            # We use fetch_id=True to get the generated ID safely on both SQLite and Postgres
+            c_id = execute_db(cursor, """
                 INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, status, latitude, longitude, date_submitted)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, comp)
-            c_id = cursor.lastrowid
+            """, comp, fetch_id=True)
             
             # Add some resolutions for the 'Resolved' ones
-            if comp[7] == 'Resolved':
+            if comp[7] == 'Resolved' and c_id:
                 execute_db(cursor, """
                     INSERT INTO resolution (complaint_id, action_taken)
                     VALUES (?, ?)
