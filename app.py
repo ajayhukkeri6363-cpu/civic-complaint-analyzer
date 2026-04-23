@@ -456,7 +456,7 @@ def get_intelligence():
     areas = cursor.fetchall()
     predictions = []
     for a in areas:
-        if a['recent_volume'] >= 3:
+        if a['recent_volume'] >= 1:
             predictions.append({
                 'area': a['area'],
                 'recent_volume': a['recent_volume'],
