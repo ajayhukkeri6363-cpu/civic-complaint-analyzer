@@ -44,7 +44,7 @@ def get_db_connection():
             protocol_fixed_url = DATABASE_URL.replace('postgres://', 'postgresql://')
             conn = psycopg2.connect(protocol_fixed_url, cursor_factory=RealDictCursor)
             return conn
-        except Exception as e:
+        except Exception:
             protocol_fixed_url = DATABASE_URL.replace('postgres://', 'postgresql://')
             return psycopg2.connect(protocol_fixed_url, cursor_factory=RealDictCursor, sslmode='require')
     else:
@@ -92,12 +92,6 @@ area_coords = {
 def format_display_id(c_id):
     return f"CIV-{1000 + int(c_id)}" if c_id else "CIV-ERR"
 
-def validate_email_rigorous(email):
-    try:
-        validation = validate_email(email, check_deliverability=True)
-        return True, ""
-    except EmailNotValidError as e: return False, str(e)
-
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -109,6 +103,8 @@ def init_db():
     else:
         execute_db(cursor, "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT UNIQUE, password_hash TEXT, role TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
         execute_db(cursor, "CREATE TABLE IF NOT EXISTS complaints (complaint_id INTEGER PRIMARY KEY AUTOINCREMENT, citizen_name TEXT, citizen_email TEXT, state TEXT, district TEXT, area TEXT, issue_type TEXT, description TEXT, image_path TEXT, latitude REAL, longitude REAL, status TEXT DEFAULT 'Pending', date_submitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        execute_db(cursor, "CREATE TABLE IF NOT EXISTS votes (vote_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER, voter_identifier TEXT, date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        execute_db(cursor, "CREATE TABLE IF NOT EXISTS resolution (resolution_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER UNIQUE, action_taken TEXT, resolved_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
     conn.commit()
     conn.close()
 
@@ -148,11 +144,25 @@ def inject_user(): return dict(user=session.get('user'))
 def index():
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-    execute_db(cursor, "SELECT * FROM complaints ORDER BY date_submitted DESC LIMIT 5")
-    recent = cursor.fetchall()
-    for c in recent: c['display_id'] = format_display_id(c['complaint_id'])
+    # Priority subquery for vote counts
+    execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY vote_count DESC LIMIT 3")
+    top_priority = cursor.fetchall()
+    for c in top_priority: c['display_id'] = format_display_id(c['complaint_id'])
+    
+    # Categorization for home page slider
+    execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY date_submitted DESC LIMIT 20")
+    all_c = cursor.fetchall()
+    categories = {
+        'Road & Infrastructure': [c for c in all_c if 'road' in c['issue_type'].lower()],
+        'Water Supply': [c for c in all_c if 'water' in c['issue_type'].lower()],
+        'Electricity': [c for c in all_c if 'electr' in c['issue_type'].lower()],
+        'Garbage': [c for c in all_c if 'garbag' in c['issue_type'].lower()]
+    }
+    for cat in categories.values():
+        for c in cat: c['display_id'] = format_display_id(c['complaint_id'])
+    
     conn.close()
-    return render_template('index.html', top_priority=recent, categories={}, active_page='index')
+    return render_template('index.html', top_priority=top_priority, categories=categories, active_page='index')
 
 @app.route('/submit', methods=['GET', 'POST'])
 def submit():
@@ -168,7 +178,6 @@ def submit():
             image_path = filename
         
         lat, lng = area_coords.get(p['area'], area_coords.get(p['district'], (12.9716, 77.5946)))
-        
         conn = get_db_connection()
         cursor = conn.cursor()
         execute_db(cursor, "INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
@@ -190,8 +199,7 @@ def login():
         conn.close()
         if user and check_password_hash(user['password_hash'], password):
             if user['role'] == 'admin':
-                entered_code = request.form.get('govt_id', '').strip()
-                if entered_code != os.getenv('ADMIN_ACCESS_CODE', 'CIVIC_ADMIN_2024'):
+                if request.form.get('govt_id') != os.getenv('ADMIN_ACCESS_CODE', 'CIVIC_ADMIN_2024'):
                     flash('Invalid Admin Access Code.', 'error')
                     return redirect(url_for('login'))
             session['user'] = dict(user)
@@ -225,7 +233,13 @@ def logout():
 @app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
-    return render_template('admin/dashboard.html', stats=get_stats(), active_page='dashboard')
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+    execute_db(cursor, "SELECT * FROM complaints WHERE status = 'Pending' ORDER BY date_submitted DESC LIMIT 5")
+    urgent = cursor.fetchall()
+    for c in urgent: c['display_id'] = format_display_id(c['complaint_id'])
+    conn.close()
+    return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=urgent, alerts=[], active_page='dashboard')
 
 @app.route('/analytics')
 def analytics():
