@@ -95,7 +95,7 @@
     <script>
         if (typeof Chart === 'undefined') {
             console.warn("Chart.js failed to load from CDN. Dashboard may not render correctly.");
-            document.write('<script src="{{ url_for(\'static\', filename=\'js/lib/chart.min.js\') }}"><\/script>');
+            document.write('<script src="{{ url_for('static', filename='js/lib/chart.min.js') }}"><\/script>');
         }
     </script>
 <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
