@@ -217,19 +217,36 @@ def admin_dashboard():
 
 @app.route('/admin/complaints')
 @admin_required
-def admin_complaints(): return redirect(url_for('admin_dashboard'))
+def admin_complaints():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        execute_db(cursor, "SELECT * FROM complaints ORDER BY date_submitted DESC")
+        complaints = cursor.fetchall() or []
+        for c in complaints: c['display_id'] = format_display_id(c['complaint_id'])
+        conn.close()
+        return render_template('admin/complaints.html', complaints=complaints, active_page='complaints')
+    except: return render_template('admin/complaints.html', complaints=[], active_page='complaints')
 
 @app.route('/admin/analytics')
 @admin_required
-def admin_analytics(): return redirect(url_for('analytics'))
+def admin_analytics(): return render_template('admin/analytics.html', stats=get_stats(), active_page='analytics')
 
 @app.route('/admin/users')
 @admin_required
-def admin_users(): return redirect(url_for('admin_dashboard'))
+def admin_users():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        execute_db(cursor, "SELECT * FROM users ORDER BY created_at DESC")
+        users = cursor.fetchall() or []
+        conn.close()
+        return render_template('admin/users.html', users=users, active_page='users')
+    except: return render_template('admin/users.html', users=[], active_page='users')
 
 @app.route('/admin/settings')
 @admin_required
-def admin_settings(): return redirect(url_for('admin_dashboard'))
+def admin_settings(): return render_template('admin/settings.html', active_page='settings')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
