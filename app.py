@@ -153,7 +153,6 @@ def submit():
     if request.method == 'POST':
         try:
             p = request.form; lat, lng = area_coords.get(p['area'], area_coords.get(p['district'], (12.9716, 77.5946)))
-            
             image_filename = None
             if 'image' in request.files:
                 file = request.files['image']
@@ -161,7 +160,6 @@ def submit():
                     ext = file.filename.rsplit('.', 1)[1].lower()
                     image_filename = f"{uuid.uuid4().hex}.{ext}"
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
-
             conn = get_db_connection(); cursor = conn.cursor()
             execute_db(cursor, "INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (p['name'], p['email'], p['state'], p['district'], p['area'], p['issue_type'], p['description'], image_filename, lat, lng))
             conn.commit(); conn.close(); flash('Complaint submitted successfully!', 'success'); return redirect(url_for('index'))
@@ -255,6 +253,26 @@ def admin_users():
 @app.route('/admin/settings')
 @admin_required
 def admin_settings(): return render_template('admin/settings.html', active_page='settings')
+
+@app.route('/api/admin/update-status', methods=['POST'])
+@admin_required
+def admin_update_status():
+    try:
+        data = request.json; c_id = data.get('complaint_id'); status = data.get('status'); action = data.get('action_taken')
+        conn = get_db_connection(); cursor = conn.cursor(); execute_db(cursor, "UPDATE complaints SET status = ? WHERE complaint_id = ?", (status, c_id))
+        if action:
+            if IS_POSTGRES: execute_db(cursor, "INSERT INTO resolution (complaint_id, action_taken) VALUES (?, ?) ON CONFLICT (complaint_id) DO UPDATE SET action_taken = EXCLUDED.action_taken", (c_id, action))
+            else: execute_db(cursor, "INSERT OR REPLACE INTO resolution (complaint_id, action_taken) VALUES (?, ?)", (c_id, action))
+        conn.commit(); conn.close(); return jsonify({'success': True})
+    except Exception as e: return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/admin/delete-complaint/<int:id>', methods=['DELETE'])
+@admin_required
+def admin_delete_complaint(id):
+    try:
+        conn = get_db_connection(); cursor = conn.cursor(); execute_db(cursor, "DELETE FROM complaints WHERE complaint_id = ?", (id,)); execute_db(cursor, "DELETE FROM resolution WHERE complaint_id = ?", (id,)); execute_db(cursor, "DELETE FROM votes WHERE complaint_id = ?", (id,))
+        conn.commit(); conn.close(); return jsonify({'success': True})
+    except Exception as e: return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
