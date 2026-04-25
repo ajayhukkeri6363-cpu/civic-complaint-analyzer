@@ -17,13 +17,20 @@ from psycopg2.extras import RealDictCursor
 import sqlite3
 from dotenv import load_dotenv
 import logging
+from email_validator import validate_email, EmailNotValidError
+from india_locations import india_locations # Added for API endpoints
+
 
 # Configure Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[logging.StreamHandler()]
-)
+import logging
+from logging.handlers import RotatingFileHandler
+
+# Configure Logging to file for diagnostics
+log_handler = RotatingFileHandler('system.log', maxBytes=100000, backupCount=3)
+log_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))
+logging.getLogger().addHandler(log_handler)
+logging.getLogger().setLevel(logging.INFO)
+
 
 load_dotenv()
 
@@ -51,12 +58,20 @@ def get_db_connection():
             except:
                 raise e
     else:
+        db_path = os.path.join('database', 'database.db')
         os.makedirs('database', exist_ok=True)
-        conn = sqlite3.connect('database/database.db', 
+        logging.info(f"Connecting to SQLite database at: {os.path.abspath(db_path)}")
+        conn = sqlite3.connect(db_path, 
                                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
                                check_same_thread=False)
         conn.row_factory = dict_factory
         return conn
+
+def get_db_type():
+    """Helper to return a string description of the active database"""
+    if IS_POSTGRES:
+        return "PostgreSQL (Render Production)"
+    return "SQLite (Local/Ephemeral)"
 
 def execute_db(cursor, query, params=(), fetch_id=False):
     """Helper to handle Postgres (%s) vs SQLite (?) and ID retrieval"""
@@ -134,7 +149,13 @@ google = oauth.register(
 BLOCKED_DOMAINS = {
     'mailinator.com', '10minutemail.com', 'tempmail.com', 'guerrillamail.com', 
     'sharklasers.com', 'getnada.com', 'dispostable.com', 'yopmail.com',
-    'trashmail.com', 'fake-email.com', 'example.com', 'test.com'
+    'trashmail.com', 'fake-email.com', 'example.com', 'test.com',
+    'temp-mail.org', 'guerrillamail.net', 'guerrillamail.biz', 'guerrillamail.org',
+    'guerrillamailblock.com', 'spam4.me', 'grr.la', 'pokemail.net', 'v007.org',
+    'guerrillamail.de', 'spam.la', '10minutemail.net', '10minutemail.co.uk',
+    'mintemail.com', 'maildrop.cc', 'yopmail.fr', 'yopmail.net', 'cool.fr.nf',
+    'jetable.fr.nf', 'nospam.ze.tc', 'nomail.xl.cx', 'mega.zik.dj', 'speed.1s.fr',
+    'courriel.fr.nf', 'moncourriel.fr.nf', 'monemail.fr.nf', 'monmail.fr.nf'
 }
 
 # Geographical Fallback Coordinates (Smart Fallback Engine)
@@ -169,20 +190,21 @@ area_coords = {
 }
 
 def validate_email_rigorous(email):
-    import re
-    # 1. Basic Format
-    if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email):
-        return False, "Invalid email format"
-    
-    # 2. Extract Domain
+    # 1. Basic Format and MX Record check using email-validator
     try:
-        domain = email.split('@')[1].lower()
-    except IndexError:
-        return False, "Invalid email structure"
-        
-    # 3. Blocked Domains
+        # check_deliverability=True performs a DNS lookup for MX records
+        validation = validate_email(email, check_deliverability=True)
+        email = validation.email
+        domain = validation.domain.lower()
+    except EmailNotValidError as e:
+        # If DNS lookup fails, it might be a temporary network issue or a truly fake domain
+        # We can fallback to basic syntax check if we want to be less strict during outages,
+        # but for "fake email detection" it's better to be strict.
+        return False, f"Email validation failed: {str(e)}"
+    
+    # 2. Blocked Domains check
     if domain in BLOCKED_DOMAINS:
-        return False, "Fake or temporary email not allowed"
+        return False, "Fake or temporary email providers are not allowed."
         
     return True, ""
 
@@ -241,6 +263,29 @@ def init_db():
             status TEXT DEFAULT 'Pending'
         )
     """)
+
+    # --- SCHEMA MIGRATION SYSTEM ---
+    # Ensure older databases get updated with new columns without data loss
+    migration_cols = [
+        ('state', 'TEXT'),
+        ('district', 'TEXT'),
+        ('latitude', 'REAL'),
+        ('longitude', 'REAL'),
+        ('image_path', 'TEXT')
+    ]
+    
+    for col_name, col_type in migration_cols:
+        try:
+            if IS_POSTGRES:
+                # Postgres ADD COLUMN IF NOT EXISTS (v9.6+)
+                cursor.execute(f"ALTER TABLE complaints ADD COLUMN IF NOT EXISTS {col_name} {col_type}")
+            else:
+                # SQLite fallback - will fail if exists, which is fine
+                cursor.execute(f"ALTER TABLE complaints ADD COLUMN {col_name} {col_type}")
+            conn.commit()
+        except:
+            pass 
+
     execute_db(cursor, """
         CREATE TABLE IF NOT EXISTS votes (
             vote_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -267,8 +312,9 @@ def init_db():
     # --- PROPER SEED DATA FOR DASHBOARD ---
     # Only add if the database is empty
     execute_db(cursor, "SELECT COUNT(*) as count FROM complaints")
-    if cursor.fetchone()['count'] == 0:
-        print("LOG: Seeding initial complaints for Dashboard features...")
+    current_count = cursor.fetchone()['count']
+    if current_count == 0:
+        print("LOG: Database is empty. Seeding initial complaints for Dashboard features...")
         sample_complaints = [
             ('John Doe', 'john@example.com', 'Karnataka', 'Bangalore', 'Indiranagar', 'Potholes', 'Major potholes on 100ft road causing traffic.', 'Pending', 12.9784, 77.6408, datetime.now()),
             ('Sara Smith', 'sara@example.com', 'Karnataka', 'Bangalore', 'Koramangala', 'Water Leakage', 'Main pipe burst near 5th Block.', 'In Progress', 12.9352, 77.6245, datetime.now()),
@@ -290,6 +336,8 @@ def init_db():
                     INSERT INTO resolution (complaint_id, action_taken)
                     VALUES (?, ?)
                 """, (c_id, f"Issue fixed on {datetime.now().strftime('%Y-%m-%d')} by municipal team."))
+    else:
+        print(f"LOG: Database check passed. {current_count} existing complaints found. Seeding skipped.")
 
     conn.commit()
     conn.close()
@@ -329,9 +377,12 @@ def internal_error(e):
 
 # Logic Helpers
 def format_display_id(c_id):
-    """Helper to format numerical ID to user-friendly string (e.g. 1 -> CIV-1001)"""
-    if c_id is None: return "CIV-ERROR"
-    return f"CIV-{1000 + int(c_id)}"
+    try:
+        if c_id is None: return "CIV-ERR"
+        return f"CIV-{1000 + int(c_id)}"
+    except:
+        return f"CIV-{c_id}"
+
 
 def get_local_ip():
     """Helper to detect local network IP for easy sharing"""
@@ -413,18 +464,20 @@ def get_intelligence():
     # Normalize issue_type grouping to handle variations (Road vs Road Damage)
     execute_db(cursor, """
         SELECT area, 
-               CASE 
-                   WHEN issue_type LIKE 'Road%' THEN 'Road Damage'
-                   WHEN issue_type LIKE 'Water%' THEN 'Water Supply'
-                   WHEN issue_type LIKE 'Electr%' THEN 'Electricity'
-                   WHEN issue_type LIKE 'Garbag%' THEN 'Garbage Management'
+                CASE 
+                   WHEN UPPER(issue_type) LIKE 'ROAD%' OR UPPER(issue_type) LIKE 'POTHOLE%' THEN 'Road Damage'
+                   WHEN UPPER(issue_type) LIKE 'WATER%' OR UPPER(issue_type) LIKE 'LEAKAGE%' THEN 'Water Supply'
+                   WHEN UPPER(issue_type) LIKE 'ELECTR%' OR UPPER(issue_type) LIKE 'LIGHT%' THEN 'Electricity'
+                   WHEN UPPER(issue_type) LIKE 'GARBAG%' OR UPPER(issue_type) LIKE 'WASTE%' OR UPPER(issue_type) LIKE 'SANIT%' THEN 'Garbage Management'
+                   WHEN UPPER(issue_type) LIKE 'DRAIN%' OR UPPER(issue_type) LIKE 'SEWAG%' THEN 'Drainage Sewage'
                    ELSE issue_type 
                END as normalized_issue,
+
                COUNT(*) as count 
         FROM complaints 
         WHERE status IN ('Pending', 'In Progress')
         GROUP BY 1, 2 
-        HAVING COUNT(*) >= 2
+        HAVING COUNT(*) >= 1
     """)
     clusters_raw = cursor.fetchall()
     clusters = []
@@ -586,7 +639,7 @@ def submit():
         execute_db(cursor, "SELECT complaint_id FROM complaints WHERE description = ? OR (citizen_email = ? AND issue_type = ? AND status = 'Pending')", (description, email, issue_type))
         if cursor.fetchone():
             conn.close()
-            flash('This complaint looks invalid or duplicate', 'warning')
+            flash('A similar complaint is already pending. We are working on it!', 'warning')
             return redirect(url_for('submit'))
             
         # Handle image upload
@@ -642,9 +695,11 @@ def submit():
             return redirect(url_for('index'))
             
         except Exception as e:
+            conn.rollback() # Ensure transaction is cleared on failure
             logging.error(f"Submission failure: {e}")
             flash('System error during submission. Please try again.', 'error')
             return redirect(url_for('submit'))
+
         finally:
             conn.close()
             
@@ -720,6 +775,14 @@ def login():
         email = request.form.get('email')
         password = request.form.get('password')
         
+        # Block fake/disposable emails during login
+        is_valid, error_msg = validate_email_rigorous(email)
+        if not is_valid:
+            flash(error_msg, 'warning')
+            return redirect(url_for('login'))
+
+
+        
         conn = get_db_connection()
         if IS_POSTGRES:
             cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -777,6 +840,12 @@ def register():
         password = request.form.get('password')
         role = request.form.get('role', 'citizen')
         entered_key = request.form.get('govt_id', '').strip()
+        
+        # Rigorous Email Validation
+        is_valid, error_msg = validate_email_rigorous(email)
+        if not is_valid:
+            flash(error_msg, 'warning')
+            return redirect(url_for('register'))
         
         # Verify the Secret Enrollment Key for Admin status
         if role == 'admin':
@@ -878,7 +947,7 @@ def admin_settings():
     # Gather system info
     stats = get_stats()
     config_info = {
-        'database_type': 'PostgreSQL (Render)' if IS_POSTGRES else 'SQLite (Local)',
+        'database_type': get_db_type(),
         'debug_mode': app.debug,
         'environment': 'Production' if IS_POSTGRES else 'Development',
         'access_code_fallback': os.getenv('ADMIN_ACCESS_CODE') is None
@@ -907,14 +976,21 @@ def admin_complaints():
     params = []
     
     if search:
-        # Check if search resembles a display ID (CA-XXXX)
-        if search.startswith('CA-'):
+        # Check if search resembles a display ID (CIV-XXXX)
+        if search.upper().startswith('CIV-'):
             try:
-                cid = int(search.replace('CA-', ''))
+                # Remove prefix and handle potential spaces
+                cid_str = search.upper().replace('CIV-', '').strip()
+                cid = int(cid_str)
+                # Correct for the +1000 display offset
+                if cid > 1000:
+                    cid = cid - 1000
                 query += " AND complaint_id = ?"
                 params.append(cid)
-            except:
+            except ValueError:
+                # If conversion fails, fallback to name/desc search
                 pass
+
         else:
             if IS_POSTGRES:
                 query += " AND (citizen_name ILIKE ? OR description ILIKE ?)"
@@ -969,8 +1045,25 @@ def api_analytics():
     
     stats = get_stats()
     
-    execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type")
+    execute_db(cursor, """
+        SELECT 
+            CASE 
+                WHEN UPPER(issue_type) LIKE 'ROAD%' OR UPPER(issue_type) LIKE 'POTHOLE%' THEN 'Road Damage'
+                WHEN UPPER(issue_type) LIKE 'WATER%' OR UPPER(issue_type) LIKE 'LEAKAGE%' THEN 'Water Supply'
+                WHEN UPPER(issue_type) LIKE 'ELECTR%' OR UPPER(issue_type) LIKE 'LIGHT%' THEN 'Electricity'
+                WHEN UPPER(issue_type) LIKE 'GARBAG%' OR UPPER(issue_type) LIKE 'WASTE%' OR UPPER(issue_type) LIKE 'SANIT%' THEN 'Garbage Management'
+                WHEN UPPER(issue_type) LIKE 'DRAIN%' OR UPPER(issue_type) LIKE 'SEWAG%' THEN 'Drainage Sewage'
+                ELSE issue_type 
+            END as normalized_issue,
+
+            COUNT(*) as count 
+        FROM complaints 
+        GROUP BY 1
+    """)
     by_issue = cursor.fetchall()
+    # Rename normalized_issue back to issue_type for frontend compatibility
+    for r in by_issue:
+        r['issue_type'] = r.pop('normalized_issue')
     
     execute_db(cursor, "SELECT area, COUNT(*) as count FROM complaints GROUP BY area ORDER BY count DESC LIMIT 10")
     by_area = cursor.fetchall()
@@ -978,12 +1071,13 @@ def api_analytics():
     # Trends (last 6 months)
     if IS_POSTGRES:
         execute_db(cursor, """
-            SELECT TO_CHAR(date_submitted, 'YYYY-MM') as month, COUNT(*) as count 
+            SELECT TO_CHAR(COALESCE(date_submitted, NOW()), 'YYYY-MM') as month, COUNT(*) as count 
             FROM complaints 
             GROUP BY 1 
             ORDER BY 1 ASC 
             LIMIT 6
         """)
+
     else:
         execute_db(cursor, """
             SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count 
@@ -1005,7 +1099,9 @@ def api_analytics():
         'resolved_complaints': stats['resolved'],
         'issue_types': formatted_issue,
         'areas': formatted_area,
-        'monthly': formatted_monthly
+        'monthly': formatted_monthly,
+        'by_issue': by_issue, # Added for citizen dashboard compatibility
+        'trends': trends       # Added for citizen dashboard compatibility
     })
 
 @app.route('/api/heatmap')
@@ -1073,7 +1169,9 @@ def update_status():
         conn.commit()
         return jsonify({'success': True, 'message': f'Status updated to {status}.'})
     except Exception as e:
+        conn.rollback()
         return jsonify({'success': False, 'message': str(e)})
+
     finally:
         conn.close()
 
@@ -1180,13 +1278,34 @@ def vote(complaint_id):
     finally:
         conn.close()
 
+@app.route('/debug/status')
+def debug_status():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        execute_db(cursor, "SELECT COUNT(*) as count FROM complaints")
+        res = cursor.fetchone()
+        count = res['count'] if res else 0
+        
+        execute_db(cursor, "SELECT * FROM complaints ORDER BY date_submitted DESC LIMIT 1")
+        last = cursor.fetchone()
+        
+        conn.close()
+        return jsonify({
+            'status': 'Connected',
+            'count': count,
+            'last_entry': str(last),
+            'db_type': 'Postgres' if IS_POSTGRES else 'SQLite'
+        })
+    except Exception as e:
+        return jsonify({'status': 'Error', 'message': str(e)})
+
+# --- GLOBAL INITIALIZATION ---
+# These calls ensure the database is ready and keep-alive is active 
+# even when running under production servers like gunicorn.
+safe_init()
+threading.Thread(target=keep_alive, daemon=True).start()
+
 if __name__ == "__main__":
-    safe_init()
-    # Start the keep-alive thread
-    threading.Thread(target=keep_alive, daemon=True).start()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-else:
-    # When running with gunicorn (Production)
-    safe_init()
-    threading.Thread(target=keep_alive, daemon=True).start()

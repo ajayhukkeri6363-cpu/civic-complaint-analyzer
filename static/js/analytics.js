@@ -1,25 +1,26 @@
 if (!window.chartColors) {
     window.chartColors = {
-        'Road Damage': '#ff2a55',
-        'Water Supply': '#00f5ff',
-        'Electricity': '#ffb700',
-        'Garbage Management': '#22c55e',
-        'Drainage Sewage': '#a855f7',
-        'Street Light': '#fef08a',
-        'Traffic': '#f97316',
-        'Public Transport': '#7f5af0',
+        'Road Damage': '#ff0055', /* Neon Pink */
+        'Water Supply': '#00f5ff', /* Cyber Cyan */
+        'Electricity': '#ffcc00', /* Cyber Gold */
+        'Garbage Management': '#7000ff', /* Electric Purple */
+        'Drainage Sewage': '#00ffa3', /* Neon Mint */
+        'Street Light': '#ffcc00',
+        'Traffic': '#ff922b',
+        'Public Transport': '#7000ff',
         'Pollution': '#94a3b8',
-        'Illegal Construction': '#ef4444',
-        'Water Leakage': '#2dd4bf',
+        'Illegal Construction': '#ff0055',
+        'Water Leakage': '#00f5ff',
         'Network': '#3b82f6',
-        'Animal Problems': '#fb923c',
-        'Park Maintenance': '#166534',
+        'Animal Problems': '#ff922b',
+        'Park Maintenance': '#00ffa3',
         'Government Office': '#64748b',
-        'Safety Security': '#dc2626',
-        'Other': '#7f5af0',
+        'Safety Security': '#ff0055',
+        'Other': '#7000ff',
         default: '#00f5ff'
     };
 }
+
 
 function initAnalytics() {
     fetchAnalyticsData();
@@ -40,11 +41,24 @@ function fetchAnalyticsData() {
             }
             
             updateStats(data);
-            renderIssueTypeChart(data.by_issue); // Swapped to Hologram Bar
-            renderTrendChart(data.trends);       // Line with tooltips
+            if (data.by_issue && Array.isArray(data.by_issue)) {
+                renderIssueTypeChart(data.by_issue);
+            }
+            if (data.trends && Array.isArray(data.trends)) {
+                renderTrendChart(data.trends);
+            }
+
         })
-        .catch(error => {
-            console.error('Error fetching analytics data:', error);
+        .catch(err => {
+            console.error("Fetch Error:", err);
+            const container = document.querySelector('.analytics-grid');
+            if (container) {
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'error-banner';
+                errorMsg.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Data loading failed. Please refresh. (${err.message})`;
+                errorMsg.style = "grid-column: 1/-1; background: rgba(255,0,0,0.1); color: #ff4d4d; padding: 15px; border-radius: 10px; border: 1px solid #ff4d4d; margin-bottom: 20px; text-align: center;";
+                container.prepend(errorMsg);
+            }
         });
         
     fetch('/api/heatmap')
@@ -93,12 +107,19 @@ function updateStats(data) {
 window.charts = window.charts || {};
 
 function renderIssueTypeChart(issueData) {
+    console.log("Rendering Issue Type Chart with data:", issueData);
     const ctx = document.getElementById('issueTypeChart');
-    if (!ctx) return;
+    if (!ctx) {
+        console.error("Canvas 'issueTypeChart' not found!");
+        return;
+    }
+    
+    if (!issueData || issueData.length === 0) {
+        console.warn("No data for Issue Type Chart");
+        return;
+    }
     
     if (window.charts.issueType) window.charts.issueType.destroy();
-    
-    if (!issueData || issueData.length === 0) return;
     
     const labels = issueData.map(item => item.issue_type);
     const data = issueData.map(item => item.count);
@@ -162,12 +183,19 @@ function renderIssueTypeChart(issueData) {
 }
 
 function renderTrendChart(trendData) {
+    console.log("Rendering Trend Chart with data:", trendData);
     const ctx = document.getElementById('trendChart');
-    if (!ctx) return;
+    if (!ctx) {
+        console.error("Canvas 'trendChart' not found!");
+        return;
+    }
+    
+    if (!trendData || trendData.length === 0) {
+        console.warn("No data for Trend Chart");
+        return;
+    }
     
     if (window.charts.trend) window.charts.trend.destroy();
-    
-    if (!trendData || trendData.length === 0) return;
     
     const labels = trendData.map(item => item.month); // Assuming YYYY-MM
     const data = trendData.map(item => item.count);
@@ -229,7 +257,8 @@ function renderHeatmap(areaData) {
     }
     
     // Default center
-    const map = L.map('issueMap').setView([37.7749, -122.4194], 12);
+    const map = L.map('issueMap').setView([20.5937, 78.9629], 5);
+
     window.heatmap = map;
     
     // Add OpenStreetMap tiles
@@ -355,6 +384,13 @@ function renderRecommendations(recommendations) {
     `).join('');
 }
 
-// Define globally but don't auto-init here (handled by main.js)
+// Define globally but don't auto-init here (handled by main.js or self-init)
 window.initAnalytics = initAnalytics;
 window.fetchAnalyticsData = fetchAnalyticsData; // Support refresh button
+
+// Auto-initialize if the canvas is already present (handles direct page loads and SPA race conditions)
+if (document.getElementById('issueTypeChart')) {
+    console.log("LOG: Analytics script self-initializing...");
+    initAnalytics();
+}
+

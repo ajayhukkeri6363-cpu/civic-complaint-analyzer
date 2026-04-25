@@ -4,17 +4,18 @@
 
 {% block content %}
 
-<div class="dashboard-header mb-2">
+<div class="dashboard-header cinematic-fade mb-4">
     <div>
-        <h2><i class="fa-solid fa-chart-pie"></i> City Analytics</h2>
-        <p style="color: var(--text-muted);">Data-driven insights to identify issue hotspots and track departmental efficiency.</p>
+        <h2><span class="text-neon">City</span> Intelligence</h2>
+        <p style="color: var(--text-muted); opacity: 0.8;">Urban data telemetry and predictive risk assessment.</p>
     </div>
     <div>
-        <button class="btn btn-secondary" onclick="fetchAnalyticsData()">
-            <i class="fa-solid fa-rotate-right"></i> Refresh Data
+        <button class="btn btn-secondary btn-glass" onclick="fetchAnalyticsData()">
+            <i class="fa-solid fa-rotate-right"></i> Recalibrate
         </button>
     </div>
 </div>
+
 
 <div class="stats-grid">
     <div class="stat-card">
@@ -33,33 +34,36 @@
 
 <div class="analytics-grid">
     <div class="card" style="grid-column: span 1;">
-        <h3><i class="fa-solid fa-chart-column glow-icon" style="color: var(--primary-color);"></i> Active Issue Subsystems</h3>
+        <h3><span class="text-neon">Subsystem</span> Status</h3>
         <div class="chart-container">
             <canvas id="issueTypeChart"></canvas>
         </div>
     </div>
     
     <div class="card" style="grid-column: span 1; display: flex; flex-direction: column;">
-        <h3><i class="fa-solid fa-satellite-dish glow-icon" style="color: #ff2a55;"></i> Live Spatial Ping Map</h3>
-        <p class="mb-2" style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.2rem;">Geospatial mapping of high-volume event anomalies.</p>
-        <div class="heatmap-container" id="issueMap" style="flex:1; border: 1px solid rgba(0,245,255,0.2); border-radius: 8px; box-shadow: inset 0 0 20px rgba(0,245,255,0.1);"></div>
+        <h3><span style="color: var(--accent-color); text-shadow: 0 0 10px rgba(255,0,85,0.5);">Spatial</span> Ping Map</h3>
+        <p class="mb-2" style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.2rem;">Geospatial anomaly detection.</p>
+        <div class="heatmap-container" id="issueMap" style="flex:1; border: 1px solid rgba(0,245,255,0.2); border-radius: 12px; box-shadow: inset 0 0 20px rgba(0,245,255,0.1);"></div>
     </div>
+
     
     <div class="card" style="grid-column: 1 / -1;">
-        <h3><i class="fa-solid fa-waveform glow-icon" style="color: #7f5af0;"></i> Volume Trajectory Projection</h3>
+        <h3><span style="color: var(--secondary-color); text-shadow: 0 0 10px rgba(112,0,255,0.5);">Volume</span> Trajectory</h3>
         <div class="chart-container">
             <canvas id="trendChart"></canvas>
         </div>
     </div>
+
 </div>
 
 <!-- Intelligence Insights Section -->
-<div class="dashboard-header mt-4">
+<div class="dashboard-header mt-5">
     <div>
-        <h2><i class="fa-solid fa-brain"></i> Intelligent Insights</h2>
-        <p style="color: var(--text-muted);">AI-driven pattern detection and predictive risk assessment.</p>
+        <h2><span class="text-neon">Intelligent</span> Insights</h2>
+        <p style="color: var(--text-muted); opacity: 0.8;">Pattern recognition and predictive risk assessment.</p>
     </div>
 </div>
+
 
 <div class="insights-grid">
     <div class="card insight-card" id="predictionContainer">
@@ -86,5 +90,13 @@
 
 
 <!-- Analytics Logic -->
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        if (typeof Chart === 'undefined') {
+            console.warn("Chart.js failed to load from CDN. Dashboard may not render correctly.");
+            document.write('<script src="{{ url_for(\'static\', filename=\'js/lib/chart.min.js\') }}"><\/script>');
+        }
+    </script>
 <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
 {% endblock %}

@@ -7,9 +7,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 800px; margin: 0 auto;">
-    <h2><i class="fa-solid fa-pen-to-square"></i> Report a Civic Issue</h2>
-    <p class="mb-2" style="color: var(--text-muted);">Please provide accurate details to help us resolve the issue efficiently.</p>
+<div class="card cinematic-fade" style="max-width: 800px; margin: 2rem auto;">
+    <h2><span class="text-neon">Report</span> Civic Issue</h2>
+    <p class="mb-4" style="color: var(--text-muted); opacity: 0.8;">Initiate an urban intelligence report. Accuracy accelerates resolution.</p>
+
 
     <form action="{{ url_for('submit') }}" method="POST" id="complaintForm" enctype="multipart/form-data">
         <div class="form-group">
@@ -71,21 +72,21 @@
         <!-- Hierarchical Location Section -->
         <div class="form-group">
             <label for="state" class="form-label">Select State</label>
-            <select id="state" name="state" class="form-control" required>
+            <select id="state" name="state" class="form-control">
                 <option value="" disabled selected>Loading States...</option>
             </select>
         </div>
 
         <div class="form-group" id="district-container" style="display: none;">
             <label for="district" class="form-label">Select District</label>
-            <select id="district" name="district" class="form-control" required>
+            <select id="district" name="district" class="form-control">
                 <option value="" disabled selected>Search District...</option>
             </select>
         </div>
 
         <div class="form-group" id="area-container" style="display: none;">
             <label for="area" class="form-label">Select Area / Taluk</label>
-            <select id="area" name="area" class="form-control" required>
+            <select id="area" name="area" class="form-control">
                 <option value="" disabled selected>Search Area / Taluk...</option>
             </select>
         </div>
@@ -169,6 +170,19 @@
                         document.getElementById('area-container').style.display = 'block';
                     }
                 }
+
+                // Add manual validation to form
+                formEl.addEventListener('submit', function(e) {
+                    const state = document.getElementById('state').value;
+                    const district = document.getElementById('district').value;
+                    const area = document.getElementById('area').value;
+
+                    if (!state || !district || !area) {
+                        e.preventDefault();
+                        alert("Please select your State, District, and Area.");
+                        return false;
+                    }
+                });
             }
 
             // Start check
@@ -178,29 +192,31 @@
 
         <style>
             .ss-main {
-                background-color: var(--secondary-bg) !important;
-                border: 1px solid var(--border-color) !important;
-                border-radius: var(--border-radius) !important;
-                color: var(--text-main) !important;
-                padding: 4px !important;
+                background-color: rgba(10, 15, 30, 0.8) !important;
+                border: 1px solid rgba(0, 245, 255, 0.2) !important;
+                border-radius: 12px !important;
+                color: var(--white) !important;
+                backdrop-filter: blur(10px);
+                padding: 10px !important;
                 margin-top: 5px;
-                box-shadow: 0 4px 15px rgba(0, 245, 255, 0.1) !important;
+                box-shadow: var(--neon-glow) !important;
             }
             .ss-dropdown {
-                background-color: var(--secondary-bg) !important;
-                border: 1px solid var(--border-color) !important;
-                color: var(--text-main) !important;
-                backdrop-filter: blur(15px);
+                background-color: rgba(10, 15, 30, 0.95) !important;
+                border: 1px solid rgba(0, 245, 255, 0.2) !important;
+                color: var(--white) !important;
+                backdrop-filter: blur(20px);
             }
             .ss-option:hover {
                 background-color: var(--primary-color) !important;
                 color: #000 !important;
             }
             .ss-search input {
-                background-color: #1a1f2e !important;
-                color: var(--text-main) !important;
-                border: 1px solid var(--border-color) !important;
+                background-color: rgba(0, 0, 0, 0.3) !important;
+                color: var(--white) !important;
+                border: 1px solid rgba(0, 245, 255, 0.2) !important;
             }
+
             .ss-list {
                 max-height: 250px !important;
             }
@@ -258,10 +274,11 @@
         </div>
 
         <div class="mt-4">
-            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
-                <i class="fa-regular fa-paper-plane"></i> Submit Complaint
+            <button type="submit" class="btn btn-primary btn-glow" style="width: 100%;">
+                <i class="fa-regular fa-paper-plane"></i> Transmit Report
             </button>
         </div>
+
     </form>
 </div>
 {% endblock %}

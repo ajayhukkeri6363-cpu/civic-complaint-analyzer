@@ -5,10 +5,11 @@
 
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
-    <div>
-        <h2 style="font-size: 2rem; font-weight: 600; margin: 0 0 0.5rem 0; letter-spacing: -0.5px;">Global Overview</h2>
-        <p style="color: var(--admin-text-secondary); margin: 0;">Real-time diagnostics of city infrastructure reports.</p>
+    <div class="cinematic-fade">
+        <h2 class="text-neon" style="font-size: 2rem; margin: 0 0 0.5rem 0;">Global Overview</h2>
+        <p style="color: var(--text-muted); opacity: 0.8; margin: 0;">Real-time diagnostics of city infrastructure telemetry.</p>
     </div>
+
     <div style="font-size: 0.85rem; color: var(--admin-text-secondary); background: rgba(0,0,0,0.3); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--admin-border);">
         <i class="fa-solid fa-clock"></i> Live Sync Active
     </div>
@@ -59,11 +60,12 @@
 
 <div style="display: grid; grid-template-columns: 1fr 350px; gap: 1.5rem;">
     <!-- Critical Queue -->
-    <div class="admin-card">
-        <div class="admin-card-header">
-            <h3 class="admin-card-title"><i class="fa-solid fa-triangle-exclamation" style="color: var(--admin-accent-danger); margin-right: 8px;"></i> Critical Action Queue</h3>
-            <a href="{{ url_for('admin_complaints') }}" style="font-size: 0.85rem; color: var(--admin-accent-cyan); text-decoration: none;">View Matrix &rarr;</a>
+    <div class="card" style="border: 1px solid rgba(0, 245, 255, 0.1);">
+        <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3 class="admin-card-title"><span style="color: var(--accent-color);">Critical</span> Action Queue</h3>
+            <a href="{{ url_for('admin_complaints') }}" style="font-size: 0.8rem; color: var(--primary-color); text-decoration: none; text-transform: uppercase; letter-spacing: 1px;">View Matrix &rarr;</a>
         </div>
+
         <div class="admin-card-body" style="padding: 0;">
             {% if urgent_complaints %}
                 <div class="admin-table-container">
@@ -109,10 +111,11 @@
     </div>
     
     <!-- System Analytics Mini -->
-    <div class="admin-card">
-        <div class="admin-card-header">
-            <h3 class="admin-card-title"><i class="fa-solid fa-microchip" style="color: var(--admin-accent-purple); margin-right: 8px;"></i> AI Predictors</h3>
+    <div class="card" style="border: 1px solid rgba(112, 0, 255, 0.1);">
+        <div class="admin-card-header" style="margin-bottom: 1.5rem;">
+            <h3 class="admin-card-title"><span style="color: var(--secondary-color);">AI</span> Predictors</h3>
         </div>
+
         <div class="admin-card-body">
             {% if alerts %}
                 {% for alert in alerts %}

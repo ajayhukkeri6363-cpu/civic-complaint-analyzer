@@ -3,14 +3,16 @@
 {% block title %}Track Complaint - Civic Complaint Analyzer{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 800px; margin: 0 auto;">
-    <h2 class="text-center"><i class="fa-solid fa-magnifying-glass-location"></i> Track Your Complaint</h2>
-    <p class="text-center mb-2" style="color: var(--text-muted);">Enter your unique Complaint ID below to check its current status.</p>
+<div class="card cinematic-fade" style="max-width: 900px; margin: 2rem auto;">
+    <h2 class="text-center"><span class="text-neon">Intelligence</span> Tracking</h2>
+    <p class="text-center mb-4" style="color: var(--text-muted); opacity: 0.8;">Access real-time urban maintenance records via Tracking ID.</p>
+
     
-    <form action="{{ url_for('track') }}" method="GET" class="mb-2 text-center" style="display: flex; justify-content: center; gap: 1rem; max-width: 500px; margin: 0 auto 2rem;">
-        <input type="text" name="id" class="form-control" placeholder="Enter Tracking ID (e.g. CIV-1024)" value="{{ search_id or '' }}" required autofocus style="max-width: 300px;">
-        <button type="submit" class="btn btn-primary">Track</button>
+    <form action="{{ url_for('track') }}" method="GET" class="mb-4 text-center" style="display: flex; justify-content: center; gap: 1rem; max-width: 500px; margin: 0 auto 2.5rem;">
+        <input type="text" name="id" class="form-control" placeholder="ID: CIV-1024" value="{{ search_id or '' }}" required autofocus style="max-width: 300px;">
+        <button type="submit" class="btn btn-primary btn-glow">Initialize</button>
     </form>
+
     
     <div class="text-center mb-4" style="font-size: 0.85rem; color: var(--text-muted);">
         <i class="fa-solid fa-circle-info"></i> Tracking IDs usually start with <strong>CIV-</strong> (e.g., <strong>CIV-1024</strong>). You can also just type the number.
@@ -18,13 +20,17 @@
 
     {% if search_id and complaint %}
         <div style="border-top: 1px solid var(--border-color); padding-top: 2rem;">
-            <h3>Complaint {{ complaint.display_id }} Details</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; background: var(--background-light); padding: 1.5rem; border-radius: var(--border-radius);">
-                <div><strong>Reported By:</strong> {{ complaint.citizen_name }}</div>
-                <div><strong>Date:</strong> {{ complaint.date_submitted.strftime('%Y-%m-%d %H:%M') }}</div>
-                <div><strong>Area:</strong> {{ complaint.area }}</div>
-                <div><strong>Issue Type:</strong> {{ complaint.issue_type }}</div>
-                <div style="grid-column: 1 / -1;"><strong>Description:</strong> <br> {{ complaint.description }}</div>
+            <h3 style="font-size: 1.2rem; margin-bottom: 1.5rem;">Record <span class="text-neon">#{{ complaint.display_id }}</span></h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2.5rem; background: rgba(0, 245, 255, 0.03); border: 1px solid rgba(0, 245, 255, 0.1); padding: 2rem; border-radius: 12px;">
+                <div style="color: var(--text-muted); font-size: 0.9rem;">REPORTER: <span style="color: var(--white); font-weight: 600;">{{ complaint.citizen_name }}</span></div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">TIMESTAMP: <span style="color: var(--white); font-weight: 600;">{{ complaint.date_submitted.strftime('%Y-%m-%d %H:%M') }}</span></div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">SECTOR: <span style="color: var(--white); font-weight: 600;">{{ complaint.area }}</span></div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">CLASSIFICATION: <span style="color: var(--white); font-weight: 600;">{{ complaint.issue_type }}</span></div>
+                <div style="grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
+                    <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.5rem;">Intelligence Brief:</div>
+                    <div style="color: var(--text-main); font-size: 1rem;">{{ complaint.description }}</div>
+                </div>
+
                 {% if complaint.image_path %}
                 <div style="grid-column: 1 / -1; margin-top: 1rem;">
                     <strong>Attached Evidence:</strong><br>
@@ -83,15 +89,17 @@
 
             {% if complaint.action_taken %}
             <div class="resolution-note mt-4">
-                <h4><i class="fa-solid fa-clipboard-check"></i> Official Resolution Status</h4>
-                <div class="card" style="background: #f0fdf4; border-left: 4px solid #22c55e;">
-                    <p><strong>Action Taken:</strong> {{ complaint.action_taken }}</p>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
-                        Resolved on {{ complaint.date_submitted.strftime('%Y-%m-%d') }} by City Administration.
+                <h4><i class="fa-solid fa-clipboard-check"></i> OFFICIAL RESOLUTION</h4>
+                <div class="card" style="background: rgba(0, 255, 163, 0.05); border-left: 4px solid var(--success-color);">
+                    <p style="color: var(--success-color); font-weight: 700;">COMMAND ACTION:</p>
+                    <p style="margin-top: 0.5rem;">{{ complaint.action_taken }}</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem;">
+                        Verified on {{ complaint.date_submitted.strftime('%Y-%m-%d') }} by Central Administration.
                     </p>
                 </div>
             </div>
             {% endif %}
+
         </div>
     {% elif search_id %}
         <!-- Search attempted but no result found. Flash handles error msg-->
