@@ -86,8 +86,7 @@ def format_display_id(c_id):
 
 def init_db():
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor()
         if IS_POSTGRES:
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name TEXT, email TEXT UNIQUE, password_hash TEXT, role TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS complaints (complaint_id SERIAL PRIMARY KEY, citizen_name TEXT, citizen_email TEXT, state TEXT, district TEXT, area TEXT, issue_type TEXT, description TEXT, image_path TEXT, latitude REAL, longitude REAL, status TEXT DEFAULT 'Pending', date_submitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
@@ -103,19 +102,12 @@ def init_db():
 
 def get_stats():
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-        execute_db(cursor, "SELECT COUNT(*) as total FROM complaints")
-        total = cursor.fetchone().get('total', 0)
-        execute_db(cursor, "SELECT COUNT(*) as resolved FROM complaints WHERE status = 'Resolved'")
-        resolved = cursor.fetchone().get('resolved', 0)
-        execute_db(cursor, "SELECT COUNT(*) as active FROM complaints WHERE status != 'Resolved'")
-        active = cursor.fetchone().get('active', 0)
-        execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type ORDER BY count DESC LIMIT 1")
-        res = cursor.fetchone()
-        top_issue = res['issue_type'] if res else "N/A"
-        conn.close()
-        return {'total': total, 'resolved_complaints': resolved, 'active': active, 'pending': active, 'top_issue': top_issue}
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        execute_db(cursor, "SELECT COUNT(*) as total FROM complaints"); total = cursor.fetchone().get('total', 0)
+        execute_db(cursor, "SELECT COUNT(*) as resolved FROM complaints WHERE status = 'Resolved'"); resolved = cursor.fetchone().get('resolved', 0)
+        execute_db(cursor, "SELECT COUNT(*) as active FROM complaints WHERE status != 'Resolved'"); active = cursor.fetchone().get('active', 0)
+        execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type ORDER BY count DESC LIMIT 1"); res = cursor.fetchone(); top_issue = res['issue_type'] if res else "N/A"
+        conn.close(); return {'total': total, 'resolved_complaints': resolved, 'active': active, 'pending': active, 'top_issue': top_issue}
     except: return {'total': 0, 'resolved_complaints': 0, 'active': 0, 'pending': 0, 'top_issue': "N/A"}
 
 # --- AUTH ---
@@ -167,16 +159,22 @@ def api_analytics():
         execute_db(cursor, "SELECT area, COUNT(*) as count FROM complaints GROUP BY area"); by_area = cursor.fetchall() or []
         if IS_POSTGRES: execute_db(cursor, "SELECT TO_CHAR(date_submitted, 'YYYY-MM') as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
         else: execute_db(cursor, "SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
-        trends = cursor.fetchall() or []; conn.close()
-        stats = get_stats()
+        trends = cursor.fetchall() or []; conn.close(); stats = get_stats()
         return jsonify({'by_issue': by_issue, 'by_area': by_area, 'trends': trends, 'total_complaints': stats['total'], 'resolved_complaints': stats['resolved_complaints']})
     except: return jsonify({'error': 'api fail'})
 
+@app.route('/api/live_complaints')
 @app.route('/api/heatmap')
-def api_heatmap():
+@app.route('/get-complaints')
+def api_live_complaints():
     try:
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-        execute_db(cursor, "SELECT latitude, longitude, issue_type FROM complaints"); data = cursor.fetchall() or []; conn.close()
+        execute_db(cursor, "SELECT * FROM complaints"); data = cursor.fetchall() or []; conn.close()
+        # Format for all map versions
+        for c in data:
+            c['lat'] = c.get('latitude')
+            c['lng'] = c.get('longitude')
+            c['type'] = c.get('issue_type')
         return jsonify(data)
     except: return jsonify([])
 
@@ -192,8 +190,7 @@ def api_insights():
 @app.route('/track')
 @app.route('/track/<id>')
 def track(id=None):
-    search_id = id or request.args.get('id')
-    complaint = None
+    search_id = id or request.args.get('id'); complaint = None
     if search_id:
         try:
             raw_id = re.sub(r'\D', '', search_id)
