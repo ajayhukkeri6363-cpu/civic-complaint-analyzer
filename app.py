@@ -124,15 +124,23 @@ def get_stats():
         resolved = cursor.fetchone()['resolved']
         execute_db(cursor, "SELECT COUNT(*) as active FROM complaints WHERE status != 'Resolved'")
         active = cursor.fetchone()['active']
+        
+        # Most frequent issue type
+        execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type ORDER BY count DESC LIMIT 1")
+        res = cursor.fetchone()
+        top_issue = res['issue_type'] if res else "N/A"
+        
         conn.close()
-        return {'total': total, 'resolved': resolved, 'active': active, 'pending': active}
-    except: return {'total': 0, 'resolved': 0, 'active': 0, 'pending': 0}
+        return {'total': total, 'resolved': resolved, 'active': active, 'pending': active, 'top_issue': top_issue}
+    except: return {'total': 0, 'resolved': 0, 'active': 0, 'pending': 0, 'top_issue': "N/A"}
 
 # --- AUTH ---
 def admin_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user' not in session or session['user']['role'] != 'admin': return redirect(url_for('index'))
+        if 'user' not in session or session['user']['role'] != 'admin': 
+            flash('Admin access required.', 'error')
+            return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -145,20 +153,12 @@ def index():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-        
-        # Priority issues
         execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY vote_count DESC LIMIT 3")
         top_priority = cursor.fetchall()
         for c in top_priority: c['display_id'] = format_display_id(c['complaint_id'])
-        
-        # All for categories
         execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY date_submitted DESC LIMIT 30")
         all_c = cursor.fetchall()
-        
-        # Safety filter for null issue_types
-        def safe_cat(list_c, term):
-            return [c for c in list_c if c.get('issue_type') and term.lower() in c['issue_type'].lower()]
-
+        def safe_cat(list_c, term): return [c for c in list_c if c.get('issue_type') and term.lower() in c['issue_type'].lower()]
         categories = {
             'Road & Infrastructure': safe_cat(all_c, 'road'),
             'Water Supply': safe_cat(all_c, 'water'),
@@ -167,7 +167,6 @@ def index():
         }
         for cat in categories.values():
             for c in cat: c['display_id'] = format_display_id(c['complaint_id'])
-        
         conn.close()
         return render_template('index.html', top_priority=top_priority, categories=categories, active_page='index')
     except Exception as e:
@@ -187,7 +186,6 @@ def submit():
                 os.makedirs(save_dir, exist_ok=True)
                 image_file.save(os.path.join(save_dir, filename))
                 image_path = filename
-            
             lat, lng = area_coords.get(p['area'], area_coords.get(p['district'], (12.9716, 77.5946)))
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -198,7 +196,7 @@ def submit():
             flash('Complaint submitted successfully!', 'success')
             return redirect(url_for('index'))
         except Exception as e:
-            flash(f'Error submitting complaint: {e}', 'error')
+            flash(f'Error: {e}', 'error')
             return redirect(url_for('submit'))
     return render_template('submit.html', active_page='submit')
 
@@ -220,8 +218,7 @@ def login():
                 session['user'] = dict(user)
                 return redirect(url_for('admin_dashboard' if user['role'] == 'admin' else 'index'))
             flash('Invalid credentials.', 'error')
-        except Exception as e:
-            flash(f'Login error: {e}', 'error')
+        except Exception as e: flash(f'Login Error: {e}', 'error')
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -241,9 +238,7 @@ def register():
             conn.close()
             flash('Account created! Please login.', 'success')
             return redirect(url_for('login'))
-        except Exception as e:
-            flash(f'Registration error: {e}', 'error')
-            return redirect(url_for('register'))
+        except Exception as e: flash(f'Registration Error: {e}', 'error')
     return render_template('register.html')
 
 @app.route('/logout')
@@ -251,6 +246,7 @@ def logout():
     session.pop('user', None)
     return redirect(url_for('index'))
 
+# --- ADMIN ROUTES ---
 @app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
@@ -263,8 +259,28 @@ def admin_dashboard():
         conn.close()
         return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=urgent, alerts=[], active_page='dashboard')
     except Exception as e:
-        logging.error(f"DASHBOARD_LOGIC_FAILURE: {e}")
+        logging.error(f"ADMIN_DASHBOARD_CRASH: {e}")
         return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=[], alerts=[], active_page='dashboard')
+
+@app.route('/admin/complaints')
+@admin_required
+def admin_complaints():
+    return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=[], alerts=[], active_page='complaints')
+
+@app.route('/admin/analytics')
+@admin_required
+def admin_analytics():
+    return redirect(url_for('analytics'))
+
+@app.route('/admin/users')
+@admin_required
+def admin_users():
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/settings')
+@admin_required
+def admin_settings():
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/analytics')
 def analytics():
@@ -279,10 +295,8 @@ def api_analytics():
         by_issue = cursor.fetchall()
         execute_db(cursor, "SELECT area, COUNT(*) as count FROM complaints GROUP BY area")
         by_area = cursor.fetchall()
-        if IS_POSTGRES:
-            execute_db(cursor, "SELECT TO_CHAR(date_submitted, 'YYYY-MM') as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
-        else:
-            execute_db(cursor, "SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
+        if IS_POSTGRES: execute_db(cursor, "SELECT TO_CHAR(date_submitted, 'YYYY-MM') as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
+        else: execute_db(cursor, "SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
         trends = cursor.fetchall()
         conn.close()
         return jsonify({
@@ -304,7 +318,6 @@ def api_heatmap():
         return jsonify([{'area': a['area'], 'volume': a['volume'], 'coords': area_coords.get(a['area'], (12.97, 77.59))} for a in areas])
     except: return jsonify([])
 
-# --- DUAL ROUTE FOR TRACKING ---
 @app.route('/track')
 @app.route('/track/<id>')
 def track(id=None):
@@ -336,17 +349,13 @@ def update_status():
     except Exception as e: return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/locations/districts/<state>')
-def api_get_districts(state):
-    return jsonify(list(india_locations.get(state, {}).keys()))
+def api_get_districts(state): return jsonify(list(india_locations.get(state, {}).keys()))
 
 @app.route('/api/locations/areas/<state>/<district>')
-def api_get_areas(state, district):
-    return jsonify(india_locations.get(state, {}).get(district, []))
+def api_get_areas(state, district): return jsonify(india_locations.get(state, {}).get(district, []))
 
-# --- LIVE MAP ---
 @app.route('/live_map')
-def live_map():
-    return render_template('live_map.html', active_page='live_map')
+def live_map(): return render_template('live_map.html', active_page='live_map')
 
 @app.route('/profile')
 def profile():
@@ -359,8 +368,7 @@ def safe_init():
         print("LOG: STARTING_SAFE_SCHEMA_INIT")
         init_db()
         print("LOG: SCHEMA_INIT_COMPLETE")
-    except Exception as e:
-        print(f"LOG: SCHEMA_INIT_FAIL: {e}")
+    except Exception as e: print(f"LOG: SCHEMA_INIT_FAIL: {e}")
 
 safe_init()
 
