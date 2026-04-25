@@ -160,7 +160,14 @@ def api_analytics():
         if IS_POSTGRES: execute_db(cursor, "SELECT TO_CHAR(date_submitted, 'YYYY-MM') as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
         else: execute_db(cursor, "SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
         trends = cursor.fetchall() or []; conn.close(); stats = get_stats()
-        return jsonify({'by_issue': by_issue, 'by_area': by_area, 'trends': trends, 'total_complaints': stats['total'], 'resolved_complaints': stats['resolved_complaints']})
+        # Universal Response Object
+        return jsonify({
+            'by_issue': by_issue, 'by_area': by_area, 'trends': trends, 
+            'total_complaints': stats['total'], 'resolved_complaints': stats['resolved_complaints'],
+            'issue_types': {'labels': [r['issue_type'] for r in by_issue], 'data': [r['count'] for r in by_issue]},
+            'areas': {'labels': [r['area'] for r in by_area], 'data': [r['count'] for r in by_area]},
+            'monthly': {'labels': [r['month'] for r in trends], 'data': [r['count'] for r in trends]}
+        })
     except: return jsonify({'error': 'api fail'})
 
 @app.route('/api/live_complaints')
@@ -170,11 +177,8 @@ def api_live_complaints():
     try:
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
         execute_db(cursor, "SELECT * FROM complaints"); data = cursor.fetchall() or []; conn.close()
-        # Format for all map versions
         for c in data:
-            c['lat'] = c.get('latitude')
-            c['lng'] = c.get('longitude')
-            c['type'] = c.get('issue_type')
+            c['lat'] = c.get('latitude'); c['lng'] = c.get('longitude'); c['type'] = c.get('issue_type')
         return jsonify(data)
     except: return jsonify([])
 
