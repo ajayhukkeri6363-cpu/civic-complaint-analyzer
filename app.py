@@ -40,8 +40,7 @@ def get_db_connection():
                 protocol_fixed_url += '&sslmode=require' if '?' in protocol_fixed_url else '?sslmode=require'
             conn = psycopg2.connect(protocol_fixed_url, cursor_factory=RealDictCursor, connect_timeout=10)
             return conn
-        except Exception as e:
-            raise e
+        except Exception as e: raise e
     else:
         db_path = os.path.join('database', 'database.db')
         os.makedirs('database', exist_ok=True)
@@ -99,9 +98,8 @@ def init_db():
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS complaints (complaint_id INTEGER PRIMARY KEY AUTOINCREMENT, citizen_name TEXT, citizen_email TEXT, state TEXT, district TEXT, area TEXT, issue_type TEXT, description TEXT, image_path TEXT, latitude REAL, longitude REAL, status TEXT DEFAULT 'Pending', date_submitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS votes (vote_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER, voter_identifier TEXT, date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS resolution (resolution_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER UNIQUE, action_taken TEXT, resolved_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-        conn.commit()
-        conn.close()
-    except Exception as e: pass
+        conn.commit(); conn.close()
+    except: pass
 
 def get_stats():
     try:
@@ -148,7 +146,7 @@ def index():
             for c in cat: c['display_id'] = format_display_id(c['complaint_id'])
         conn.close()
         return render_template('index.html', top_priority=top_priority, categories=categories, active_page='index')
-    except Exception as e: return render_template('index.html', top_priority=[], categories={}, active_page='index')
+    except: return render_template('index.html', top_priority=[], categories={}, active_page='index')
 
 @app.route('/submit', methods=['GET', 'POST'])
 def submit():
@@ -166,8 +164,7 @@ def submit():
     return render_template('submit.html', active_page='submit')
 
 @app.route('/analytics')
-def analytics():
-    return render_template('analytics.html', stats=get_stats(), active_page='analytics')
+def analytics(): return render_template('analytics.html', stats=get_stats(), active_page='analytics')
 
 @app.route('/api/analytics')
 def api_analytics():
@@ -175,13 +172,11 @@ def api_analytics():
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
         execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type")
-        by_issue = cursor.fetchall() or []
-        execute_db(cursor, "SELECT area, COUNT(*) as count FROM complaints GROUP BY area")
+        by_issue = cursor.fetchall() or []; execute_db(cursor, "SELECT area, COUNT(*) as count FROM complaints GROUP BY area")
         by_area = cursor.fetchall() or []
         if IS_POSTGRES: execute_db(cursor, "SELECT TO_CHAR(date_submitted, 'YYYY-MM') as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
         else: execute_db(cursor, "SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
-        trends = cursor.fetchall() or []
-        conn.close()
+        trends = cursor.fetchall() or []; conn.close()
         return jsonify({'issue_types': {'labels': [r.get('issue_type', 'N/A') for r in by_issue], 'data': [r.get('count', 0) for r in by_issue]}, 'areas': {'labels': [r.get('area', 'N/A') for r in by_area], 'data': [r.get('count', 0) for r in by_area]}, 'monthly': {'labels': [r.get('month', 'N/A') for r in trends], 'data': [r.get('count', 0) for r in trends]}, 'total_complaints': sum(r.get('count', 0) for r in by_issue)})
     except: return jsonify({'error': 'api fail'})
 
@@ -192,15 +187,17 @@ def track(id=None):
     complaint = None
     if search_id:
         try:
-            c_id = int(re.sub(r'\D', '', search_id)) - 1000
-            conn = get_db_connection()
-            cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-            execute_db(cursor, "SELECT c.*, r.action_taken FROM complaints c LEFT JOIN resolution r ON c.complaint_id = r.complaint_id WHERE c.complaint_id = ?", (c_id,))
-            complaint = cursor.fetchone()
-            if complaint: complaint['display_id'] = format_display_id(complaint['complaint_id'])
-            conn.close()
-        except: pass
-    return render_template('track.html', complaint=complaint, active_page='track')
+            raw_id = re.sub(r'\D', '', search_id)
+            if raw_id:
+                c_id = int(raw_id) - 1000
+                conn = get_db_connection()
+                cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+                execute_db(cursor, "SELECT c.*, r.action_taken FROM complaints c LEFT JOIN resolution r ON c.complaint_id = r.complaint_id WHERE c.complaint_id = ?", (c_id,))
+                complaint = cursor.fetchone()
+                if complaint: complaint['display_id'] = format_display_id(complaint['complaint_id'])
+                conn.close()
+        except Exception as e: print(f"TRACK_ERROR: {e}")
+    return render_template('track.html', complaint=complaint, search_id=search_id, active_page='track')
 
 @app.route('/admin/dashboard')
 @admin_required
@@ -239,8 +236,7 @@ def admin_users():
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
         execute_db(cursor, "SELECT * FROM users ORDER BY created_at DESC")
-        users = cursor.fetchall() or []
-        conn.close()
+        users = cursor.fetchall() or []; conn.close()
         return render_template('admin/users.html', users=users, active_page='users')
     except: return render_template('admin/users.html', users=[], active_page='users')
 
@@ -253,14 +249,10 @@ def login():
     if request.method == 'POST':
         try:
             email, password = request.form.get('email'), request.form.get('password')
-            conn = get_db_connection()
-            cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-            execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,))
-            user = cursor.fetchone()
-            conn.close()
+            conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+            execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,)); user = cursor.fetchone(); conn.close()
             if user and check_password_hash(user['password_hash'], password):
-                session['user'] = dict(user)
-                return redirect(url_for('admin_dashboard' if user['role'] == 'admin' else 'index'))
+                session['user'] = dict(user); return redirect(url_for('admin_dashboard' if user['role'] == 'admin' else 'index'))
             flash('Invalid credentials.', 'error')
         except: flash('Login error', 'error')
     return render_template('login.html')
@@ -269,14 +261,9 @@ def login():
 def register():
     if request.method == 'POST':
         try:
-            p = request.form
-            hashed_pw = generate_password_hash(p['password'])
-            conn = get_db_connection()
-            cursor = conn.cursor()
+            p = request.form; hashed_pw = generate_password_hash(p['password']); conn = get_db_connection(); cursor = conn.cursor()
             execute_db(cursor, "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)", (p['name'], p['email'], hashed_pw, p.get('role', 'citizen')))
-            conn.commit(); conn.close()
-            flash('Account created! Please login.', 'success')
-            return redirect(url_for('login'))
+            conn.commit(); conn.close(); flash('Account created! Please login.', 'success'); return redirect(url_for('login'))
         except Exception as e: flash(f'Registration Error: {e}', 'error')
     return render_template('register.html')
 
@@ -298,5 +285,4 @@ def profile():
     return render_template('profile.html', active_page='profile')
 
 if __name__ == "__main__":
-    init_db()
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    init_db(); app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
