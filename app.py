@@ -215,6 +215,22 @@ def admin_dashboard():
         return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=urgent, alerts=[], active_page='dashboard')
     except: return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=[], alerts=[], active_page='dashboard')
 
+@app.route('/admin/complaints')
+@admin_required
+def admin_complaints(): return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/analytics')
+@admin_required
+def admin_analytics(): return redirect(url_for('analytics'))
+
+@app.route('/admin/users')
+@admin_required
+def admin_users(): return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/settings')
+@admin_required
+def admin_settings(): return redirect(url_for('admin_dashboard'))
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
