@@ -1,69 +1,59 @@
 {% extends 'admin/base.html' %}
 
-{% block title %}Dashboard Overview - Civic Command{% endblock %}
-{% block breadcrumb %}Overview{% endblock %}
+{% block title %}SYSTEM TELEMETRY - Civic Command{% endblock %}
+{% block breadcrumb %}Telemetry Matrix{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
-    <div class="cinematic-fade">
-        <h2 class="text-neon" style="font-size: 2rem; margin: 0 0 0.5rem 0;">Global Overview</h2>
-        <p style="color: var(--text-muted); opacity: 0.8; margin: 0;">Real-time diagnostics of city infrastructure telemetry.</p>
+<div class="dashboard-header-ai cinematic-fade" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem; border-bottom: 1px solid var(--admin-border); padding-bottom: 1.5rem;">
+    <div>
+        <h2 style="font-size: 2.2rem; margin: 0 0 0.5rem 0; font-family: var(--admin-font-futuristic); color: var(--admin-accent-cyan); text-shadow: var(--admin-glow-cyan);">SYSTEM TELEMETRY</h2>
+        <p style="color: var(--admin-text-secondary); opacity: 0.8; margin: 0; letter-spacing: 1px;">Real-time diagnostics of city-wide infrastructure vectors.</p>
     </div>
 
-    <div style="font-size: 0.85rem; color: var(--admin-text-secondary); background: rgba(0,0,0,0.3); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--admin-border);">
-        <i class="fa-solid fa-clock"></i> Live Sync Active
+    <div class="live-sync-badge" style="font-size: 0.75rem; color: var(--admin-accent-cyan); background: rgba(0, 245, 255, 0.05); padding: 0.6rem 1.25rem; border-radius: 50px; border: 1px solid var(--admin-accent-cyan); box-shadow: var(--admin-glow-cyan); font-family: var(--admin-font-futuristic);">
+        <i class="fa-solid fa-satellite-dish" style="animation: blink 1.5s infinite;"></i> LIVE LINK SECURE
     </div>
 </div>
 
 <!-- Key Metrics Grid -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
     <div class="admin-card stat-card-premium">
         <div class="stat-content">
-            <h3>Total Impressions</h3>
+            <h3>TOTAL IMPRESSIONS</h3>
             <div class="stat-number animated-counter" data-target="{{ stats.total }}">0</div>
         </div>
-        <div class="stat-icon-wrapper stat-icon-cyan">
-            <i class="fa-solid fa-satellite-dish"></i>
+        <div class="stat-icon-wrapper">
+            <i class="fa-solid fa-brain"></i>
         </div>
     </div>
     
-    <div class="admin-card stat-card-premium" style="--admin-accent-cyan: var(--admin-accent-warning); --admin-accent-purple: #f59e0b;">
+    <div class="admin-card stat-card-premium" style="border-left-color: var(--admin-accent-warning);">
         <div class="stat-content">
-            <h3>Active / Pending</h3>
-            <div class="stat-number animated-counter" data-target="{{ stats.pending }}" style="color: var(--admin-accent-warning)">0</div>
+            <h3>ACTIVE ANOMALIES</h3>
+            <div class="stat-number animated-counter" data-target="{{ stats.pending }}" style="color: var(--admin-accent-warning); text-shadow: 0 0 15px rgba(255, 204, 0, 0.3);">0</div>
         </div>
-        <div class="stat-icon-wrapper" style="background: rgba(245, 158, 11, 0.1); color: var(--admin-accent-warning); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);">
-            <i class="fa-solid fa-hourglass-half"></i>
+        <div class="stat-icon-wrapper" style="color: var(--admin-accent-warning); border-color: var(--admin-accent-warning); box-shadow: 0 0 15px rgba(255, 204, 0, 0.2);">
+            <i class="fa-solid fa-radiation"></i>
         </div>
     </div>
     
-    <div class="admin-card stat-card-premium" style="--admin-accent-cyan: var(--admin-accent-success); --admin-accent-purple: #10b981;">
+    <div class="admin-card stat-card-premium" style="border-left-color: var(--admin-accent-success);">
         <div class="stat-content">
-            <h3>Resolved Incidents</h3>
-            <div class="stat-number animated-counter" data-target="{{ stats.resolved }}" style="color: var(--admin-accent-success)">0</div>
+            <h3>RESOLVED PROTOCOLS</h3>
+            <div class="stat-number animated-counter" data-target="{{ stats.resolved }}" style="color: var(--admin-accent-success); text-shadow: 0 0 15px rgba(0, 255, 163, 0.3);">0</div>
         </div>
-        <div class="stat-icon-wrapper stat-icon-success">
-            <i class="fa-solid fa-check-double"></i>
-        </div>
-    </div>
-    
-    <div class="admin-card stat-card-premium" style="--admin-accent-cyan: var(--admin-accent-danger); --admin-accent-purple: #f43f5e;">
-        <div class="stat-content">
-            <h3>Primary Catalyst</h3>
-            <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-accent-danger); margin-top: 5px;">{{ stats.top_issue }}</div>
-        </div>
-        <div class="stat-icon-wrapper stat-icon-danger">
-            <i class="fa-solid fa-fire"></i>
+        <div class="stat-icon-wrapper" style="color: var(--admin-accent-success); border-color: var(--admin-accent-success); box-shadow: 0 0 15px rgba(0, 255, 163, 0.2);">
+            <i class="fa-solid fa-shield-check"></i>
         </div>
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 350px; gap: 1.5rem;">
+<div style="display: grid; grid-template-columns: 1fr 380px; gap: 2rem;">
     <!-- Critical Queue -->
-    <div class="card" style="border: 1px solid rgba(0, 245, 255, 0.1);">
-        <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h3 class="admin-card-title"><span style="color: var(--accent-color);">Critical</span> Action Queue</h3>
-            <a href="{{ url_for('admin_complaints') }}" style="font-size: 0.8rem; color: var(--primary-color); text-decoration: none; text-transform: uppercase; letter-spacing: 1px;">View Matrix &rarr;</a>
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h3 class="admin-card-title"><i class="fa-solid fa-bolt-lightning" style="margin-right: 10px;"></i> CRITICAL ACTION QUEUE</h3>
+            <a href="{{ url_for('admin_dashboard') }}" style="font-size: 0.7rem; color: var(--admin-accent-cyan); text-decoration: none; font-family: var(--admin-font-futuristic);">EXPAND MATRIX &rarr;</a>
         </div>
 
         <div class="admin-card-body" style="padding: 0;">
@@ -72,28 +62,23 @@
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Target ID</th>
-                                <th>Category</th>
-                                <th>Location Vector</th>
-                                <th>Time Elapsed</th>
-                                <th>Action</th>
+                                <th>IDENTIFIER</th>
+                                <th>VECTOR</th>
+                                <th>COORDINATES</th>
+                                <th>PRIORITY</th>
+                                <th>INTERCEPT</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for c in urgent_complaints %}
                             <tr class="row-urgent">
-                                <td style="font-family: monospace; color: var(--admin-text-secondary);">{{ c.display_id }}</td>
+                                <td style="font-family: monospace; color: var(--admin-accent-cyan);">#{{ c.display_id }}</td>
+                                <td style="font-weight: 700;">{{ c.issue_type }}</td>
+                                <td style="color: var(--admin-text-secondary); font-size: 0.85rem;">{{ c.area }}</td>
+                                <td><span class="badge badge-urgent">CRITICAL</span></td>
                                 <td>
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--admin-accent-danger); box-shadow: var(--admin-glow-danger);"></div>
-                                        {{ c.issue_type }}
-                                    </div>
-                                </td>
-                                <td>{{ c.area }}</td>
-                                <td><span class="badge badge-urgent">URGENT</span></td>
-                                <td>
-                                    <a href="{{ url_for('admin_complaints') }}?search={{ c.display_id }}" class="admin-btn admin-btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                                        Intercept
+                                    <a href="{{ url_for('admin_dashboard') }}" class="admin-btn admin-btn-danger" style="padding: 0.4rem 1rem; font-size: 0.7rem;">
+                                        RESOLVE
                                     </a>
                                 </td>
                             </tr>
@@ -103,65 +88,63 @@
                 </div>
             {% else %}
                 <div style="padding: 4rem 2rem; text-align: center; color: var(--admin-text-secondary);">
-                    <i class="fa-solid fa-shield-check" style="font-size: 3rem; color: var(--admin-accent-success); opacity: 0.7; margin-bottom: 1rem;"></i>
-                    <p>System Nominal. No critical action required.</p>
+                    <i class="fa-solid fa-shield-check" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                    <p style="font-family: var(--admin-font-futuristic); letter-spacing: 2px;">ALL SYSTEMS NOMINAL</p>
                 </div>
             {% endif %}
         </div>
     </div>
-    
-    <!-- System Analytics Mini -->
-    <div class="card" style="border: 1px solid rgba(112, 0, 255, 0.1);">
-        <div class="admin-card-header" style="margin-bottom: 1.5rem;">
-            <h3 class="admin-card-title"><span style="color: var(--secondary-color);">AI</span> Predictors</h3>
-        </div>
 
-        <div class="admin-card-body">
-            {% if alerts %}
-                {% for alert in alerts %}
-                <div style="padding: 1rem; background: rgba(127, 90, 240, 0.05); border: 1px solid rgba(127, 90, 240, 0.2); border-radius: 8px; margin-bottom: 1rem;">
-                    <div style="display: flex; gap: 10px; align-items: flex-start;">
-                        <i class="fa-solid fa-radar" style="color: var(--admin-accent-purple); margin-top: 3px;"></i>
-                        <div>
-                            <div style="font-size: 0.8rem; color: var(--admin-text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">{{ alert.risk_level }} Threat</div>
-                            <div style="font-weight: 500; margin: 4px 0;">{{ alert.area }}</div>
-                            <div style="font-size: 0.85rem; color: var(--admin-text-secondary);">{{ alert.recent_volume }} anomalies tracking (+{{ alert.growth }}%).</div>
-                        </div>
-                    </div>
+    <!-- AI Intelligence Sidebar -->
+    <div style="display: flex; flex-direction: column; gap: 2rem;">
+        <div class="admin-card" style="border-color: var(--admin-accent-purple);">
+            <div class="admin-card-header">
+                <h3 class="admin-card-title" style="color: var(--admin-accent-purple); font-size: 0.9rem;">AI CORE INSIGHTS</h3>
+            </div>
+            <div class="admin-card-body">
+                <div style="padding: 1rem; background: rgba(127, 90, 240, 0.05); border-left: 3px solid var(--admin-accent-purple); border-radius: 4px; margin-bottom: 1rem;">
+                    <div style="font-size: 0.7rem; color: var(--admin-accent-purple); font-weight: 800; margin-bottom: 5px;">PREDICTIVE ALERT</div>
+                    <p style="font-size: 0.85rem; margin: 0; line-height: 1.4;">Infrastructure stress detected in Northern sectors. Resolution advised within 48h.</p>
                 </div>
-                {% endfor %}
-            {% else %}
-                <div style="text-align: center; padding: 2rem 0; color: var(--admin-text-secondary);">
-                    <i class="fa-solid fa-satellite" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                    <p style="font-size: 0.85rem;">Predictive models lack sufficient data vectors for anomaly detection.</p>
+                <div style="padding: 1rem; background: rgba(0, 245, 255, 0.05); border-left: 3px solid var(--admin-accent-cyan); border-radius: 4px;">
+                    <div style="font-size: 0.7rem; color: var(--admin-accent-cyan); font-weight: 800; margin-bottom: 5px;">EFFICIENCY STATUS</div>
+                    <p style="font-size: 0.85rem; margin: 0; line-height: 1.4;">Citizen trust factor increased by 12% following recent lightning resolutions.</p>
                 </div>
-            {% endif %}
+            </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+<style>
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.animated-counter {
+    display: inline-block;
+}
+</style>
+
 <script>
-// Animated Number Counter Logic
 document.addEventListener('DOMContentLoaded', () => {
     const counters = document.querySelectorAll('.animated-counter');
-    const speed = 150; // The lower the slower
-    
     counters.forEach(counter => {
-        const updateCount = () => {
-            const target = +counter.getAttribute('data-target');
-            const count = +counter.innerText;
-            const inc = target / speed;
-            
-            if (count < target) {
-                counter.innerText = Math.ceil(count + inc);
-                setTimeout(updateCount, 10);
+        const target = parseInt(counter.getAttribute('data-target'));
+        const duration = 2000;
+        const step = target / (duration / 16);
+        let current = 0;
+        
+        const update = () => {
+            current += step;
+            if (current < target) {
+                counter.innerText = Math.floor(current);
+                requestAnimationFrame(update);
             } else {
                 counter.innerText = target;
             }
         };
-        updateCount();
+        update();
     });
 });
 </script>

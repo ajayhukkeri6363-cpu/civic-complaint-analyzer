@@ -1,58 +1,76 @@
 {% extends 'base.html' %}
 
-{% block title %}System Error - Civic Analyzer{% endblock %}
+{% block title %}SYSTEM FAILURE - 500 ERROR{% endblock %}
 
 {% block content %}
-<section class="error-section" style="padding-top: 120px; padding-bottom: 80px; min-height: 100vh; background: #0b0f19; overflow: hidden; position: relative;">
-    <!-- Abstract Particle Effect -->
-    <div style="position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0.1; pointer-events: none;">
-        <svg width="100%" height="100%">
-            <pattern id="pattern-grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#00f5ff" stroke-width="1"></path>
-            </pattern>
-            <rect width="100%" height="100%" fill="url(#pattern-grid)"></rect>
-        </svg>
-    </div>
+<div class="error-container" style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 2rem; position: relative; z-index: 10;">
+    <div class="error-card cinematic-fade" style="max-width: 800px; width: 100%; padding: 4rem 2rem; text-align: center;">
+        <!-- Futuristic Warning Icon -->
+        <div class="warning-ring" style="width: 120px; height: 120px; border: 4px solid var(--error-neon); border-radius: 50%; margin: 0 auto 2rem; display: flex; align-items: center; justify-content: center; position: relative; animation: pulseRed 2s infinite;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 3.5rem; color: var(--error-neon);"></i>
+            <div style="position: absolute; width: 100%; height: 100%; border: 2px solid var(--error-neon); border-radius: 50%; animation: pingRed 2s infinite;"></div>
+        </div>
 
-    <div class="container text-center" style="position: relative; z-index: 2;">
-        <div class="glass-card p-5 mx-auto" style="max-width: 700px; border: 1px solid rgba(255, 42, 85, 0.2); border-radius: 20px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px);">
-            <div class="mb-4">
-                <div class="icon-pulse mx-auto mb-4" style="width: 100px; height: 100px; background: rgba(255, 42, 85, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #ff2a55;">
-                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: #ff2a55;"></i>
-                </div>
-                <h1 style="font-weight: 800; color: #fff; font-size: 2.5rem; letter-spacing: -1px;">500 Internal Error</h1>
-                <p style="color: #94a3b8; font-size: 1.1rem;">The system encountered an unexpected dialect or transaction collision. Our municipal engineers have been notified.</p>
-            </div>
+        <h1 class="text-neon-red" style="font-size: 3.5rem; margin-bottom: 0.5rem; font-family: var(--font-futuristic);">500 INTERNAL ERROR</h1>
+        <div style="height: 2px; width: 100px; background: var(--error-neon); margin: 0 auto 1.5rem; box-shadow: 0 0 10px var(--error-neon);"></div>
+        
+        <p style="font-size: 1.2rem; color: #fff; margin-bottom: 2rem; letter-spacing: 1px;">CRITICAL SYSTEM ANOMALY DETECTED</p>
+        
+        <p class="text-muted" style="margin-bottom: 3rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+            The server encountered an unexpected issue while processing your request. The intelligence core has logged the event.
+        </p>
 
-            {% if error %}
-            <div class="error-details text-start mt-4 mb-4" id="debugInfo" style="display: none;">
-                <label style="color: #ff2a55; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Technical Traceback</label>
-                <div style="background: #000; color: #00f5ff; padding: 20px; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; overflow-x: auto; border: 1px solid rgba(0, 245, 255, 0.2); max-height: 300px;">
-                    <pre style="margin: 0;">{{ error }}</pre>
-                </div>
-            </div>
-            <button onclick="document.getElementById('debugInfo').style.display='block'; this.style.display='none';" class="btn btn-outline-secondary mb-3" style="font-size: 0.8rem;">
-                <i class="fa-solid fa-bug"></i> Show Technical Info
+        <div class="btn-group" style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary btn-glow" style="padding: 1rem 2rem;">
+                <i class="fa-solid fa-terminal"></i> RETURN TO COMMAND
+            </a>
+            <button onclick="document.getElementById('tech-info').style.display='block'" class="btn btn-secondary btn-glass" style="padding: 1rem 2rem; border-color: var(--error-neon);">
+                <i class="fa-solid fa-bug"></i> SHOW TECHNICAL INFO
             </button>
-            {% endif %}
+        </div>
 
-            <div class="actions">
-                <a href="{{ url_for('index') }}" class="btn btn-primary px-5 py-3" style="border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #00f5ff 0%, #7f5af0 100%); border: none; box-shadow: 0 5px 15px rgba(0, 245, 255, 0.3);">
-                    Return to Mission Control
-                </a>
-            </div>
+        <!-- Hidden Debug Info -->
+        <div id="tech-info" style="display: none; margin-top: 3rem; text-align: left; background: rgba(0,0,0,0.5); padding: 1.5rem; border-radius: 10px; border: 1px solid rgba(255,0,85,0.2); overflow-x: auto;">
+            <h4 style="color: var(--error-neon); font-size: 0.9rem; margin-bottom: 1rem;">>>> SYSTEM_TRACEBACK_DUMP</h4>
+            <pre style="color: #ff88aa; font-size: 0.8rem; line-height: 1.4;">{{ error if error else "No traceback available. Direct system access required." }}</pre>
         </div>
     </div>
-</section>
+</div>
 
 <style>
-    .icon-pulse {
-        animation: pulse-red 2s infinite;
-    }
-    @keyframes pulse-red {
-        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 42, 85, 0.4); }
-        70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(255, 42, 85, 0); }
-        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 42, 85, 0); }
-    }
+@keyframes pulseRed {
+    0% { box-shadow: 0 0 10px rgba(255,0,85,0.2); transform: scale(1); }
+    50% { box-shadow: 0 0 30px rgba(255,0,85,0.5); transform: scale(1.02); }
+    100% { box-shadow: 0 0 10px rgba(255,0,85,0.2); transform: scale(1); }
+}
+
+@keyframes pingRed {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+.error-card {
+    background: rgba(10, 5, 5, 0.9) !important;
+    border: 1px solid rgba(255, 0, 85, 0.4) !important;
+    box-shadow: 0 0 50px rgba(255, 0, 85, 0.2) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.error-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 0, 85, 0.05), transparent);
+    animation: scanLine 4s linear infinite;
+}
+
+@keyframes scanLine {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+}
 </style>
 {% endblock %}
