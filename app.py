@@ -40,17 +40,16 @@ IS_POSTGRES = DATABASE_URL and DATABASE_URL.startswith('postgres')
 
 def get_db_connection():
     if IS_POSTGRES:
-        # Render PostgreSQL MANDATES SSL
-        protocol_fixed_url = DATABASE_URL.replace('postgres://', 'postgresql://')
-        if 'sslmode' not in protocol_fixed_url:
-            if '?' in protocol_fixed_url: protocol_fixed_url += '&sslmode=require'
-            else: protocol_fixed_url += '?sslmode=require'
-        
         try:
-            conn = psycopg2.connect(protocol_fixed_url, cursor_factory=RealDictCursor)
+            # Force SSL for Render
+            protocol_fixed_url = DATABASE_URL.replace('postgres://', 'postgresql://')
+            if 'sslmode' not in protocol_fixed_url:
+                protocol_fixed_url += '&sslmode=require' if '?' in protocol_fixed_url else '?sslmode=require'
+            
+            conn = psycopg2.connect(protocol_fixed_url, cursor_factory=RealDictCursor, connect_timeout=10)
             return conn
         except Exception as e:
-            logging.error(f"DB Connection Error: {e}")
+            logging.error(f"DATABASE_CONNECTION_FAILURE: {e}")
             raise e
     else:
         db_path = os.path.join('database', 'database.db')
@@ -96,20 +95,23 @@ def format_display_id(c_id):
     return f"CIV-{1000 + int(c_id)}" if c_id else "CIV-ERR"
 
 def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    if IS_POSTGRES:
-        execute_db(cursor, "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name TEXT, email TEXT UNIQUE, password_hash TEXT, role TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-        execute_db(cursor, "CREATE TABLE IF NOT EXISTS complaints (complaint_id SERIAL PRIMARY KEY, citizen_name TEXT, citizen_email TEXT, state TEXT, district TEXT, area TEXT, issue_type TEXT, description TEXT, image_path TEXT, latitude REAL, longitude REAL, status TEXT DEFAULT 'Pending', date_submitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-        execute_db(cursor, "CREATE TABLE IF NOT EXISTS votes (vote_id SERIAL PRIMARY KEY, complaint_id INTEGER, voter_identifier TEXT, date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-        execute_db(cursor, "CREATE TABLE IF NOT EXISTS resolution (resolution_id SERIAL PRIMARY KEY, complaint_id INTEGER UNIQUE, action_taken TEXT, resolved_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-    else:
-        execute_db(cursor, "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT UNIQUE, password_hash TEXT, role TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-        execute_db(cursor, "CREATE TABLE IF NOT EXISTS complaints (complaint_id INTEGER PRIMARY KEY AUTOINCREMENT, citizen_name TEXT, citizen_email TEXT, state TEXT, district TEXT, area TEXT, issue_type TEXT, description TEXT, image_path TEXT, latitude REAL, longitude REAL, status TEXT DEFAULT 'Pending', date_submitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-        execute_db(cursor, "CREATE TABLE IF NOT EXISTS votes (vote_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER, voter_identifier TEXT, date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-        execute_db(cursor, "CREATE TABLE IF NOT EXISTS resolution (resolution_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER UNIQUE, action_taken TEXT, resolved_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        if IS_POSTGRES:
+            execute_db(cursor, "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name TEXT, email TEXT UNIQUE, password_hash TEXT, role TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+            execute_db(cursor, "CREATE TABLE IF NOT EXISTS complaints (complaint_id SERIAL PRIMARY KEY, citizen_name TEXT, citizen_email TEXT, state TEXT, district TEXT, area TEXT, issue_type TEXT, description TEXT, image_path TEXT, latitude REAL, longitude REAL, status TEXT DEFAULT 'Pending', date_submitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+            execute_db(cursor, "CREATE TABLE IF NOT EXISTS votes (vote_id SERIAL PRIMARY KEY, complaint_id INTEGER, voter_identifier TEXT, date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+            execute_db(cursor, "CREATE TABLE IF NOT EXISTS resolution (resolution_id SERIAL PRIMARY KEY, complaint_id INTEGER UNIQUE, action_taken TEXT, resolved_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        else:
+            execute_db(cursor, "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT UNIQUE, password_hash TEXT, role TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+            execute_db(cursor, "CREATE TABLE IF NOT EXISTS complaints (complaint_id INTEGER PRIMARY KEY AUTOINCREMENT, citizen_name TEXT, citizen_email TEXT, state TEXT, district TEXT, area TEXT, issue_type TEXT, description TEXT, image_path TEXT, latitude REAL, longitude REAL, status TEXT DEFAULT 'Pending', date_submitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+            execute_db(cursor, "CREATE TABLE IF NOT EXISTS votes (vote_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER, voter_identifier TEXT, date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+            execute_db(cursor, "CREATE TABLE IF NOT EXISTS resolution (resolution_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER UNIQUE, action_taken TEXT, resolved_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logging.error(f"SCHEMA_INIT_FAILURE: {e}")
 
 def get_stats():
     try:
@@ -142,24 +144,33 @@ def index():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        
+        # Priority issues
         execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY vote_count DESC LIMIT 3")
         top_priority = cursor.fetchall()
         for c in top_priority: c['display_id'] = format_display_id(c['complaint_id'])
         
-        execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY date_submitted DESC LIMIT 20")
+        # All for categories
+        execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY date_submitted DESC LIMIT 30")
         all_c = cursor.fetchall()
+        
+        # Safety filter for null issue_types
+        def safe_cat(list_c, term):
+            return [c for c in list_c if c['issue_type'] and term.lower() in c['issue_type'].lower()]
+
         categories = {
-            'Road & Infrastructure': [c for c in all_c if 'road' in c['issue_type'].lower()],
-            'Water Supply': [c for c in all_c if 'water' in c['issue_type'].lower()],
-            'Electricity': [c for c in all_c if 'electr' in c['issue_type'].lower()],
-            'Garbage': [c for c in all_c if 'garbag' in c['issue_type'].lower()]
+            'Road & Infrastructure': safe_cat(all_c, 'road'),
+            'Water Supply': safe_cat(all_c, 'water'),
+            'Electricity': safe_cat(all_c, 'electr'),
+            'Garbage': safe_cat(all_c, 'garbag')
         }
         for cat in categories.values():
             for c in cat: c['display_id'] = format_display_id(c['complaint_id'])
+        
         conn.close()
         return render_template('index.html', top_priority=top_priority, categories=categories, active_page='index')
     except Exception as e:
-        logging.error(f"Index Error: {e}")
+        logging.error(f"HOMEPAGE_LOGIC_FAILURE: {e}")
         return render_template('index.html', top_priority=[], categories={}, active_page='index')
 
 @app.route('/submit', methods=['GET', 'POST'])
@@ -231,13 +242,17 @@ def logout():
 @app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-    execute_db(cursor, "SELECT * FROM complaints WHERE status = 'Pending' ORDER BY date_submitted DESC LIMIT 5")
-    urgent = cursor.fetchall()
-    for c in urgent: c['display_id'] = format_display_id(c['complaint_id'])
-    conn.close()
-    return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=urgent, alerts=[], active_page='dashboard')
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        execute_db(cursor, "SELECT * FROM complaints WHERE status = 'Pending' ORDER BY date_submitted DESC LIMIT 5")
+        urgent = cursor.fetchall()
+        for c in urgent: c['display_id'] = format_display_id(c['complaint_id'])
+        conn.close()
+        return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=urgent, alerts=[], active_page='dashboard')
+    except Exception as e:
+        logging.error(f"DASHBOARD_LOGIC_FAILURE: {e}")
+        return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=[], alerts=[], active_page='dashboard')
 
 @app.route('/analytics')
 def analytics():
@@ -313,8 +328,12 @@ def api_get_areas(state, district):
 
 # --- INIT ---
 def safe_init():
-    try: init_db()
-    except Exception as e: logging.error(f"Init Fail: {e}")
+    try:
+        print("LOG: STARTING_SAFE_SCHEMA_INIT")
+        init_db()
+        print("LOG: SCHEMA_INIT_COMPLETE")
+    except Exception as e:
+        print(f"LOG: SCHEMA_INIT_FAIL: {e}")
 
 safe_init()
 
