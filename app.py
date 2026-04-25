@@ -27,7 +27,6 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-123')
-app.debug = True
 
 # --- DATABASE CONFIG ---
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -42,7 +41,6 @@ def get_db_connection():
             conn = psycopg2.connect(protocol_fixed_url, cursor_factory=RealDictCursor, connect_timeout=10)
             return conn
         except Exception as e:
-            print(f"DATABASE_CONNECTION_FAIL: {e}")
             raise e
     else:
         db_path = os.path.join('database', 'database.db')
@@ -103,7 +101,7 @@ def init_db():
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS resolution (resolution_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER UNIQUE, action_taken TEXT, resolved_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
         conn.commit()
         conn.close()
-    except Exception as e: print(f"LOG: SCHEMA_INIT_FAIL: {e}")
+    except Exception as e: pass
 
 def get_stats():
     try:
@@ -233,6 +231,21 @@ def login():
             flash('Invalid credentials.', 'error')
         except: flash('Login error', 'error')
     return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        try:
+            p = request.form
+            hashed_pw = generate_password_hash(p['password'])
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            execute_db(cursor, "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)", (p['name'], p['email'], hashed_pw, p.get('role', 'citizen')))
+            conn.commit(); conn.close()
+            flash('Account created! Please login.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e: flash(f'Registration Error: {e}', 'error')
+    return render_template('register.html')
 
 @app.route('/logout')
 def logout(): session.pop('user', None); return redirect(url_for('index'))
