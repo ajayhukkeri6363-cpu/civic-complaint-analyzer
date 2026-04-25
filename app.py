@@ -14,6 +14,7 @@ import re
 from email.mime.text import MIMEText
 from authlib.integrations.flask_client import OAuth
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import sqlite3
@@ -27,6 +28,15 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-123')
+
+# --- STORAGE CONFIG ---
+UPLOAD_FOLDER = os.path.join('static', 'uploads')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # --- DATABASE CONFIG ---
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -143,7 +153,17 @@ def submit():
     if request.method == 'POST':
         try:
             p = request.form; lat, lng = area_coords.get(p['area'], area_coords.get(p['district'], (12.9716, 77.5946)))
-            conn = get_db_connection(); cursor = conn.cursor(); execute_db(cursor, "INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (p['name'], p['email'], p['state'], p['district'], p['area'], p['issue_type'], p['description'], lat, lng))
+            
+            image_filename = None
+            if 'image' in request.files:
+                file = request.files['image']
+                if file and allowed_file(file.filename):
+                    ext = file.filename.rsplit('.', 1)[1].lower()
+                    image_filename = f"{uuid.uuid4().hex}.{ext}"
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+
+            conn = get_db_connection(); cursor = conn.cursor()
+            execute_db(cursor, "INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (p['name'], p['email'], p['state'], p['district'], p['area'], p['issue_type'], p['description'], image_filename, lat, lng))
             conn.commit(); conn.close(); flash('Complaint submitted successfully!', 'success'); return redirect(url_for('index'))
         except Exception as e: flash(f'Error: {e}', 'error'); return redirect(url_for('submit'))
     return render_template('submit.html', active_page='submit')
@@ -160,14 +180,7 @@ def api_analytics():
         if IS_POSTGRES: execute_db(cursor, "SELECT TO_CHAR(date_submitted, 'YYYY-MM') as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
         else: execute_db(cursor, "SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
         trends = cursor.fetchall() or []; conn.close(); stats = get_stats()
-        # Universal Response Object
-        return jsonify({
-            'by_issue': by_issue, 'by_area': by_area, 'trends': trends, 
-            'total_complaints': stats['total'], 'resolved_complaints': stats['resolved_complaints'],
-            'issue_types': {'labels': [r['issue_type'] for r in by_issue], 'data': [r['count'] for r in by_issue]},
-            'areas': {'labels': [r['area'] for r in by_area], 'data': [r['count'] for r in by_area]},
-            'monthly': {'labels': [r['month'] for r in trends], 'data': [r['count'] for r in trends]}
-        })
+        return jsonify({'by_issue': by_issue, 'by_area': by_area, 'trends': trends, 'total_complaints': stats['total'], 'resolved_complaints': stats['resolved_complaints'], 'issue_types': {'labels': [r['issue_type'] for r in by_issue], 'data': [r['count'] for r in by_issue]}, 'areas': {'labels': [r['area'] for r in by_area], 'data': [r['count'] for r in by_area]}, 'monthly': {'labels': [r['month'] for r in trends], 'data': [r['count'] for r in trends]}})
     except: return jsonify({'error': 'api fail'})
 
 @app.route('/api/live_complaints')
