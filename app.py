@@ -108,11 +108,11 @@ def get_stats():
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
         execute_db(cursor, "SELECT COUNT(*) as total FROM complaints")
-        total = cursor.fetchone()['total']
+        total = cursor.fetchone().get('total', 0)
         execute_db(cursor, "SELECT COUNT(*) as resolved FROM complaints WHERE status = 'Resolved'")
-        resolved = cursor.fetchone()['resolved']
+        resolved = cursor.fetchone().get('resolved', 0)
         execute_db(cursor, "SELECT COUNT(*) as active FROM complaints WHERE status != 'Resolved'")
-        active = cursor.fetchone()['active']
+        active = cursor.fetchone().get('active', 0)
         execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type ORDER BY count DESC LIMIT 1")
         res = cursor.fetchone()
         top_issue = res['issue_type'] if res else "N/A"
@@ -138,10 +138,10 @@ def index():
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
         execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY vote_count DESC LIMIT 3")
-        top_priority = cursor.fetchall()
+        top_priority = cursor.fetchall() or []
         for c in top_priority: c['display_id'] = format_display_id(c['complaint_id'])
         execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY date_submitted DESC LIMIT 30")
-        all_c = cursor.fetchall()
+        all_c = cursor.fetchall() or []
         def safe_cat(list_c, term): return [c for c in list_c if c.get('issue_type') and term.lower() in c['issue_type'].lower()]
         categories = {'Road & Infrastructure': safe_cat(all_c, 'road'), 'Water Supply': safe_cat(all_c, 'water'), 'Electricity': safe_cat(all_c, 'electr'), 'Garbage': safe_cat(all_c, 'garbag')}
         for cat in categories.values():
@@ -209,7 +209,7 @@ def admin_dashboard():
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
         execute_db(cursor, "SELECT * FROM complaints WHERE status = 'Pending' ORDER BY date_submitted DESC LIMIT 5")
-        urgent = cursor.fetchall()
+        urgent = cursor.fetchall() or []
         for c in urgent: c['display_id'] = format_display_id(c['complaint_id'])
         conn.close()
         return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=urgent, alerts=[], active_page='dashboard')
