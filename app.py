@@ -92,7 +92,8 @@ area_coords = {
 }
 
 def format_display_id(c_id):
-    return f"CIV-{1000 + int(c_id)}" if c_id else "CIV-ERR"
+    try: return f"CIV-{1000 + int(c_id)}" if c_id else "CIV-ERR"
+    except: return "CIV-ERR"
 
 def init_db():
     try:
@@ -156,7 +157,7 @@ def index():
         
         # Safety filter for null issue_types
         def safe_cat(list_c, term):
-            return [c for c in list_c if c['issue_type'] and term.lower() in c['issue_type'].lower()]
+            return [c for c in list_c if c.get('issue_type') and term.lower() in c['issue_type'].lower()]
 
         categories = {
             'Road & Infrastructure': safe_cat(all_c, 'road'),
@@ -176,62 +177,73 @@ def index():
 @app.route('/submit', methods=['GET', 'POST'])
 def submit():
     if request.method == 'POST':
-        p = request.form
-        image_file = request.files.get('image')
-        image_path = None
-        if image_file and image_file.filename:
-            filename = f"{uuid.uuid4().hex}.{image_file.filename.rsplit('.', 1)[-1].lower()}"
-            save_dir = os.path.join(app.root_path, 'static', 'uploads')
-            os.makedirs(save_dir, exist_ok=True)
-            image_file.save(os.path.join(save_dir, filename))
-            image_path = filename
-        
-        lat, lng = area_coords.get(p['area'], area_coords.get(p['district'], (12.9716, 77.5946)))
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        execute_db(cursor, "INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
-                   (p['name'], p['email'], p['state'], p['district'], p['area'], p['issue_type'], p['description'], image_path, lat, lng))
-        conn.commit()
-        conn.close()
-        flash('Complaint submitted successfully!', 'success')
-        return redirect(url_for('index'))
+        try:
+            p = request.form
+            image_file = request.files.get('image')
+            image_path = None
+            if image_file and image_file.filename:
+                filename = f"{uuid.uuid4().hex}.{image_file.filename.rsplit('.', 1)[-1].lower()}"
+                save_dir = os.path.join(app.root_path, 'static', 'uploads')
+                os.makedirs(save_dir, exist_ok=True)
+                image_file.save(os.path.join(save_dir, filename))
+                image_path = filename
+            
+            lat, lng = area_coords.get(p['area'], area_coords.get(p['district'], (12.9716, 77.5946)))
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            execute_db(cursor, "INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+                       (p['name'], p['email'], p['state'], p['district'], p['area'], p['issue_type'], p['description'], image_path, lat, lng))
+            conn.commit()
+            conn.close()
+            flash('Complaint submitted successfully!', 'success')
+            return redirect(url_for('index'))
+        except Exception as e:
+            flash(f'Error submitting complaint: {e}', 'error')
+            return redirect(url_for('submit'))
     return render_template('submit.html', active_page='submit')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email, password = request.form.get('email'), request.form.get('password')
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-        execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,))
-        user = cursor.fetchone()
-        conn.close()
-        if user and check_password_hash(user['password_hash'], password):
-            if user['role'] == 'admin':
-                if request.form.get('govt_id') != os.getenv('ADMIN_ACCESS_CODE', 'CIVIC_ADMIN_2024'):
-                    flash('Invalid Admin Access Code.', 'error')
-                    return redirect(url_for('login'))
-            session['user'] = dict(user)
-            return redirect(url_for('admin_dashboard' if user['role'] == 'admin' else 'index'))
-        flash('Invalid credentials.', 'error')
+        try:
+            email, password = request.form.get('email'), request.form.get('password')
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+            execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,))
+            user = cursor.fetchone()
+            conn.close()
+            if user and check_password_hash(user['password_hash'], password):
+                if user['role'] == 'admin':
+                    if request.form.get('govt_id') != os.getenv('ADMIN_ACCESS_CODE', 'CIVIC_ADMIN_2024'):
+                        flash('Invalid Admin Access Code.', 'error')
+                        return redirect(url_for('login'))
+                session['user'] = dict(user)
+                return redirect(url_for('admin_dashboard' if user['role'] == 'admin' else 'index'))
+            flash('Invalid credentials.', 'error')
+        except Exception as e:
+            flash(f'Login error: {e}', 'error')
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        p = request.form
-        if p.get('role') == 'admin':
-            if p.get('govt_id') != os.getenv('ADMIN_ENROLLMENT_CODE', 'TEAM_ENROLL_2024'):
-                flash('Invalid Admin Enrollment Key.', 'error')
-                return redirect(url_for('register'))
-        hashed_pw = generate_password_hash(p['password'])
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        execute_db(cursor, "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)", (p['name'], p['email'], hashed_pw, p.get('role', 'citizen')))
-        conn.commit()
-        conn.close()
-        flash('Account created! Please login.', 'success')
-        return redirect(url_for('login'))
+        try:
+            p = request.form
+            if p.get('role') == 'admin':
+                if p.get('govt_id') != os.getenv('ADMIN_ENROLLMENT_CODE', 'TEAM_ENROLL_2024'):
+                    flash('Invalid Admin Enrollment Key.', 'error')
+                    return redirect(url_for('register'))
+            hashed_pw = generate_password_hash(p['password'])
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            execute_db(cursor, "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)", (p['name'], p['email'], hashed_pw, p.get('role', 'citizen')))
+            conn.commit()
+            conn.close()
+            flash('Account created! Please login.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            flash(f'Registration error: {e}', 'error')
+            return redirect(url_for('register'))
     return render_template('register.html')
 
 @app.route('/logout')
@@ -292,12 +304,15 @@ def api_heatmap():
         return jsonify([{'area': a['area'], 'volume': a['volume'], 'coords': area_coords.get(a['area'], (12.97, 77.59))} for a in areas])
     except: return jsonify([])
 
+# --- DUAL ROUTE FOR TRACKING ---
+@app.route('/track')
 @app.route('/track/<id>')
-def track(id):
+def track(id=None):
+    search_id = id or request.args.get('id')
     complaint = None
-    if id:
+    if search_id:
         try:
-            c_id = int(re.sub(r'\D', '', id)) - 1000
+            c_id = int(re.sub(r'\D', '', search_id)) - 1000
             conn = get_db_connection()
             cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
             execute_db(cursor, "SELECT c.*, r.action_taken FROM complaints c LEFT JOIN resolution r ON c.complaint_id = r.complaint_id WHERE c.complaint_id = ?", (c_id,))
@@ -305,18 +320,20 @@ def track(id):
             if complaint: complaint['display_id'] = format_display_id(complaint['complaint_id'])
             conn.close()
         except: pass
-    return render_template('track.html', complaint=complaint)
+    return render_template('track.html', complaint=complaint, active_page='track')
 
 @app.route('/api/admin/update-status', methods=['POST'])
 @admin_required
 def update_status():
-    data = request.json
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    execute_db(cursor, "UPDATE complaints SET status = ? WHERE complaint_id = ?", (data['status'], data['complaint_id']))
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
+    try:
+        data = request.json
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        execute_db(cursor, "UPDATE complaints SET status = ? WHERE complaint_id = ?", (data['status'], data['complaint_id']))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e: return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/locations/districts/<state>')
 def api_get_districts(state):
@@ -325,6 +342,16 @@ def api_get_districts(state):
 @app.route('/api/locations/areas/<state>/<district>')
 def api_get_areas(state, district):
     return jsonify(india_locations.get(state, {}).get(district, []))
+
+# --- LIVE MAP ---
+@app.route('/live_map')
+def live_map():
+    return render_template('live_map.html', active_page='live_map')
+
+@app.route('/profile')
+def profile():
+    if not session.get('user'): return redirect(url_for('login'))
+    return render_template('profile.html', active_page='profile')
 
 # --- INIT ---
 def safe_init():
