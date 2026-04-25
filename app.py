@@ -79,8 +79,10 @@ def dict_factory(cursor, row):
     for idx, col in enumerate(cursor.description): d[col[0]] = row[idx]
     return d
 
-def get_db_type():
-    return "PostgreSQL" if IS_POSTGRES else "SQLite"
+@app.errorhandler(500)
+def internal_error(e):
+    import traceback
+    return render_template('error_500.html', error=traceback.format_exc()), 500
 
 # --- HELPERS ---
 area_coords = {
@@ -120,14 +122,6 @@ def get_stats():
     conn.close()
     return {'total': total, 'resolved': resolved, 'active': active, 'pending': active}
 
-def get_intelligence():
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-    execute_db(cursor, "SELECT area, issue_type, COUNT(*) as count FROM complaints WHERE status != 'Resolved' GROUP BY area, issue_type HAVING COUNT(*) >= 1")
-    clusters = cursor.fetchall()
-    conn.close()
-    return {'clusters': clusters, 'predictions': [], 'recommendations': []}
-
 # --- AUTH ---
 def admin_required(f):
     @functools.wraps(f)
@@ -144,12 +138,9 @@ def inject_user(): return dict(user=session.get('user'))
 def index():
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-    # Priority subquery for vote counts
     execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY vote_count DESC LIMIT 3")
     top_priority = cursor.fetchall()
     for c in top_priority: c['display_id'] = format_display_id(c['complaint_id'])
-    
-    # Categorization for home page slider
     execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY date_submitted DESC LIMIT 20")
     all_c = cursor.fetchall()
     categories = {
@@ -160,7 +151,6 @@ def index():
     }
     for cat in categories.values():
         for c in cat: c['display_id'] = format_display_id(c['complaint_id'])
-    
     conn.close()
     return render_template('index.html', top_priority=top_priority, categories=categories, active_page='index')
 
@@ -176,7 +166,6 @@ def submit():
             os.makedirs(save_dir, exist_ok=True)
             image_file.save(os.path.join(save_dir, filename))
             image_path = filename
-        
         lat, lng = area_coords.get(p['area'], area_coords.get(p['district'], (12.9716, 77.5946)))
         conn = get_db_connection()
         cursor = conn.cursor()
