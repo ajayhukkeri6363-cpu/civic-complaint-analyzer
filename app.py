@@ -202,6 +202,23 @@ def api_insights():
         return jsonify({'predictions': [f"Critical {a['area']} infrastructure vector indicates 85% risk" for a in top_areas], 'clusters': [f"{i['issue_type']} detected in {len(top_areas)} sectors" for i in top_issues], 'recommendations': ["Deploy preventative maintenance in high-risk zones", "Increase sector-wide infrastructure redundancy"]})
     except: return jsonify({'error': 'insights fail'})
 
+@app.route('/api/vote/<int:complaint_id>', methods=['POST'])
+def vote_complaint(complaint_id):
+    try:
+        voter_id = request.remote_addr
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        # Check if already voted
+        execute_db(cursor, "SELECT * FROM votes WHERE complaint_id = ? AND voter_identifier = ?", (complaint_id, voter_id))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'message': 'You have already prioritized this issue!'})
+        
+        execute_db(cursor, "INSERT INTO votes (complaint_id, voter_identifier) VALUES (?, ?)", (complaint_id, voter_id))
+        conn.commit(); conn.close()
+        return jsonify({'success': True, 'message': 'Priority vote recorded!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/track')
 @app.route('/track/<id>')
 def track(id=None):
