@@ -37,10 +37,10 @@
                 <h1 class="brand-title">Civic Analyzer</h1>
             </a>
             
-            <button class="mobile-menu-btn" id="mobileMenuBtn">
+            <button class="mobile-menu-btn" id="menuBtn">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <ul class="nav-links" id="navLinks">
+            <ul class="nav-links mobile-menu" id="mobileMenu">
                 <li>
                     <a href="{{ url_for('index') }}" class="nav-link {% if active_page == 'index' %}active{% endif %}">
                         <i class="fa-solid fa-house"></i> Home

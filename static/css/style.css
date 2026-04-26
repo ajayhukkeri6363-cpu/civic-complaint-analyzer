@@ -1118,25 +1118,24 @@ main {
     }
 
     /* Navigation Fixes */
-    .nav-links {
-        display: flex;
+    .mobile-menu {
+        display: none !important; /* Force hide by default */
         flex-direction: column;
         position: fixed;
         top: 0;
-        right: -100%; /* Start off-screen */
-        width: 280px;
-        height: 100vh;
-        background: #0b0f19;
+        right: 0;
+        width: 280px !important;
+        height: 100vh !important;
+        background: #0b0f19 !important; /* Dark solid background */
         padding: 80px 1.5rem 2rem;
-        box-shadow: -5px 0 25px rgba(0,0,0,0.5);
-        transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        z-index: 999;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+        z-index: 9999 !important; /* Extremely high z-index */
         border-left: 1px solid var(--border-color);
-        backdrop-filter: blur(20px);
+        backdrop-filter: blur(25px);
     }
     
-    .nav-links.show {
-        right: 0; /* Slide in */
+    .mobile-menu.active {
+        display: flex !important; /* Use flex for layout but force visibility */
     }
     
     .mobile-menu-btn {
@@ -1168,8 +1167,9 @@ main {
         gap: 1rem;
     }
     
-    .nav-links {
-        display: none; 
+    /* .nav-links hidden by default on mobile to prevent layout shift */
+    .nav-links:not(.mobile-menu) {
+        display: none;
     }
     
     .stats-grid {

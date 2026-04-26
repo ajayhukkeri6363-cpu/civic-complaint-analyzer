@@ -117,11 +117,11 @@ class SpaRouter {
         }
 
         // Close mobile menu if open
-        const navLinks = document.getElementById('navLinks');
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        if (navLinks && navLinks.classList.contains('show')) {
-            navLinks.classList.remove('show');
-            const icon = mobileMenuBtn.querySelector('i');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const menuBtn = document.getElementById('menuBtn');
+        if (mobileMenu && mobileMenu.classList.contains('active')) {
+            mobileMenu.classList.remove('active');
+            const icon = menuBtn.querySelector('i');
             icon.classList.remove('fa-xmark');
             icon.classList.add('fa-bars');
         }
@@ -426,14 +426,14 @@ class SpaRouter {
 
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize standard interactions that persist outside the #app-content
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const navLinks = document.getElementById('navLinks');
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
 
-    if (mobileMenuBtn && navLinks) {
-        mobileMenuBtn.addEventListener('click', () => {
-            navLinks.classList.toggle('show');
-            const icon = mobileMenuBtn.querySelector('i');
-            if (navLinks.classList.contains('show')) {
+    if (menuBtn && mobileMenu) {
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('active');
+            const icon = menuBtn.querySelector('i');
+            if (mobileMenu.classList.contains('active')) {
                 icon.classList.remove('fa-bars');
                 icon.classList.add('fa-xmark');
             } else {
