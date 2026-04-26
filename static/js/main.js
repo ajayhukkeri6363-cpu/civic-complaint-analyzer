@@ -402,7 +402,7 @@ class SpaRouter {
                                     <img src="${c.image_url}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/static/img/placeholder.png'">
                                 </div>` : ''}
                                 <div style="color: ${color}; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;">${c.issue_type} REPORT</div>
-                                <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; color: #fff;">${c.id}</div>
+                                <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; color: #fff;">CIV-${1000 + c.complaint_id}</div>
                                 <div style="font-size: 0.85rem; margin-bottom: 8px; color: #00f5ff; font-weight: 500;"><i class="fa-solid fa-location-dot"></i> ${c.area}</div>
                                 <div style="font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.8); max-height: 100px; overflow-y: auto;">
                                     ${c.description}

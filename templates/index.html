@@ -32,13 +32,19 @@
         <div class="netflix-slider" style="margin-top: 1.5rem;">
             {% for complaint in top_priority %}
             <div class="card netflix-card">
-                <div class="vote-control" style="background: rgba(0, 245, 255, 0.1); border-radius: 8px; padding: 0.5rem; text-align: center; border: 1px solid rgba(0, 245, 255, 0.2);">
+                <div class="vote-control" style="background: rgba(0, 245, 255, 0.1); border-radius: 8px; padding: 0.5rem; text-align: center; border: 1px solid rgba(0, 245, 255, 0.2); min-width: 80px;">
                     <span class="vote-count" id="vote-count-{{ complaint.complaint_id }}" style="font-size: 1.5rem; color: var(--primary-color);">{{ complaint.vote_count }}</span>
                     <button class="vote-btn" onclick="voteIssue({{ complaint.complaint_id }})" style="color: var(--primary-color);">
                         <i class="fa-solid fa-caret-up"></i>
                     </button>
                     <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">VOTES</div>
                 </div>
+                
+                {% if complaint.image_path %}
+                <div class="priority-img-wrapper" style="width: 150px; height: 100px; overflow: hidden; border-radius: 8px; border: 1px solid var(--border-color); margin-left: 1rem;">
+                    <img src="/static/uploads/{{ complaint.image_path }}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/static/img/placeholder.png'">
+                </div>
+                {% endif %}
                 <div class="priority-content" style="flex: 1; padding-left: 1.5rem;">
                     <div class="priority-meta" style="margin-bottom: 0.5rem;">
                         <span class="status-badge status-{{ complaint.status.split(' ')[0] }}">{{ complaint.status }}</span>

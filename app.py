@@ -138,7 +138,9 @@ def index():
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
         execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY vote_count DESC LIMIT 3")
         top_priority = cursor.fetchall() or []
-        for c in top_priority: c['display_id'] = format_display_id(c['complaint_id'])
+        for c in top_priority: 
+            c['display_id'] = format_display_id(c['complaint_id'])
+            c['image_url'] = f"/static/uploads/{c['image_path']}" if c.get('image_path') else None
         execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY date_submitted DESC LIMIT 30")
         all_c = cursor.fetchall() or []
         def safe_cat(list_c, term): return [c for c in list_c if c.get('issue_type') and term.lower() in c['issue_type'].lower()]
@@ -153,17 +155,22 @@ def submit():
     if request.method == 'POST':
         try:
             p = request.form; lat, lng = area_coords.get(p['area'], area_coords.get(p['district'], (12.9716, 77.5946)))
+            with open("debug_upload.txt", "a") as f:
+                f.write(f"\n--- Submission {datetime.now()} ---\n")
             image_filename = None
             if 'image' in request.files:
                 file = request.files['image']
                 if file and allowed_file(file.filename):
                     ext = file.filename.rsplit('.', 1)[1].lower()
                     image_filename = f"{uuid.uuid4().hex}.{ext}"
-                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+                    save_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+                    file.save(save_path)
+            
             conn = get_db_connection(); cursor = conn.cursor()
             execute_db(cursor, "INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (p['name'], p['email'], p['state'], p['district'], p['area'], p['issue_type'], p['description'], image_filename, lat, lng))
             conn.commit(); conn.close(); flash('Complaint submitted successfully!', 'success'); return redirect(url_for('index'))
-        except Exception as e: flash(f'Error: {e}', 'error'); return redirect(url_for('submit'))
+        except Exception as e: 
+            flash(f'Error: {e}', 'error'); return redirect(url_for('submit'))
     return render_template('submit.html', active_page='submit')
 
 @app.route('/analytics')
@@ -190,6 +197,7 @@ def api_live_complaints():
         execute_db(cursor, "SELECT * FROM complaints"); data = cursor.fetchall() or []; conn.close()
         for c in data:
             c['lat'] = c.get('latitude'); c['lng'] = c.get('longitude'); c['type'] = c.get('issue_type')
+            c['image_url'] = f"/static/uploads/{c['image_path']}" if c.get('image_path') else None
         return jsonify(data)
     except: return jsonify([])
 
