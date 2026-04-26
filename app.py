@@ -113,11 +113,26 @@ def init_db():
 def get_stats():
     try:
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-        execute_db(cursor, "SELECT COUNT(*) as total FROM complaints"); total = cursor.fetchone().get('total', 0)
-        execute_db(cursor, "SELECT COUNT(*) as resolved FROM complaints WHERE status = 'Resolved'"); resolved = cursor.fetchone().get('resolved', 0)
-        execute_db(cursor, "SELECT COUNT(*) as active FROM complaints WHERE status != 'Resolved'"); active = cursor.fetchone().get('active', 0)
-        execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type ORDER BY count DESC LIMIT 1"); res = cursor.fetchone(); top_issue = res['issue_type'] if res else "N/A"
-        conn.close(); return {'total': total, 'resolved_complaints': resolved, 'active': active, 'pending': active, 'top_issue': top_issue}
+        # Single query for all main counts
+        execute_db(cursor, """
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'Resolved' THEN 1 ELSE 0 END) as resolved,
+                SUM(CASE WHEN status != 'Resolved' THEN 1 ELSE 0 END) as active
+            FROM complaints
+        """)
+        res = cursor.fetchone()
+        total = res.get('total', 0)
+        resolved = res.get('resolved', 0)
+        active = res.get('active', 0)
+        
+        # Get top issue in a separate query for clarity
+        execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type ORDER BY count DESC LIMIT 1")
+        res_issue = cursor.fetchone()
+        top_issue = res_issue['issue_type'] if res_issue else "N/A"
+        
+        conn.close()
+        return {'total': total, 'resolved_complaints': resolved, 'active': active, 'pending': active, 'top_issue': top_issue}
     except: return {'total': 0, 'resolved_complaints': 0, 'active': 0, 'pending': 0, 'top_issue': "N/A"}
 
 # --- AUTH ---
@@ -136,27 +151,51 @@ def inject_user(): return dict(user=session.get('user'))
 def index():
     try:
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-        execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY vote_count DESC LIMIT 3")
+        
+        # Optimized query with LEFT JOIN for top priority
+        execute_db(cursor, """
+            SELECT c.*, COUNT(v.vote_id) as vote_count 
+            FROM complaints c 
+            LEFT JOIN votes v ON c.complaint_id = v.complaint_id 
+            GROUP BY c.complaint_id 
+            ORDER BY vote_count DESC LIMIT 3
+        """)
         top_priority = cursor.fetchall() or []
         for c in top_priority: 
             c['display_id'] = format_display_id(c['complaint_id'])
             c['image_url'] = f"/static/uploads/{c['image_path']}" if c.get('image_path') else None
-        execute_db(cursor, "SELECT c.*, (SELECT COUNT(*) FROM votes v WHERE v.complaint_id = c.complaint_id) as vote_count FROM complaints c ORDER BY date_submitted DESC LIMIT 30")
+            
+        # Optimized query for all categories
+        execute_db(cursor, """
+            SELECT c.*, COUNT(v.vote_id) as vote_count 
+            FROM complaints c 
+            LEFT JOIN votes v ON c.complaint_id = v.complaint_id 
+            GROUP BY c.complaint_id 
+            ORDER BY date_submitted DESC LIMIT 30
+        """)
         all_c = cursor.fetchall() or []
+        
         def safe_cat(list_c, term): return [c for c in list_c if c.get('issue_type') and term.lower() in c['issue_type'].lower()]
-        categories = {'Road & Infrastructure': safe_cat(all_c, 'road'), 'Water Supply': safe_cat(all_c, 'water'), 'Electricity': safe_cat(all_c, 'electr'), 'Garbage': safe_cat(all_c, 'garbag')}
+        categories = {
+            'Road & Infrastructure': safe_cat(all_c, 'road'), 
+            'Water Supply': safe_cat(all_c, 'water'), 
+            'Electricity': safe_cat(all_c, 'electr'), 
+            'Garbage': safe_cat(all_c, 'garbag')
+        }
         for cat in categories.values():
             for c in cat: c['display_id'] = format_display_id(c['complaint_id'])
-        conn.close(); return render_template('index.html', top_priority=top_priority, categories=categories, active_page='index')
-    except: return render_template('index.html', top_priority=[], categories={}, active_page='index')
+        
+        conn.close()
+        return render_template('index.html', top_priority=top_priority, categories=categories, active_page='index')
+    except Exception as e:
+        print(f"Index Error: {e}")
+        return render_template('index.html', top_priority=[], categories={}, active_page='index')
 
 @app.route('/submit', methods=['GET', 'POST'])
 def submit():
     if request.method == 'POST':
         try:
             p = request.form; lat, lng = area_coords.get(p['area'], area_coords.get(p['district'], (12.9716, 77.5946)))
-            with open("debug_upload.txt", "a") as f:
-                f.write(f"\n--- Submission {datetime.now()} ---\n")
             image_filename = None
             if 'image' in request.files:
                 file = request.files['image']
