@@ -108,29 +108,32 @@ def init_db():
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS votes (vote_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER, voter_identifier TEXT, date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS resolution (resolution_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER UNIQUE, action_taken TEXT, resolved_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
         
+        conn.commit()
+        
         # Schema modifications for Civic Intelligence Platform
-        try: execute_db(cursor, "ALTER TABLE complaints ADD COLUMN is_anonymous INTEGER DEFAULT 0")
-        except: pass
-        try: execute_db(cursor, "ALTER TABLE complaints ADD COLUMN assigned_department TEXT")
-        except: pass
-        try: execute_db(cursor, "ALTER TABLE complaints ADD COLUMN priority TEXT")
-        except: pass
-        try: execute_db(cursor, "ALTER TABLE resolution ADD COLUMN admin_image_path TEXT")
-        except: pass
-        try: execute_db(cursor, "ALTER TABLE complaints ADD COLUMN ward TEXT")
-        except: pass
-        try: execute_db(cursor, "ALTER TABLE complaints ADD COLUMN mla TEXT")
-        except: pass
-        try: execute_db(cursor, "ALTER TABLE complaints ADD COLUMN mp TEXT")
-        except: pass
+        def try_alter(query):
+            try:
+                cursor.execute(query)
+                conn.commit()
+            except:
+                conn.rollback()
+
+        try_alter("ALTER TABLE complaints ADD COLUMN is_anonymous INTEGER DEFAULT 0")
+        try_alter("ALTER TABLE complaints ADD COLUMN assigned_department TEXT")
+        try_alter("ALTER TABLE complaints ADD COLUMN priority TEXT")
+        try_alter("ALTER TABLE resolution ADD COLUMN admin_image_path TEXT")
+        try_alter("ALTER TABLE complaints ADD COLUMN ward TEXT")
+        try_alter("ALTER TABLE complaints ADD COLUMN mla TEXT")
+        try_alter("ALTER TABLE complaints ADD COLUMN mp TEXT")
         
         if IS_POSTGRES:
-            execute_db(cursor, "CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_email TEXT, message TEXT, type TEXT, is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+            cursor.execute("CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_email TEXT, message TEXT, type TEXT, is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
         else:
-            execute_db(cursor, "CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_email TEXT, message TEXT, type TEXT, is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+            cursor.execute("CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_email TEXT, message TEXT, type TEXT, is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
             
         conn.commit(); conn.close()
-    except: pass
+    except Exception as e: 
+        print(f"Init DB Error: {e}")
 
 def get_stats():
     try:
