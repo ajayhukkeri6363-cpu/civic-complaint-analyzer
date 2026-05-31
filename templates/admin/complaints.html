@@ -106,6 +106,8 @@
                                         " 
                                         onchange="handleStatusChange({{ complaint.complaint_id }}, this.value)">
                                         <option style="color:initial" value="Pending" {% if complaint.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                        <option style="color:initial" value="Verified" {% if complaint.status == 'Verified' %}selected{% endif %}>Verified</option>
+                                        <option style="color:initial" value="Assigned" {% if complaint.status == 'Assigned' %}selected{% endif %}>Assigned</option>
                                         <option style="color:initial" value="In Progress" {% if complaint.status == 'In Progress' %}selected{% endif %}>In Progress</option>
                                         <option style="color:initial" value="Resolved" {% if complaint.status == 'Resolved' %}selected{% endif %}>Resolved</option>
                                     </select>
@@ -149,7 +151,10 @@
             <form id="resolveForm">
                 <input type="hidden" id="complaintIdInput">
                 <label for="action_taken" style="display: block; margin-bottom: 0.5rem; color: var(--admin-text-primary); font-size: 0.85rem; font-weight: 500;">Action Transcript</label>
-                <textarea id="action_taken" name="action_taken" class="admin-input" rows="4" style="width: 100%; margin-bottom: 1.5rem; resize: vertical;" required placeholder="e.g., Engineering unit dispatched to vector..."></textarea>
+                <textarea id="action_taken" name="action_taken" class="admin-input" rows="4" style="width: 100%; margin-bottom: 1rem; resize: vertical;" required placeholder="e.g., Engineering unit dispatched to vector..."></textarea>
+                
+                <label for="admin_image" style="display: block; margin-bottom: 0.5rem; color: var(--admin-text-primary); font-size: 0.85rem; font-weight: 500;">Resolution Evidence (Image)</label>
+                <input type="file" id="admin_image" name="admin_image" accept="image/*" class="admin-input" style="width: 100%; margin-bottom: 1.5rem; padding: 0.5rem; cursor: pointer;">
                 
                 <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                     <button type="button" class="admin-btn" onclick="closeModal()">Abort</button>
@@ -190,23 +195,29 @@ function closeModal() {
     document.getElementById('resolveModal').style.display = 'none';
 }
 
-function updateStatusAPI(complaintId, status, actionTaken = '') {
+function updateStatusAPI(complaintId, status, formData = null) {
     const loader = document.getElementById(`loader-${complaintId}`);
     if(loader) loader.style.display = 'block';
     
     const btn = document.getElementById('resolveSubmitBtn');
     if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Transmitting...'; }
 
-    fetch('/api/admin/update-status', {
+    let fetchOptions = {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ complaint_id: complaintId, status: status, action_taken: actionTaken })
-    })
+        body: formData ? formData : (() => {
+            let fd = new FormData();
+            fd.append('complaint_id', complaintId);
+            fd.append('status', status);
+            return fd;
+        })()
+    };
+
+    fetch('/api/admin/update-status', fetchOptions)
     .then(res => res.json())
     .then(data => {
         if(loader) loader.style.display = 'none';
         if (data.success) {
-            location.reload(); // Reload matrix to apply correct row-urgent coloring and selections securely
+            location.reload();
         } else {
             alert('Transmission Error: ' + data.message);
         }
@@ -223,11 +234,17 @@ function updateStatusAPI(complaintId, status, actionTaken = '') {
 
 document.getElementById('resolveForm').onsubmit = function(e) {
     e.preventDefault();
-    updateStatusAPI(
-        document.getElementById('complaintIdInput').value, 
-        'Resolved', 
-        document.getElementById('action_taken').value
-    );
+    const fd = new FormData();
+    fd.append('complaint_id', document.getElementById('complaintIdInput').value);
+    fd.append('status', 'Resolved');
+    fd.append('action_taken', document.getElementById('action_taken').value);
+    
+    const imageInput = document.getElementById('admin_image');
+    if(imageInput.files.length > 0) {
+        fd.append('admin_image', imageInput.files[0]);
+    }
+    
+    updateStatusAPI(document.getElementById('complaintIdInput').value, 'Resolved', fd);
 };
 
 function deleteComplaint(complaintId, displayId) {

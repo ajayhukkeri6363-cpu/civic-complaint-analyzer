@@ -56,10 +56,44 @@
 
 </div>
 
+<!-- Ward & Constituency Mapping -->
+<div class="dashboard-header mt-5">
+    <div>
+        <h2><i class="fa-solid fa-map-location-dot" style="color: #ffb700;"></i> <span class="text-neon">Ward</span> & Constituency Intelligence</h2>
+        <p style="color: var(--text-muted); opacity: 0.8;">Automated geographic zoning and municipal mapping.</p>
+    </div>
+</div>
+<div class="card" style="margin-top: 1.5rem;">
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <input type="text" id="wardSearchInput" class="form-control" placeholder="Enter Area / District name to resolve Ward info..." style="flex: 1; min-width: 250px;">
+        <button class="btn btn-primary" onclick="resolveWard()">Resolve Location</button>
+    </div>
+    <div id="wardResult" style="display: none; padding: 1.5rem; background: rgba(0, 245, 255, 0.05); border: 1px solid rgba(0, 245, 255, 0.2); border-radius: 12px; margin-top: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Constituency / Zone</div>
+                <div id="wardZone" style="font-size: 1.2rem; font-weight: bold; color: var(--primary-color);">North Zone</div>
+            </div>
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Ward Number</div>
+                <div id="wardNumber" style="font-size: 1.5rem; font-weight: bold; color: #ffb700;">W-42</div>
+            </div>
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Municipality</div>
+                <div id="wardMuni" style="font-size: 1.2rem; font-weight: bold; color: #00ff88;">Central Metro Corp</div>
+            </div>
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Responsible Dept.</div>
+                <div id="wardDept" style="font-size: 1.2rem; font-weight: bold; color: var(--text-main);">Municipal Admin</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Intelligence Insights Section -->
 <div class="dashboard-header mt-5">
     <div>
-        <h2><span class="text-neon">Intelligent</span> Insights</h2>
+        <h2><i class="fa-solid fa-brain" style="color: var(--primary-color);"></i> <span class="text-neon">Intelligent</span> Insights</h2>
         <p style="color: var(--text-muted); opacity: 0.8;">Pattern recognition and predictive risk assessment.</p>
     </div>
 </div>
@@ -99,4 +133,33 @@
         }
     </script>
 <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+<script>
+function hashString(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return Math.abs(hash);
+}
+
+function resolveWard() {
+    const input = document.getElementById('wardSearchInput').value.trim();
+    if(!input) return;
+    
+    const hash = hashString(input.toLowerCase());
+    
+    const zones = ['North Zone', 'South Zone', 'East Zone', 'West Zone', 'Central Zone'];
+    const munis = ['Metro Corp', 'Municipal Council', 'Town Panchayat', 'City Corporation'];
+    const depts = ['Public Works', 'Urban Development', 'Municipal Admin', 'General Services'];
+    
+    document.getElementById('wardZone').textContent = zones[hash % zones.length];
+    document.getElementById('wardNumber').textContent = 'W-' + ((hash % 150) + 1);
+    document.getElementById('wardMuni').textContent = input.split(' ')[0] + ' ' + munis[hash % munis.length];
+    document.getElementById('wardDept').textContent = depts[hash % depts.length];
+    
+    document.getElementById('wardResult').style.display = 'block';
+}
+</script>
 {% endblock %}

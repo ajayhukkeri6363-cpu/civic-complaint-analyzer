@@ -17,8 +17,31 @@
                 <i class="fa-solid fa-chart-line"></i> View City Analytics
             </a>
         </div>
+        </div>
     </div>
 </section>
+
+<!-- AI Civic Insights -->
+<div class="insights-section mt-4" style="background: rgba(0, 245, 255, 0.05); border: 1px solid rgba(0, 245, 255, 0.2); border-radius: 12px; padding: 1.5rem; position: relative; overflow: hidden;">
+    <div style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; background: var(--primary-color); filter: blur(50px); opacity: 0.3;"></div>
+    <h3 style="color: var(--primary-color); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-robot"></i> AI Civic Insights
+    </h3>
+    <div id="aiInsightsContainer" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <h4 style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-location-crosshairs" style="color: #ffb700;"></i> Most Affected Locations</h4>
+            <ul id="aiTopAreas" style="color: var(--text-muted); font-size: 0.85rem; padding-left: 1.2rem; margin: 0; line-height: 1.6;"><li>Analyzing...</li></ul>
+        </div>
+        <div style="flex: 1; min-width: 200px; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <h4 style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-chart-pie" style="color: #3498db;"></i> Recurring Patterns</h4>
+            <ul id="aiTopIssues" style="color: var(--text-muted); font-size: 0.85rem; padding-left: 1.2rem; margin: 0; line-height: 1.6;"><li>Analyzing...</li></ul>
+        </div>
+        <div style="flex: 1; min-width: 200px; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <h4 style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-triangle-exclamation" style="color: #ff2a55;"></i> Predicted High-Risk Zones</h4>
+            <ul id="aiPredictions" style="color: #ff2a55; font-size: 0.85rem; padding-left: 1.2rem; margin: 0; line-height: 1.6;"><li>Analyzing...</li></ul>
+        </div>
+    </div>
+</div>
 
 
 
@@ -124,13 +147,85 @@
         </div>
         {% endif %}
     {% endfor %}
+</div>
+
+<!-- Accountability Leaderboard -->
+<div class="leaderboard-section mt-5" style="margin-bottom: 3rem;">
+    <h2 style="display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-ranking-star" style="color: #ffb700;"></i> Public Accountability Board</h2>
+    <p style="color: var(--text-muted); opacity: 0.8; margin-bottom: 1.5rem;">Tracking which representatives have the most unresolved civic issues in their jurisdiction.</p>
     
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;" id="leaderboard-container">
+        <!-- Injected via JS -->
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    fetch('/api/leaderboard')
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('leaderboard-container');
+            let html = '';
+            
+            const renderCard = (title, items) => {
+                let cardHtml = `<div class="card" style="padding: 1.5rem; border-top: 3px solid #ffb700;">
+                                    <h3 style="margin-bottom: 1rem; color: var(--text-main);">${title} Rankings</h3>`;
+                if (!items || items.length === 0) {
+                    cardHtml += `<p style="color: var(--text-muted); font-size: 0.9rem;">No data available yet.</p>`;
+                } else {
+                    items.slice(0, 5).forEach((item, index) => {
+                        cardHtml += `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-weight: 700; color: #ffb700; width: 20px;">#${index+1}</span>
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 0.95rem;">${item.name}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">${item.role}</div>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="color: #ff2a55; font-weight: 700;">${item.unresolved} Pending</div>
+                                    <div style="font-size: 0.75rem; color: #00ff88;">${item.resolved} Resolved</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                cardHtml += `</div>`;
+                return cardHtml;
+            };
+            
+            html += renderCard('MLA', data.mlas);
+            html += renderCard('MP', data.mps);
+            container.innerHTML = html;
+        })
+        .catch(err => console.error("Leaderboard Error:", err));
+});
+</script>
+
     {% if not categories.values()|length %}
-        <div class="card text-center" style="margin-top: 2rem;">
-            <i class="fa-regular fa-folder-open" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
-            <p>No complaints found in the system. The city is running smoothly!</p>
-        </div>
+        <div class="card text-center" style="margin-top: 2rem; display: none;"></div>
     {% endif %}
+</div>
+
+<!-- Live Public Feed -->
+<div class="live-feed-section mt-4" style="margin-bottom: 3rem;">
+    <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2><i class="fa-solid fa-rss" style="color: #00ff88;"></i> Live Public Feed</h2>
+            <p style="color: var(--text-muted);">Real-time stream of community issues, sorted by support score.</p>
+        </div>
+        <div style="font-size: 0.85rem; color: #00ff88; display: flex; align-items: center; gap: 8px; background: rgba(0, 255, 136, 0.1); padding: 5px 12px; border-radius: 50px; border: 1px solid rgba(0, 255, 136, 0.3);">
+            <i class="fa-solid fa-circle fa-fade"></i> Auto-updating
+        </div>
+    </div>
+    
+    <div id="liveFeedContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary-color);"></i>
+            <p class="text-muted mt-2">Loading live feed...</p>
+        </div>
+    </div>
 </div>
 
 <!-- Inline voting logic for SPA compatibility -->
@@ -168,5 +263,83 @@ function voteIssue(complaintId) {
             btn.disabled = false;
         });
 }
+
+// AI Insights & Live Feed Logic
+async function loadInsights() {
+    try {
+        const res = await fetch('/api/insights');
+        const data = await res.json();
+        if(data && !data.error) {
+            const predictionsList = document.getElementById('aiPredictions');
+            const issuesList = document.getElementById('aiTopIssues');
+            const areasList = document.getElementById('aiTopAreas');
+            if(predictionsList) predictionsList.innerHTML = data.predictions.map(p => `<li>${p}</li>`).join('');
+            if(issuesList) issuesList.innerHTML = data.clusters.map(c => `<li>${c}</li>`).join('');
+            if(areasList) areasList.innerHTML = data.recommendations.map(r => `<li>${r}</li>`).join('');
+        }
+    } catch(e) {}
+}
+
+async function loadLiveFeed() {
+    try {
+        const res = await fetch('/api/live_complaints');
+        let data = await res.json();
+        const container = document.getElementById('liveFeedContainer');
+        if(!container) return;
+        if(data.length > 0) {
+            data.sort((a, b) => (b.support_score || 0) - (a.support_score || 0));
+            container.innerHTML = data.map(c => {
+                let prioColor = c.priority === 'High' ? '#ff2a55' : (c.priority === 'Medium' ? '#ffb700' : '#00f5ff');
+                let deptBadge = c.assigned_department ? `<span style="font-size: 0.7rem; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block;">${c.assigned_department}</span>` : '';
+                
+                return `
+                <div class="card netflix-card" style="display: flex; flex-direction: column; position: relative;">
+                    <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: ${prioColor}; border-top-left-radius: 16px; border-bottom-left-radius: 16px;"></div>
+                    <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                        <span class="status-badge status-${c.status.split(' ')[0]}">${c.status}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">${new Date(c.date_submitted).toLocaleString()}</span>
+                    </div>
+                    <div style="padding: 1rem 1.5rem; flex: 1;">
+                        <h4 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-circle-exclamation" style="color: ${prioColor};"></i> ${c.issue_type}
+                        </h4>
+                        ${deptBadge}
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 1rem 0;">
+                            <i class="fa-solid fa-location-dot"></i> ${c.area}, ${c.district}<br>
+                            <i class="fa-solid fa-user" style="margin-top: 6px;"></i> ${c.citizen_name || 'Citizen'}
+                        </p>
+                        <p style="color: var(--text-main); font-size: 0.9rem; line-height: 1.5;">${(c.description || '').substring(0, 80)}${(c.description && c.description.length > 80) ? '...' : ''}</p>
+                    </div>
+                    <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2);">
+                        <button class="btn btn-sm" onclick="voteLiveFeed(${c.complaint_id})" id="btn-feed-${c.complaint_id}" style="background: rgba(0, 245, 255, 0.1); color: var(--primary-color); border: 1px solid rgba(0, 245, 255, 0.3); display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-hand-fist"></i> Support <span id="feed-vote-count-${c.complaint_id}" style="font-weight: bold; font-size: 1.1rem;">${c.support_score || 0}</span>
+                        </button>
+                        <a href="/track/CIV-${1000 + c.complaint_id}" class="btn btn-sm btn-primary">Track Details</a>
+                    </div>
+                </div>
+            `}).join('');
+        } else {
+            container.innerHTML = '<p class="text-muted text-center pt-2" style="grid-column: 1 / -1;">No complaints found in the live feed.</p>';
+        }
+    } catch(e) {}
+}
+
+function voteLiveFeed(complaintId) {
+    const btn = document.getElementById('btn-feed-' + complaintId);
+    if(btn) btn.disabled = true;
+    voteIssue(complaintId);
+    setTimeout(() => {
+        const feedCount = document.getElementById('feed-vote-count-' + complaintId);
+        if(feedCount) {
+            feedCount.textContent = parseInt(feedCount.textContent) + 1;
+        }
+    }, 500);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadInsights();
+    loadLiveFeed();
+    setInterval(loadLiveFeed, 30000); // 30 seconds
+});
 </script>
 {% endblock %}

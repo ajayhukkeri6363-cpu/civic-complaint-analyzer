@@ -26,17 +26,42 @@
                 <div style="color: var(--text-muted); font-size: 0.9rem;">TIMESTAMP: <span style="color: var(--white); font-weight: 600;">{{ complaint.date_submitted.strftime('%Y-%m-%d %H:%M') }}</span></div>
                 <div style="color: var(--text-muted); font-size: 0.9rem;">SECTOR: <span style="color: var(--white); font-weight: 600;">{{ complaint.area }}</span></div>
                 <div style="color: var(--text-muted); font-size: 0.9rem;">CLASSIFICATION: <span style="color: var(--white); font-weight: 600;">{{ complaint.issue_type }}</span></div>
+                
+                <div style="grid-column: 1 / -1; display: flex; gap: 1rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border-left: 3px solid #ffb700;">
+                    <div style="flex: 1;">
+                        <div style="color: #ffb700; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">Ward</div>
+                        <div style="color: var(--white); font-weight: 600; font-size: 0.9rem;">{{ complaint.ward or 'Pending' }}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="color: #ffb700; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">MLA</div>
+                        <div style="color: var(--white); font-weight: 600; font-size: 0.9rem;">{{ complaint.mla or 'Pending' }}</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="color: #ffb700; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">MP</div>
+                        <div style="color: var(--white); font-weight: 600; font-size: 0.9rem;">{{ complaint.mp or 'Pending' }}</div>
+                    </div>
+                </div>
                 <div style="grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
                     <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.5rem;">Intelligence Brief:</div>
                     <div style="color: var(--text-main); font-size: 1rem;">{{ complaint.description }}</div>
                 </div>
 
-                {% if complaint.image_path %}
+                {% if complaint.image_path or complaint.admin_image_path %}
                 <div style="grid-column: 1 / -1; margin-top: 1rem;">
-                    <strong>Attached Evidence:</strong><br>
-                    <div style="max-width: 400px; margin-top: 0.5rem; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);">
-                        <img src="/static/uploads/{{ complaint.image_path }}" style="width: 100%; display: block;" 
-                             onerror="this.src='/static/img/placeholder.png'">
+                    <strong>Before & After Resolution Gallery:</strong><br>
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                        {% if complaint.image_path %}
+                        <div style="flex: 1; min-width: 250px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); position: relative;">
+                            <div style="position: absolute; top: 0; left: 0; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; font-size: 0.8rem; border-bottom-right-radius: 8px;">Citizen Image (Before)</div>
+                            <img src="/static/uploads/{{ complaint.image_path }}" style="width: 100%; height: 250px; object-fit: cover; display: block;" onerror="this.src='/static/img/placeholder.png'">
+                        </div>
+                        {% endif %}
+                        {% if complaint.admin_image_path %}
+                        <div style="flex: 1; min-width: 250px; border-radius: 8px; overflow: hidden; border: 1px solid #00ff88; position: relative; box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);">
+                            <div style="position: absolute; top: 0; left: 0; background: rgba(0, 255, 136, 0.9); color: black; padding: 4px 8px; font-size: 0.8rem; border-bottom-right-radius: 8px; font-weight: bold;">Official Resolution (After)</div>
+                            <img src="/static/uploads/{{ complaint.admin_image_path }}" style="width: 100%; height: 250px; object-fit: cover; display: block;" onerror="this.src='/static/img/placeholder.png'">
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endif %}
@@ -46,37 +71,37 @@
             
             {% set s = complaint.status %}
             {% set width = '0%' %}
-            {% if s == 'Pending' %}{% set width = '16.5%' %}{% endif %}
-            {% if s == 'In Progress' %}{% set width = '50%' %}{% endif %}
+            {% if s == 'Submitted' %}{% set width = '10%' %}{% endif %}
+            {% if s == 'Verified' %}{% set width = '35%' %}{% endif %}
+            {% if s == 'Assigned' %}{% set width = '60%' %}{% endif %}
+            {% if s == 'In Progress' %}{% set width = '85%' %}{% endif %}
             {% if s == 'Resolved' %}{% set width = '100%' %}{% endif %}
             {% if s == 'Rejected' %}{% set width = '100%' %}{% endif %}
 
-            <div class="progress-container">
-                <div class="progress-line" style="width: {{ width }}; {% if s == 'Rejected' %}background-color: var(--accent-color);{% endif %}"></div>
-                <ul class="progressbar">
-                    <li class="active">
+            <div class="progress-container" style="max-width: 800px; margin: 0 auto;">
+                <div class="progress-line" style="width: {{ width }}; {% if s == 'Rejected' %}background-color: var(--accent-color);{% else %}background-color: var(--primary-color);{% endif %}"></div>
+                <ul class="progressbar" style="display: flex; justify-content: space-between; position: relative;">
+                    <li class="active" style="width: 20%;">
                         <div class="icon-wrapper"><i class="fa-solid fa-file-signature"></i></div>
-                        Submitted
+                        <span style="font-size:0.75rem;">Submitted</span>
                     </li>
-                    <li class="{% if s in ['In Progress', 'Resolved', 'Rejected'] %}active{% endif %}">
+                    <li class="{% if s in ['Verified', 'Assigned', 'In Progress', 'Resolved', 'Rejected'] %}active{% endif %}" style="width: 20%;">
                         <div class="icon-wrapper">
-                            {% if s == 'Rejected' %}
-                                <i class="fa-solid fa-ban"></i>
-                            {% else %}
-                                <i class="fa-solid fa-gears"></i>
-                            {% endif %}
+                            {% if s == 'Rejected' %}<i class="fa-solid fa-ban"></i>{% else %}<i class="fa-solid fa-clipboard-check"></i>{% endif %}
                         </div>
-                        {% if s == 'Rejected' %}Rejected{% else %}In Progress{% endif %}
+                        <span style="font-size:0.75rem;">{% if s == 'Rejected' %}Rejected{% else %}Verified{% endif %}</span>
                     </li>
-                    <li class="{% if s in ['Resolved', 'Rejected'] %}active{% endif %}">
-                        <div class="icon-wrapper">
-                            {% if s == 'Rejected' %}
-                                <i class="fa-solid fa-circle-xmark"></i>
-                            {% else %}
-                                <i class="fa-solid fa-circle-check"></i>
-                            {% endif %}
-                        </div>
-                        {% if s == 'Rejected' %}Closed{% else %}Resolved{% endif %}
+                    <li class="{% if s in ['Assigned', 'In Progress', 'Resolved'] %}active{% endif %}" style="width: 20%;">
+                        <div class="icon-wrapper"><i class="fa-solid fa-user-tag"></i></div>
+                        <span style="font-size:0.75rem;">Assigned</span>
+                    </li>
+                    <li class="{% if s in ['In Progress', 'Resolved'] %}active{% endif %}" style="width: 20%;">
+                        <div class="icon-wrapper"><i class="fa-solid fa-gears"></i></div>
+                        <span style="font-size:0.75rem;">In Progress</span>
+                    </li>
+                    <li class="{% if s == 'Resolved' %}active{% endif %}" style="width: 20%;">
+                        <div class="icon-wrapper"><i class="fa-solid fa-circle-check"></i></div>
+                        <span style="font-size:0.75rem;">Resolved</span>
                     </li>
                 </ul>
             </div>

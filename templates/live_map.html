@@ -127,28 +127,16 @@
 
 <div id="map"></div>
 
-<div class="map-legend" style="max-width: 1000px; margin: 1.5rem auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem; text-align: left; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-    <span><span class="legend-dot" style="background:#ff2a55;box-shadow:0 0 6px #ff2a55;"></span>Road Damage</span>
-    <span><span class="legend-dot" style="background:#00f5ff;box-shadow:0 0 6px #00f5ff;"></span>Water Supply</span>
-    <span><span class="legend-dot" style="background:#ffb700;box-shadow:0 0 6px #ffb700;"></span>Electricity</span>
-    <span><span class="legend-dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></span>Garbage</span>
-    <span><span class="legend-dot" style="background:#a855f7;box-shadow:0 0 6px #a855f7;"></span>Drainage</span>
-    <span><span class="legend-dot" style="background:#fef08a;box-shadow:0 0 6px #fef08a;"></span>Street Light</span>
-    <span><span class="legend-dot" style="background:#f97316;box-shadow:0 0 6px #f97316;"></span>Traffic</span>
-    <span><span class="legend-dot" style="background:#7f5af0;box-shadow:0 0 6px #7f5af0;"></span>Public Transport</span>
-    <span><span class="legend-dot" style="background:#94a3b8;box-shadow:0 0 6px #94a3b8;"></span>Pollution</span>
-    <span><span class="legend-dot" style="background:#ef4444;box-shadow:0 0 6px #ef4444;"></span>Construction</span>
-    <span><span class="legend-dot" style="background:#2dd4bf;box-shadow:0 0 6px #2dd4bf;"></span>Leakage</span>
-    <span><span class="legend-dot" style="background:#3b82f6;box-shadow:0 0 6px #3b82f6;"></span>Network</span>
-    <span><span class="legend-dot" style="background:#fb923c;box-shadow:0 0 6px #fb923c;"></span>Animal Prob.</span>
-    <span><span class="legend-dot" style="background:#166534;box-shadow:0 0 6px #166534;"></span>Parks</span>
-    <span><span class="legend-dot" style="background:#64748b;box-shadow:0 0 6px #64748b;"></span>Govt Office</span>
-    <span><span class="legend-dot" style="background:#dc2626;box-shadow:0 0 6px #dc2626;"></span>Safety</span>
+<div class="map-legend" style="max-width: 600px; margin: 1.5rem auto; display: flex; justify-content: space-around; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+    <span><span class="legend-dot" style="background:green;box-shadow:0 0 6px green; border-color:transparent;"></span>Low Intensity</span>
+    <span><span class="legend-dot" style="background:yellow;box-shadow:0 0 6px yellow; border-color:transparent;"></span>Medium Intensity</span>
+    <span><span class="legend-dot" style="background:red;box-shadow:0 0 6px red; border-color:transparent;"></span>High Intensity</span>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -160,20 +148,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var map = L.map('map', {
         maxBounds:           INDIA_BOUNDS,
-        maxBoundsViscosity:  1.0,           // Hard wall — physically prevents panning outside
+        maxBoundsViscosity:  1.0,           
         zoomSnap:            0.1,
         zoomDelta:           0.5,
-        attributionControl: false           // Cleaner look for "India only"
+        attributionControl: false           
     });
 
-    // Fit India to the view and lock it
     map.fitBounds(INDIA_BOUNDS, { padding: [10, 10] });
-    map.setMinZoom(map.getZoom() - 0.2);     // Allow a tiny bit of buffer but basically locked
+    map.setMinZoom(map.getZoom() - 0.2);     
     map.setMaxZoom(18);
 
-    // ── India Only Visual Mask (Dimming the rest of the world) ──
-    // This GeoJSON creates a massive "world" rectangle with a "hole" shaped like India
-    // Simplified India boundary coordinates for the mask
     var indiaGeoJSON = {
         "type": "Feature",
         "properties": {},
@@ -181,10 +165,9 @@ document.addEventListener('DOMContentLoaded', function () {
             "type": "Polygon",
             "coordinates": [
                 [
-                    [-180, 90], [180, 90], [180, -90], [-180, -90], [-180, 90] // The World
+                    [-180, 90], [180, 90], [180, -90], [-180, -90], [-180, 90]
                 ],
                 [
-                    // Simplified India Outline (Hole)
                     [68.1, 23.7], [70.5, 24.9], [71.5, 26.5], [74.5, 30.5], [77.5, 35.5],
                     [80.5, 36.5], [82.5, 33.5], [85.5, 30.5], [88.5, 29.5], [92.5, 28.5],
                     [97.5, 28.5], [96.5, 24.5], [92.5, 22.5], [88.5, 21.5], [85.5, 18.5],
@@ -199,8 +182,8 @@ document.addEventListener('DOMContentLoaded', function () {
         style: {
             color: "#000",
             weight: 0,
-            fillColor: "#080b15", // Matches background
-            fillOpacity: 0.85     // Dims the rest of the world
+            fillColor: "#080b15",
+            fillOpacity: 0.85
         }
     }).addTo(map);
 
@@ -210,74 +193,67 @@ document.addEventListener('DOMContentLoaded', function () {
         maxZoom: 19
     }).addTo(map);
 
-    function getColor(type) {
-        type = (type || '').toLowerCase();
-        if (type.includes('road'))    return '#ff2a55';
-        if (type.includes('water supply')) return '#00f5ff';
-        if (type.includes('electr'))  return '#ffb700';
-        if (type.includes('garbag'))  return '#22c55e';
-        if (type.includes('drainag') || type.includes('sewag')) return '#a855f7';
-        if (type.includes('light'))   return '#fef08a';
-        if (type.includes('traffic')) return '#f97316';
-        if (type.includes('transport')) return '#7f5af0';
-        if (type.includes('pollut'))  return '#94a3b8';
-        if (type.includes('construct')) return '#ef4444';
-        if (type.includes('leakag'))  return '#2dd4bf';
-        if (type.includes('network') || type.includes('internet')) return '#3b82f6';
-        if (type.includes('animal'))  return '#fb923c';
-        if (type.includes('park'))    return '#166534';
-        if (type.includes('office') || type.includes('govt'))  return '#64748b';
-        if (type.includes('safety') || type.includes('secur'))  return '#dc2626';
-        return '#3498db';
-    }
-
-    function makeIcon(color) {
-        return L.divIcon({
-            className: '',
-            html: '<div style="width:14px;height:14px;border-radius:50%;background:' + color
-                + ';border:2px solid #fff;box-shadow:0 0 12px 3px ' + color + ';"></div>',
-            iconSize: [14, 14],
-            iconAnchor: [7, 7],
-            popupAnchor: [0, -12]
-        });
-    }
-
-    function makePopup(c, color) {
-        var imgHTML = '';
-        if (c.image_path && c.image_path.indexOf('.jpg') !== -1) {
-            imgHTML = '<img class="cp-popup-img" src="/static/uploads/' + c.image_path
-                + '" onerror="this.style.display=\'none\'">';
-        }
-
-        var statusColor = c.status === 'Resolved' ? '#27ae60' : '#f39c12';
-        var statusBg    = c.status === 'Resolved' ? 'rgba(39,174,96,0.15)' : 'rgba(243,156,18,0.15)';
-
-        return '<div class="cp-popup">'
-            + imgHTML
-            + '<div class="cp-popup-body">'
-            +   '<div class="cp-popup-type" style="color:' + color + ';">' + (c.issue_type || 'Civic') + '</div>'
-            +   '<div class="cp-popup-id">#' + (c.complaint_id || '---') + '</div>'
-            +   '<div class="cp-popup-area"><i class="fa-solid fa-location-dot"></i> ' + (c.area || 'Unknown') + ', ' + (c.district || '') + '</div>'
-            +   '<div class="cp-popup-desc">' + (c.description || '') + '</div>'
-            +   '<span class="cp-popup-status" style="color:' + statusColor + ';background:' + statusBg + ';border:1px solid ' + statusColor + '33;">'
-            +     (c.status || 'Pending')
-            +   '</span>'
-            + '</div></div>';
-    }
-
-    // Fetch and plot complaint markers
+    // Fetch and plot heatmap
     fetch('/api/live_complaints')
         .then(function (r) { return r.json(); })
         .then(function (data) {
+            var heatData = [];
             data.forEach(function (c) {
                 if (c.latitude && c.longitude) {
-                    var color = getColor(c.issue_type);
                     var lat   = parseFloat(c.latitude);
                     var lng   = parseFloat(c.longitude);
+                    // Add slight jitter for points with exactly same coords to spread heat
+                    lat += (Math.random() - 0.5) * 0.005;
+                    lng += (Math.random() - 0.5) * 0.005;
                     
-                    L.marker([lat, lng], { icon: makeIcon(color) })
-                        .addTo(map)
-                        .bindPopup(makePopup(c, color), { maxWidth: 250 });
+                    var intensity = 0.5;
+                    if(c.priority === 'High') intensity = 1.0;
+                    if(c.priority === 'Low') intensity = 0.2;
+                    
+                    // We also consider support_score to multiply intensity
+                    intensity += (c.support_score || 0) * 0.1;
+                    if(intensity > 1.0) intensity = 1.0;
+                    
+                    heatData.push([lat, lng, intensity]);
+                }
+            });
+            
+            L.heatLayer(heatData, {
+                radius: 30,
+                blur: 20,
+                maxZoom: 10,
+                gradient: {0.3: 'green', 0.6: 'yellow', 1.0: 'red'}
+            }).addTo(map);
+
+            // Add interactive markers for Accountability transparency
+            data.forEach(function (c) {
+                if (c.latitude && c.longitude) {
+                    var lat = parseFloat(c.latitude);
+                    var lng = parseFloat(c.longitude);
+                    
+                    var popupHtml = `
+                        <div style="font-family: var(--font-main); min-width: 200px;">
+                            <div style="font-weight: 700; color: var(--primary-color); margin-bottom: 5px;">${c.issue_type}</div>
+                            <div style="font-size: 0.85rem; margin-bottom: 10px;">${c.area}</div>
+                            <div style="background: rgba(0,0,0,0.05); padding: 8px; border-radius: 4px; font-size: 0.8rem;">
+                                <strong>Ward:</strong> ${c.ward || 'Pending'}<br>
+                                <strong>MLA:</strong> ${c.mla || 'Pending'}<br>
+                                <strong>MP:</strong> ${c.mp || 'Pending'}
+                            </div>
+                            <div style="margin-top: 10px; text-align: center;">
+                                <a href="/track?id=${c.display_id}" style="color: var(--primary-color); text-decoration: none; font-weight: 600; font-size: 0.85rem;">Track Issue &rarr;</a>
+                            </div>
+                        </div>
+                    `;
+                    
+                    L.circleMarker([lat, lng], {
+                        radius: 6,
+                        fillColor: c.priority === 'High' ? 'red' : (c.priority === 'Medium' ? 'yellow' : 'green'),
+                        color: '#000',
+                        weight: 1,
+                        opacity: 0.5,
+                        fillOpacity: 0.8
+                    }).addTo(map).bindPopup(popupHtml);
                 }
             });
         })

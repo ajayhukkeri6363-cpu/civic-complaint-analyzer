@@ -37,6 +37,21 @@
                 <h1 class="brand-title">Civic Analyzer</h1>
             </a>
             
+            <!-- Smart Search -->
+            <div class="smart-search-container" style="position: relative; margin-left: 1rem; flex-grow: 1; max-width: 250px; display: none;" id="desktopSearch">
+                <input type="text" id="smartSearchInput" placeholder="Search ID, Area, Issue..." style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.5rem; border-radius: 50px; border: 1px solid rgba(0, 245, 255, 0.3); background: rgba(0, 0, 0, 0.3); color: white; outline: none; font-size: 0.85rem; backdrop-filter: blur(5px);">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--primary-color); font-size: 0.85rem;"></i>
+                <div id="smartSearchResults" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--card-bg); border: 1px solid rgba(0, 245, 255, 0.2); border-radius: 12px; margin-top: 5px; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.5); max-height: 300px; overflow-y: auto;"></div>
+            </div>
+            <style>@media (min-width: 768px) { #desktopSearch { display: block !important; } .live-stats-header { display: flex !important; } }</style>
+
+            <!-- Live Civic Stats Counters -->
+            <div class="live-stats-header" style="display: none; gap: 1rem; margin-left: auto; font-size: 0.75rem; text-align: center; color: var(--text-muted);">
+                <div><span id="stat-total" style="color: var(--primary-color); font-weight: bold; font-size: 0.9rem;">0</span><br>Total</div>
+                <div><span id="stat-resolved" style="color: #00ff88; font-weight: bold; font-size: 0.9rem;">0</span><br>Resolved</div>
+                <div><span id="stat-pending" style="color: #ffaa00; font-weight: bold; font-size: 0.9rem;">0</span><br>Pending</div>
+            </div>
+            
             <button class="mobile-menu-btn" id="menuBtn">
                 <i class="fa-solid fa-bars"></i>
             </button>
@@ -74,8 +89,22 @@
                     </a>
                 </li>
                 
-                <li class="nav-auth">
+                <li class="nav-auth" style="display: flex; align-items: center; gap: 1rem;">
                     {% if user %}
+                        <!-- Notification Center -->
+                        <div class="notification-center" style="position: relative;">
+                            <button id="notifBtn" onclick="document.getElementById('notifDropdown').classList.toggle('show')" style="background: none; border: none; cursor: pointer; color: var(--text-muted); position: relative;">
+                                <i class="fa-solid fa-bell" style="font-size: 1.2rem; transition: color 0.3s;" onmouseover="this.style.color='#00f5ff'" onmouseout="this.style.color='var(--text-muted)'"></i>
+                                <span id="notifBadge" style="display: none; position: absolute; top: -5px; right: -5px; background: #ff2a55; color: white; font-size: 0.6rem; border-radius: 50%; width: 14px; height: 14px; align-items: center; justify-content: center; font-weight: bold;"></span>
+                            </button>
+                            <div id="notifDropdown" style="display: none; position: absolute; right: -50px; top: 150%; width: 280px; background: var(--card-bg); border: 1px solid rgba(0, 245, 255, 0.2); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 1000; overflow: hidden; backdrop-filter: blur(12px);">
+                                <div style="padding: 10px 15px; border-bottom: 1px solid var(--border-color); font-weight: bold; font-size: 0.9rem; color: #00f5ff;">Notifications</div>
+                                <div id="notifList" style="max-height: 300px; overflow-y: auto;">
+                                    <div style="padding: 15px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">No new notifications</div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="user-profile" style="position: relative;">
                             <button id="avatarBtn" onclick="document.getElementById('userDropdown').classList.toggle('show')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 0.3rem 0.5rem; border-radius: 50px; transition: var(--transition);">
                                 {% if user.get('profile_pic') %}
@@ -218,6 +247,106 @@
                   "interactivity": { "detect_on": "canvas", "events": { "onhover": { "enable": false }, "resize": true } },
                   "retina_detect": true
                 });
+            }
+            
+            // Smart Search
+            const searchInput = document.getElementById('smartSearchInput');
+            const searchResults = document.getElementById('smartSearchResults');
+            if(searchInput) {
+                searchInput.addEventListener('input', async function() {
+                    if(this.value.length > 2) {
+                        const res = await fetch('/api/search?q=' + encodeURIComponent(this.value));
+                        const data = await res.json();
+                        searchResults.innerHTML = '';
+                        if(data.length > 0) {
+                            data.forEach(item => {
+                                searchResults.innerHTML += `<a href="/track/${item.display_id}" style="display: block; padding: 10px; border-bottom: 1px solid var(--border-color); color: var(--text-main); text-decoration: none; font-size: 0.85rem;" onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'" onmouseout="this.style.background='transparent'"><strong style="color:var(--primary-color)">${item.display_id}</strong><br><span style="color:var(--text-muted);font-size:0.75rem;">${item.issue_type} in ${item.area}</span></a>`;
+                            });
+                        } else {
+                            searchResults.innerHTML = '<div style="padding: 10px; font-size: 0.85rem; color: var(--text-muted); text-align:center;">No results found</div>';
+                        }
+                        searchResults.style.display = 'block';
+                    } else {
+                        searchResults.style.display = 'none';
+                    }
+                });
+                document.addEventListener('click', e => {
+                    if(searchResults && !searchInput.contains(e.target) && !searchResults.contains(e.target)) searchResults.style.display = 'none';
+                });
+            }
+
+            // Live Stats
+            async function fetchLiveStats() {
+                try {
+                    const res = await fetch('/api/analytics');
+                    const data = await res.json();
+                    if(data && !data.error) {
+                        const tot = document.getElementById('stat-total');
+                        const resd = document.getElementById('stat-resolved');
+                        const pend = document.getElementById('stat-pending');
+                        if(tot) tot.innerText = data.total_complaints;
+                        if(resd) resd.innerText = data.resolved_complaints;
+                        if(pend) pend.innerText = (data.total_complaints - data.resolved_complaints);
+                    }
+                } catch(e) {}
+            }
+            fetchLiveStats();
+            setInterval(fetchLiveStats, 30000);
+
+            // Notifications
+            async function fetchNotifications() {
+                const notifBtn = document.getElementById('notifBtn');
+                if(!notifBtn) return;
+                try {
+                    const res = await fetch('/api/notifications');
+                    const data = await res.json();
+                    if(data.length > 0) {
+                        const badge = document.getElementById('notifBadge');
+                        const unread = data.filter(d => !d.is_read).length;
+                        if(unread > 0) {
+                            badge.style.display = 'flex';
+                            badge.innerText = unread;
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                        const notifList = document.getElementById('notifList');
+                        notifList.innerHTML = '';
+                        data.forEach(n => {
+                            notifList.innerHTML += `<div style="padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; background: ${n.is_read ? 'transparent' : 'rgba(0, 245, 255, 0.05)'}; display:flex; gap:10px;">
+                                <i class="fa-solid fa-circle-info" style="color:var(--primary-color); margin-top:3px;"></i>
+                                <div>
+                                    <div style="color:var(--text-main); margin-bottom:4px;">${n.message}</div>
+                                    <div style="color:var(--text-muted); font-size:0.7rem;">${new Date(n.created_at).toLocaleString()}</div>
+                                </div>
+                            </div>`;
+                        });
+                    }
+                } catch(e) {}
+            }
+            {% if user %}
+            fetchNotifications();
+            setInterval(fetchNotifications, 60000);
+            {% endif %}
+            
+            // Close notif dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                const notifDropdown = document.getElementById('notifDropdown');
+                const notifBtn = document.getElementById('notifBtn');
+                if (notifDropdown && notifBtn && !notifBtn.contains(e.target)) {
+                    notifDropdown.classList.remove('show');
+                }
+            });
+            const notifDropdown = document.getElementById('notifDropdown');
+            if (notifDropdown) {
+                const observer = new MutationObserver(() => {
+                    notifDropdown.style.display = notifDropdown.classList.contains('show') ? 'block' : 'none';
+                    if(notifDropdown.classList.contains('show')) {
+                        // Optimistically mark as read in UI by hiding badge
+                        const badge = document.getElementById('notifBadge');
+                        if(badge) badge.style.display = 'none';
+                    }
+                });
+                observer.observe(notifDropdown, { attributes: true, attributeFilter: ['class'] });
             }
 
         });

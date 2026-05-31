@@ -107,6 +107,28 @@ def init_db():
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS complaints (complaint_id INTEGER PRIMARY KEY AUTOINCREMENT, citizen_name TEXT, citizen_email TEXT, state TEXT, district TEXT, area TEXT, issue_type TEXT, description TEXT, image_path TEXT, latitude REAL, longitude REAL, status TEXT DEFAULT 'Pending', date_submitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS votes (vote_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER, voter_identifier TEXT, date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS resolution (resolution_id INTEGER PRIMARY KEY AUTOINCREMENT, complaint_id INTEGER UNIQUE, action_taken TEXT, resolved_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        
+        # Schema modifications for Civic Intelligence Platform
+        try: execute_db(cursor, "ALTER TABLE complaints ADD COLUMN is_anonymous INTEGER DEFAULT 0")
+        except: pass
+        try: execute_db(cursor, "ALTER TABLE complaints ADD COLUMN assigned_department TEXT")
+        except: pass
+        try: execute_db(cursor, "ALTER TABLE complaints ADD COLUMN priority TEXT")
+        except: pass
+        try: execute_db(cursor, "ALTER TABLE resolution ADD COLUMN admin_image_path TEXT")
+        except: pass
+        try: execute_db(cursor, "ALTER TABLE complaints ADD COLUMN ward TEXT")
+        except: pass
+        try: execute_db(cursor, "ALTER TABLE complaints ADD COLUMN mla TEXT")
+        except: pass
+        try: execute_db(cursor, "ALTER TABLE complaints ADD COLUMN mp TEXT")
+        except: pass
+        
+        if IS_POSTGRES:
+            execute_db(cursor, "CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_email TEXT, message TEXT, type TEXT, is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        else:
+            execute_db(cursor, "CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_email TEXT, message TEXT, type TEXT, is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+            
         conn.commit(); conn.close()
     except: pass
 
@@ -134,6 +156,14 @@ def get_stats():
         conn.close()
         return {'total': total, 'resolved_complaints': resolved, 'active': active, 'pending': active, 'top_issue': top_issue}
     except: return {'total': 0, 'resolved_complaints': 0, 'active': 0, 'pending': 0, 'top_issue': "N/A"}
+
+def resolve_accountability(area_str):
+    if not area_str: return "W-Unknown", "Unassigned", "Unassigned"
+    h = sum(ord(c) for c in area_str.lower())
+    wards = ["W-14", "W-23", "W-42", "W-56", "W-89", "W-112", "W-150", "W-18"]
+    mlas = ["Ramesh K.", "Sunil Kumar", "Priya Reddy", "Anand Rao", "Vikram Singh"]
+    mps = ["Tejasvi Surya", "PC Mohan", "DK Suresh", "Shobha Karandlaje"]
+    return wards[h % len(wards)], mlas[h % len(mlas)], mps[h % len(mps)]
 
 # --- AUTH ---
 def admin_required(f):
@@ -205,8 +235,33 @@ def submit():
                     save_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
                     file.save(save_path)
             
+            
+            # --- NEW PRIORITY & ASSIGNMENT LOGIC ---
+            is_anonymous = 1 if p.get('is_anonymous') else 0
+            
+            issue = p.get('issue_type', '').lower()
+            if any(x in issue for x in ['water', 'electric', 'fire', 'sewage']): priority = 'High'
+            elif any(x in issue for x in ['garbage', 'pothole', 'road']): priority = 'Medium'
+            else: priority = 'Low'
+                
+            assigned_department = 'General Administration'
+            if 'road' in issue or 'pothole' in issue: assigned_department = 'Road Department'
+            elif 'water' in issue or 'sewage' in issue: assigned_department = 'Water Department'
+            elif 'electr' in issue: assigned_department = 'Electricity Department'
+            elif 'garbag' in issue: assigned_department = 'Garbage Department'
+
+            ward, mla, mp = resolve_accountability(p.get('area', ''))
+            
+            c_name = p.get('name', '').strip() or 'Anonymous Citizen'
+            c_email = p.get('email', '').strip() or 'no-email@local'
+
             conn = get_db_connection(); cursor = conn.cursor()
-            execute_db(cursor, "INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (p['name'], p['email'], p['state'], p['district'], p['area'], p['issue_type'], p['description'], image_filename, lat, lng))
+            execute_db(cursor, "INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude, is_anonymous, assigned_department, priority, status, ward, mla, mp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Submitted', ?, ?, ?)", (c_name, c_email, p.get('state'), p.get('district'), p.get('area'), p.get('issue_type'), p.get('description'), image_filename, lat, lng, is_anonymous, assigned_department, priority, ward, mla, mp))
+            
+            # Notification
+            if c_email != 'no-email@local':
+                execute_db(cursor, "INSERT INTO notifications (user_email, message, type) VALUES (?, ?, ?)", (c_email, "Your complaint has been successfully submitted.", "status"))
+            
             conn.commit(); conn.close(); flash('Complaint submitted successfully!', 'success'); return redirect(url_for('index'))
         except Exception as e: 
             flash(f'Error: {e}', 'error'); return redirect(url_for('submit'))
@@ -233,10 +288,20 @@ def api_analytics():
 def api_live_complaints():
     try:
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-        execute_db(cursor, "SELECT * FROM complaints"); data = cursor.fetchall() or []; conn.close()
+        execute_db(cursor, """
+            SELECT c.*, COUNT(v.vote_id) as support_score 
+            FROM complaints c 
+            LEFT JOIN votes v ON c.complaint_id = v.complaint_id 
+            GROUP BY c.complaint_id
+        """)
+        data = cursor.fetchall() or []; conn.close()
         for c in data:
             c['lat'] = c.get('latitude'); c['lng'] = c.get('longitude'); c['type'] = c.get('issue_type')
             c['image_url'] = f"/static/uploads/{c['image_path']}" if c.get('image_path') else None
+            c['support_score'] = c.get('support_score', 0)
+            if c.get('is_anonymous') in (1, True, '1', 'true', 'True'):
+                c['citizen_name'] = 'Anonymous Citizen'
+                c['citizen_email'] = 'Hidden'
         return jsonify(data)
     except: return jsonify([])
 
@@ -275,7 +340,7 @@ def track(id=None):
             raw_id = re.sub(r'\D', '', search_id)
             if raw_id:
                 c_id = int(raw_id) - 1000; conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
-                execute_db(cursor, "SELECT c.*, r.action_taken FROM complaints c LEFT JOIN resolution r ON c.complaint_id = r.complaint_id WHERE c.complaint_id = ?", (c_id,))
+                execute_db(cursor, "SELECT c.*, r.action_taken, r.admin_image_path FROM complaints c LEFT JOIN resolution r ON c.complaint_id = r.complaint_id WHERE c.complaint_id = ?", (c_id,))
                 complaint = cursor.fetchone()
                 if complaint: complaint['display_id'] = format_display_id(complaint['complaint_id'])
                 conn.close()
@@ -322,11 +387,46 @@ def admin_settings(): return render_template('admin/settings.html', active_page=
 @admin_required
 def admin_update_status():
     try:
-        data = request.json; c_id = data.get('complaint_id'); status = data.get('status'); action = data.get('action_taken')
-        conn = get_db_connection(); cursor = conn.cursor(); execute_db(cursor, "UPDATE complaints SET status = ? WHERE complaint_id = ?", (status, c_id))
-        if action:
-            if IS_POSTGRES: execute_db(cursor, "INSERT INTO resolution (complaint_id, action_taken) VALUES (?, ?) ON CONFLICT (complaint_id) DO UPDATE SET action_taken = EXCLUDED.action_taken", (c_id, action))
-            else: execute_db(cursor, "INSERT OR REPLACE INTO resolution (complaint_id, action_taken) VALUES (?, ?)", (c_id, action))
+        if request.content_type and request.content_type.startswith('multipart/form-data'):
+            data = request.form
+            c_id = data.get('complaint_id')
+            status = data.get('status')
+            action = data.get('action_taken')
+            admin_image_filename = None
+            if 'admin_image' in request.files:
+                file = request.files['admin_image']
+                if file and allowed_file(file.filename):
+                    ext = file.filename.rsplit('.', 1)[1].lower()
+                    admin_image_filename = f"admin_{uuid.uuid4().hex}.{ext}"
+                    save_path = os.path.join(app.config['UPLOAD_FOLDER'], admin_image_filename)
+                    file.save(save_path)
+        else:
+            data = request.json
+            c_id = data.get('complaint_id')
+            status = data.get('status')
+            action = data.get('action_taken')
+            admin_image_filename = None
+
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        execute_db(cursor, "UPDATE complaints SET status = ? WHERE complaint_id = ?", (status, c_id))
+        
+        if action or admin_image_filename:
+            execute_db(cursor, "SELECT * FROM resolution WHERE complaint_id = ?", (c_id,))
+            res = cursor.fetchone()
+            if res:
+                if action: execute_db(cursor, "UPDATE resolution SET action_taken = ? WHERE complaint_id = ?", (action, c_id))
+                if admin_image_filename: execute_db(cursor, "UPDATE resolution SET admin_image_path = ? WHERE complaint_id = ?", (admin_image_filename, c_id))
+            else:
+                if IS_POSTGRES:
+                    execute_db(cursor, "INSERT INTO resolution (complaint_id, action_taken, admin_image_path) VALUES (?, ?, ?) ON CONFLICT (complaint_id) DO UPDATE SET action_taken = EXCLUDED.action_taken, admin_image_path = COALESCE(EXCLUDED.admin_image_path, resolution.admin_image_path)", (c_id, action, admin_image_filename))
+                else:
+                    execute_db(cursor, "INSERT INTO resolution (complaint_id, action_taken, admin_image_path) VALUES (?, ?, ?)", (c_id, action, admin_image_filename))
+        
+        execute_db(cursor, "SELECT citizen_email FROM complaints WHERE complaint_id = ?", (c_id,))
+        email_res = cursor.fetchone()
+        if email_res:
+            execute_db(cursor, "INSERT INTO notifications (user_email, message, type) VALUES (?, ?, ?)", (email_res['citizen_email'], f"Your complaint status is now: {status}", "status"))
+            
         conn.commit(); conn.close(); return jsonify({'success': True})
     except Exception as e: return jsonify({'success': False, 'message': str(e)})
 
@@ -349,6 +449,42 @@ def login():
             flash('Invalid credentials.', 'error')
         except: flash('Login error', 'error')
     return render_template('login.html')
+
+@app.route('/api/leaderboard', methods=['GET'])
+def api_leaderboard():
+    try:
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        
+        # Rank by MLA unresolved
+        execute_db(cursor, """
+            SELECT mla as name, 'MLA' as role, 
+                   COUNT(*) as total,
+                   SUM(CASE WHEN status != 'Resolved' THEN 1 ELSE 0 END) as unresolved,
+                   SUM(CASE WHEN status = 'Resolved' THEN 1 ELSE 0 END) as resolved
+            FROM complaints 
+            WHERE mla IS NOT NULL AND mla != 'Unassigned'
+            GROUP BY mla 
+            ORDER BY unresolved DESC
+        """)
+        mlas = cursor.fetchall() or []
+        
+        # Rank by MP unresolved
+        execute_db(cursor, """
+            SELECT mp as name, 'MP' as role, 
+                   COUNT(*) as total,
+                   SUM(CASE WHEN status != 'Resolved' THEN 1 ELSE 0 END) as unresolved,
+                   SUM(CASE WHEN status = 'Resolved' THEN 1 ELSE 0 END) as resolved
+            FROM complaints 
+            WHERE mp IS NOT NULL AND mp != 'Unassigned'
+            GROUP BY mp 
+            ORDER BY unresolved DESC
+        """)
+        mps = cursor.fetchall() or []
+        
+        conn.close()
+        return jsonify({'mlas': mlas, 'mps': mps})
+    except Exception as e:
+        return jsonify({'error': str(e), 'mlas': [], 'mps': []})
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -374,7 +510,61 @@ def live_map(): return render_template('live_map.html', active_page='live_map')
 @app.route('/profile')
 def profile():
     if not session.get('user'): return redirect(url_for('login'))
-    return render_template('profile.html', active_page='profile')
+    try:
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        execute_db(cursor, "SELECT * FROM complaints WHERE citizen_email = ? ORDER BY date_submitted DESC", (session['user']['email'],))
+        user_complaints = cursor.fetchall() or []
+        for c in user_complaints: c['display_id'] = format_display_id(c['complaint_id'])
+        
+        execute_db(cursor, """
+            SELECT c.* FROM complaints c 
+            JOIN votes v ON c.complaint_id = v.complaint_id 
+            WHERE v.voter_identifier = ?
+        """, (session['user'].get('email', request.remote_addr),))
+        supported = cursor.fetchall() or []
+        for c in supported: c['display_id'] = format_display_id(c['complaint_id'])
+        
+        conn.close()
+        return render_template('profile.html', complaints=user_complaints, supported=supported, active_page='profile')
+    except:
+        return render_template('profile.html', complaints=[], supported=[], active_page='profile')
+
+@app.route('/api/search')
+def api_search():
+    query = request.args.get('q', '').lower()
+    if not query: return jsonify([])
+    try:
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        search_term = f"%{query}%"
+        execute_db(cursor, """
+            SELECT * FROM complaints 
+            WHERE CAST(complaint_id AS TEXT) LIKE ? 
+               OR LOWER(district) LIKE ? 
+               OR LOWER(area) LIKE ? 
+               OR LOWER(issue_type) LIKE ?
+            LIMIT 10
+        """, (search_term, search_term, search_term, search_term))
+        results = cursor.fetchall() or []
+        conn.close()
+        for r in results:
+            r['display_id'] = format_display_id(r['complaint_id'])
+            if r.get('is_anonymous') in (1, True, '1', 'true', 'True'):
+                r['citizen_name'] = 'Anonymous Citizen'
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/notifications')
+def api_notifications():
+    if not session.get('user'): return jsonify([])
+    try:
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        execute_db(cursor, "SELECT * FROM notifications WHERE user_email = ? ORDER BY created_at DESC LIMIT 10", (session['user']['email'],))
+        notifs = cursor.fetchall() or []
+        execute_db(cursor, "UPDATE notifications SET is_read = 1 WHERE user_email = ?", (session['user']['email'],))
+        conn.commit(); conn.close()
+        return jsonify(notifs)
+    except: return jsonify([])
 
 if __name__ == "__main__":
     init_db(); app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

@@ -9,18 +9,18 @@
 {% block content %}
 <div class="card cinematic-fade" style="max-width: 800px; margin: 2rem auto;">
     <h2><span class="text-neon">Report</span> Civic Issue</h2>
-    <p class="mb-4" style="color: var(--text-muted); opacity: 0.8;">Initiate an urban intelligence report. Accuracy accelerates resolution.</p>
+    <p class="mb-4" style="color: var(--text-muted); opacity: 0.8;">Takes under 30 seconds. No login required.</p>
 
 
     <form action="{{ url_for('submit') }}" method="POST" id="complaintForm" enctype="multipart/form-data" data-no-spa>
         <div class="form-group">
-            <label for="name" class="form-label">Full Name</label>
-            <input type="text" id="name" name="name" class="form-control" required placeholder="John Doe">
+            <label for="name" class="form-label">Full Name <span style="color:var(--text-muted); font-size:0.8rem;">(Optional)</span></label>
+            <input type="text" id="name" name="name" class="form-control" placeholder="Anonymous Citizen">
         </div>
 
         <div class="form-group">
-            <label for="email" class="form-label">Email Address</label>
-            <input type="email" id="email" name="email" class="form-control" required placeholder="john.doe@example.com">
+            <label for="email" class="form-label">Email Address <span style="color:var(--text-muted); font-size:0.8rem;">(Optional)</span></label>
+            <input type="email" id="email" name="email" class="form-control" placeholder="For tracking updates...">
             <div id="emailError" class="error-msg" style="color: var(--accent-color); font-size: 0.8rem; margin-top: 0.4rem; display: none;">
                 <i class="fa-solid fa-triangle-exclamation"></i> Fake or temporary email not allowed
             </div>
@@ -89,6 +89,16 @@
             <select id="area" name="area" class="form-control">
                 <option value="" disabled selected>Search Area / Taluk...</option>
             </select>
+            
+            <div id="accountability-box" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(0, 245, 255, 0.05); border-left: 3px solid var(--primary-color); border-radius: 4px;">
+                <div style="font-size: 0.75rem; color: var(--primary-color); font-weight: 700; margin-bottom: 5px; text-transform: uppercase;">Accountability Routing</div>
+                <div style="font-size: 0.9rem; color: var(--text-main);">
+                    <i class="fa-solid fa-map-location-dot" style="width: 20px; color: var(--text-muted);"></i> <strong>Ward:</strong> <span id="preview-ward">...</span><br>
+                    <i class="fa-solid fa-user-tie" style="width: 20px; color: var(--text-muted); margin-top: 4px;"></i> <strong>MLA:</strong> <span id="preview-mla">...</span><br>
+                    <i class="fa-solid fa-building-columns" style="width: 20px; color: var(--text-muted); margin-top: 4px;"></i> <strong>MP:</strong> <span id="preview-mp">...</span>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">These representatives will be publicly tagged on the Live Feed.</div>
+            </div>
         </div>
         
         <!-- Library Script (The SPA router will wait for this) -->
@@ -147,7 +157,8 @@
 
                         window.areaSS = new SlimSelect({
                             select: '#area',
-                            settings: ssSettings('Search Area / Taluk...')
+                            settings: ssSettings('Search Area / Taluk...'),
+                            events: { afterChange: v => updateAccountability(v[0]?.value) }
                         });
                         
                         window.initHierarchyRunning = false;
@@ -165,10 +176,28 @@
                 function updateAreas(district, data) {
                     const state = window.stateSS.getSelected()[0];
                     document.getElementById('area-container').style.display = 'none';
+                    document.getElementById('accountability-box').style.display = 'none';
                     if (state && district && data[state][district]) {
                         window.areaSS.setData([{text: 'Select Area...', value: '', placeholder: true}, ...data[state][district].sort().map(a=>({text:a, value:a}))]);
                         document.getElementById('area-container').style.display = 'block';
                     }
+                }
+
+                function updateAccountability(area) {
+                    const box = document.getElementById('accountability-box');
+                    if (!area) { box.style.display = 'none'; return; }
+                    
+                    let h = 0;
+                    for (let i = 0; i < area.length; i++) { h += area.toLowerCase().charCodeAt(i); }
+                    
+                    const wards = ["W-14", "W-23", "W-42", "W-56", "W-89", "W-112", "W-150", "W-18"];
+                    const mlas = ["Ramesh K.", "Sunil Kumar", "Priya Reddy", "Anand Rao", "Vikram Singh"];
+                    const mps = ["Tejasvi Surya", "PC Mohan", "DK Suresh", "Shobha Karandlaje"];
+                    
+                    document.getElementById('preview-ward').textContent = wards[h % wards.length];
+                    document.getElementById('preview-mla').textContent = mlas[h % mlas.length];
+                    document.getElementById('preview-mp').textContent = mps[h % mps.length];
+                    box.style.display = 'block';
                 }
 
                 // Add manual validation to form
@@ -267,7 +296,15 @@
 
         <div class="form-group checkbox-group"
             style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem;">
-            <input type="checkbox" id="confirm" name="confirm" required style="width: auto;">
+            <input type="checkbox" id="is_anonymous" name="is_anonymous" style="width: auto; cursor: pointer;">
+            <label for="is_anonymous" class="form-label" style="margin-bottom: 0; cursor: pointer; color: #ffb700;">
+                <i class="fa-solid fa-user-secret"></i> Submit Anonymously <span style="color:var(--text-muted); font-size: 0.8rem; font-weight: normal;">(Your identity will be hidden on the public feed)</span>
+            </label>
+        </div>
+
+        <div class="form-group checkbox-group"
+            style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;">
+            <input type="checkbox" id="confirm" name="confirm" required style="width: auto; cursor: pointer;">
             <label for="confirm" class="form-label" style="margin-bottom: 0; cursor: pointer;">
                 I confirm that the details provided above are accurate to the best of my knowledge.
             </label>

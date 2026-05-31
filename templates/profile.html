@@ -100,10 +100,72 @@
         <a href="{{ url_for('index') }}" class="btn btn-secondary">
             <i class="fa-solid fa-house"></i> Home
         </a>
-        <a href="{{ url_for('logout') }}" class="btn" style="background: #c0392b; color: white;" data-no-spa>
+        <a href="{{ url_for('logout') }}" class="btn" style="background: #ff2a55; color: white; border: none; border-radius: 8px;" data-no-spa>
             <i class="fa-solid fa-right-from-bracket"></i> Sign Out
         </a>
     </div>
+
+    <!-- Citizen Statistics -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        <div class="card" style="text-align: center; border-top: 3px solid var(--primary-color);">
+            <div style="font-size: 2rem; color: var(--primary-color); font-weight: bold;">{{ complaints|length }}</div>
+            <div style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Total Submitted</div>
+        </div>
+        <div class="card" style="text-align: center; border-top: 3px solid #00ff88;">
+            {% set resolved_count = complaints | selectattr("status", "equalto", "Resolved") | list | length %}
+            <div style="font-size: 2rem; color: #00ff88; font-weight: bold;">{{ resolved_count }}</div>
+            <div style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Resolved Issues</div>
+        </div>
+        <div class="card" style="text-align: center; border-top: 3px solid #ffb700;">
+            <div style="font-size: 2rem; color: #ffb700; font-weight: bold;">{{ supported|length }}</div>
+            <div style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Community Supports</div>
+        </div>
+    </div>
+
+    <!-- My Complaints -->
+    <h3 style="margin: 2rem 0 1rem; color: var(--text-main);"><i class="fa-solid fa-list" style="color: var(--primary-color);"></i> My Submitted Complaints</h3>
+    {% if complaints %}
+        <div style="display: grid; gap: 1rem;">
+        {% for c in complaints %}
+            <div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;">
+                <div>
+                    <h4 style="margin-bottom: 0.2rem;"><a href="{{ url_for('track', id=c.display_id) }}" style="color: var(--primary-color); text-decoration: none;">{{ c.display_id }}</a> - {{ c.issue_type }}</h4>
+                    <div style="color: var(--text-muted); font-size: 0.85rem;">{{ c.area }} • {{ c.date_submitted.strftime('%Y-%m-%d') }}</div>
+                </div>
+                <div>
+                    <span class="status-badge status-{{ c.status.split(' ')[0] }}">{{ c.status }}</span>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <div class="card text-center" style="padding: 2rem;">
+            <i class="fa-regular fa-folder-open" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+            <p style="color: var(--text-muted);">You haven't submitted any complaints yet.</p>
+        </div>
+    {% endif %}
+
+    <!-- Supported History -->
+    <h3 style="margin: 2rem 0 1rem; color: var(--text-main);"><i class="fa-solid fa-hand-fist" style="color: #ffb700;"></i> My Supported Issues</h3>
+    {% if supported %}
+        <div style="display: grid; gap: 1rem;">
+        {% for c in supported %}
+            <div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-left: 3px solid #ffb700;">
+                <div>
+                    <h4 style="margin-bottom: 0.2rem;"><a href="{{ url_for('track', id=c.display_id) }}" style="color: var(--text-main); text-decoration: none;">{{ c.display_id }}</a> - {{ c.issue_type }}</h4>
+                    <div style="color: var(--text-muted); font-size: 0.85rem;">{{ c.area }}</div>
+                </div>
+                <div>
+                    <span class="status-badge status-{{ c.status.split(' ')[0] }}">{{ c.status }}</span>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <div class="card text-center" style="padding: 2rem;">
+            <p style="color: var(--text-muted);">You haven't supported any community issues yet.</p>
+        </div>
+    {% endif %}
 
 </div>
 {% endblock %}
