@@ -81,6 +81,7 @@ def dict_factory(cursor, row):
     return d
 
 @app.errorhandler(Exception)
+@app.errorhandler(500)
 def handle_exception(e):
     import traceback
     return "<pre>" + traceback.format_exc() + "</pre>", 500
