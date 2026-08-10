@@ -80,9 +80,10 @@ def dict_factory(cursor, row):
     for idx, col in enumerate(cursor.description): d[col[0]] = row[idx]
     return d
 
-@app.errorhandler(500)
-def internal_error(e):
-    return render_template('error_500.html', error=traceback.format_exc()), 500
+@app.errorhandler(Exception)
+def handle_exception(e):
+    import traceback
+    return "<pre>" + traceback.format_exc() + "</pre>", 500
 
 # --- HELPERS ---
 area_coords = {
