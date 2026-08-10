@@ -42,24 +42,73 @@ def allowed_file(filename):
 DATABASE_URL = os.getenv('DATABASE_URL')
 IS_POSTGRES = DATABASE_URL and DATABASE_URL.startswith('postgres')
 
+IS_POSTGRES_ACTIVE = IS_POSTGRES
+
 def get_db_connection():
-    if IS_POSTGRES:
+    global IS_POSTGRES_ACTIVE
+    if IS_POSTGRES_ACTIVE:
         try:
             protocol_fixed_url = DATABASE_URL.replace('postgres://', 'postgresql://')
             if 'sslmode' not in protocol_fixed_url:
                 protocol_fixed_url += '&sslmode=require' if '?' in protocol_fixed_url else '?sslmode=require'
-            conn = psycopg2.connect(protocol_fixed_url, cursor_factory=RealDictCursor, connect_timeout=10)
+            conn = psycopg2.connect(protocol_fixed_url, cursor_factory=RealDictCursor, connect_timeout=5)
             return conn
-        except Exception as e: raise e
-    else:
-        db_path = os.path.join('database', 'database.db')
-        os.makedirs('database', exist_ok=True)
-        conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES, check_same_thread=False)
-        conn.row_factory = dict_factory
-        return conn
+        except Exception as e:
+            print(f"Postgres Connection Failed: {e}. Falling back to SQLite.")
+            IS_POSTGRES_ACTIVE = False
+            
+    # SQLite Fallback
+    db_path = os.path.join('database', 'database.db')
+    os.makedirs('database', exist_ok=True)
+    conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES, check_same_thread=False)
+    conn.row_factory = dict_factory
+    
+    # Ensure tables exist on fallback
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS complaints (
+            complaint_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            citizen_name TEXT,
+            citizen_phone TEXT,
+            citizen_email TEXT,
+            state TEXT,
+            district TEXT,
+            area TEXT,
+            issue_type TEXT,
+            description TEXT,
+            image_path TEXT,
+            status TEXT DEFAULT 'Pending',
+            priority TEXT DEFAULT 'Medium',
+            assigned_department TEXT,
+            resolution_remarks TEXT,
+            date_submitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            date_resolved TIMESTAMP
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS votes (
+            vote_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            complaint_id INTEGER,
+            ip_address TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (complaint_id) REFERENCES complaints (complaint_id)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE,
+            password_hash TEXT,
+            role TEXT DEFAULT 'citizen',
+            name TEXT
+        )
+    ''')
+    conn.commit()
+    
+    return conn
 
 def execute_db(cursor, query, params=(), fetch_id=False):
-    if IS_POSTGRES:
+    if IS_POSTGRES_ACTIVE:
         query = query.replace('%', '%%').replace('?', '%s')
         if fetch_id and "INSERT" in query.upper() and "RETURNING" not in query.upper():
             q_lower = query.lower()
@@ -99,7 +148,7 @@ def format_display_id(c_id):
 def init_db():
     try:
         conn = get_db_connection(); cursor = conn.cursor()
-        if IS_POSTGRES:
+        if IS_POSTGRES_ACTIVE:
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name TEXT, email TEXT UNIQUE, password_hash TEXT, role TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS complaints (complaint_id SERIAL PRIMARY KEY, citizen_name TEXT, citizen_email TEXT, state TEXT, district TEXT, area TEXT, issue_type TEXT, description TEXT, image_path TEXT, latitude REAL, longitude REAL, status TEXT DEFAULT 'Pending', date_submitted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
             execute_db(cursor, "CREATE TABLE IF NOT EXISTS votes (vote_id SERIAL PRIMARY KEY, complaint_id INTEGER, voter_identifier TEXT, date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
@@ -128,7 +177,7 @@ def init_db():
         try_alter("ALTER TABLE complaints ADD COLUMN mla TEXT")
         try_alter("ALTER TABLE complaints ADD COLUMN mp TEXT")
         
-        if IS_POSTGRES:
+        if IS_POSTGRES_ACTIVE:
             cursor.execute("CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_email TEXT, message TEXT, type TEXT, is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
         else:
             cursor.execute("CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_email TEXT, message TEXT, type TEXT, is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
@@ -139,7 +188,7 @@ def init_db():
 
 def get_stats():
     try:
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         # Single query for all main counts
         execute_db(cursor, """
             SELECT 
@@ -185,7 +234,7 @@ def inject_user(): return dict(user=session.get('user'))
 @app.route('/')
 def index():
     try:
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         
         # Optimized query with LEFT JOIN for top priority
         execute_db(cursor, """
@@ -278,10 +327,10 @@ def analytics(): return render_template('analytics.html', stats=get_stats(), act
 @app.route('/api/analytics')
 def api_analytics():
     try:
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type"); by_issue = cursor.fetchall() or []
         execute_db(cursor, "SELECT area, COUNT(*) as count FROM complaints GROUP BY area"); by_area = cursor.fetchall() or []
-        if IS_POSTGRES: execute_db(cursor, "SELECT TO_CHAR(date_submitted, 'YYYY-MM') as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
+        if IS_POSTGRES_ACTIVE: execute_db(cursor, "SELECT TO_CHAR(date_submitted, 'YYYY-MM') as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
         else: execute_db(cursor, "SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
         trends = cursor.fetchall() or []; conn.close(); stats = get_stats()
         return jsonify({'by_issue': by_issue, 'by_area': by_area, 'trends': trends, 'total_complaints': stats['total'], 'resolved_complaints': stats['resolved_complaints'], 'issue_types': {'labels': [r['issue_type'] for r in by_issue], 'data': [r['count'] for r in by_issue]}, 'areas': {'labels': [r['area'] for r in by_area], 'data': [r['count'] for r in by_area]}, 'monthly': {'labels': [r['month'] for r in trends], 'data': [r['count'] for r in trends]}})
@@ -292,7 +341,7 @@ def api_analytics():
 @app.route('/get-complaints')
 def api_live_complaints():
     try:
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         execute_db(cursor, """
             SELECT c.*, COUNT(v.vote_id) as support_score 
             FROM complaints c 
@@ -313,7 +362,7 @@ def api_live_complaints():
 @app.route('/api/insights')
 def api_insights():
     try:
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         execute_db(cursor, "SELECT area, COUNT(*) as count FROM complaints GROUP BY area ORDER BY count DESC LIMIT 3"); top_areas = cursor.fetchall() or []
         execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type ORDER BY count DESC LIMIT 3"); top_issues = cursor.fetchall() or []; conn.close()
         return jsonify({'predictions': [f"Critical {a['area']} infrastructure vector indicates 85% risk" for a in top_areas], 'clusters': [f"{i['issue_type']} detected in {len(top_areas)} sectors" for i in top_issues], 'recommendations': ["Deploy preventative maintenance in high-risk zones", "Increase sector-wide infrastructure redundancy"]})
@@ -323,7 +372,7 @@ def api_insights():
 def vote_complaint(complaint_id):
     try:
         voter_id = request.remote_addr
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         # Check if already voted
         execute_db(cursor, "SELECT * FROM votes WHERE complaint_id = ? AND voter_identifier = ?", (complaint_id, voter_id))
         if cursor.fetchone():
@@ -344,7 +393,7 @@ def track(id=None):
         try:
             raw_id = re.sub(r'\D', '', search_id)
             if raw_id:
-                c_id = int(raw_id) - 1000; conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+                c_id = int(raw_id) - 1000; conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
                 execute_db(cursor, "SELECT c.*, r.action_taken, r.admin_image_path FROM complaints c LEFT JOIN resolution r ON c.complaint_id = r.complaint_id WHERE c.complaint_id = ?", (c_id,))
                 complaint = cursor.fetchone()
                 if complaint: complaint['display_id'] = format_display_id(complaint['complaint_id'])
@@ -356,7 +405,7 @@ def track(id=None):
 @admin_required
 def admin_dashboard():
     try:
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         execute_db(cursor, "SELECT * FROM complaints WHERE status = 'Pending' ORDER BY date_submitted DESC LIMIT 5"); urgent = cursor.fetchall() or []
         for c in urgent: c['display_id'] = format_display_id(c['complaint_id'])
         conn.close(); return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=urgent, alerts=[], active_page='dashboard')
@@ -366,7 +415,7 @@ def admin_dashboard():
 @admin_required
 def admin_complaints():
     try:
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         execute_db(cursor, "SELECT * FROM complaints ORDER BY date_submitted DESC"); complaints = cursor.fetchall() or []
         for c in complaints: c['display_id'] = format_display_id(c['complaint_id'])
         conn.close(); return render_template('admin/complaints.html', complaints=complaints, active_page='complaints')
@@ -380,7 +429,7 @@ def admin_analytics(): return render_template('admin/analytics.html', stats=get_
 @admin_required
 def admin_users():
     try:
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         execute_db(cursor, "SELECT * FROM users ORDER BY created_at DESC"); users = cursor.fetchall() or []; conn.close(); return render_template('admin/users.html', users=users, active_page='users')
     except: return render_template('admin/users.html', users=[], active_page='users')
 
@@ -412,7 +461,7 @@ def admin_update_status():
             action = data.get('action_taken')
             admin_image_filename = None
 
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         execute_db(cursor, "UPDATE complaints SET status = ? WHERE complaint_id = ?", (status, c_id))
         
         if action or admin_image_filename:
@@ -422,7 +471,7 @@ def admin_update_status():
                 if action: execute_db(cursor, "UPDATE resolution SET action_taken = ? WHERE complaint_id = ?", (action, c_id))
                 if admin_image_filename: execute_db(cursor, "UPDATE resolution SET admin_image_path = ? WHERE complaint_id = ?", (admin_image_filename, c_id))
             else:
-                if IS_POSTGRES:
+                if IS_POSTGRES_ACTIVE:
                     execute_db(cursor, "INSERT INTO resolution (complaint_id, action_taken, admin_image_path) VALUES (?, ?, ?) ON CONFLICT (complaint_id) DO UPDATE SET action_taken = EXCLUDED.action_taken, admin_image_path = COALESCE(EXCLUDED.admin_image_path, resolution.admin_image_path)", (c_id, action, admin_image_filename))
                 else:
                     execute_db(cursor, "INSERT INTO resolution (complaint_id, action_taken, admin_image_path) VALUES (?, ?, ?)", (c_id, action, admin_image_filename))
@@ -447,7 +496,7 @@ def admin_delete_complaint(id):
 def login():
     if request.method == 'POST':
         try:
-            email, password = request.form.get('email'), request.form.get('password'); conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+            email, password = request.form.get('email'), request.form.get('password'); conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
             execute_db(cursor, "SELECT * FROM users WHERE email = ?", (email,)); user = cursor.fetchone(); conn.close()
             if user and check_password_hash(user['password_hash'], password):
                 session['user'] = dict(user); return redirect(url_for('admin_dashboard' if user['role'] == 'admin' else 'index'))
@@ -458,7 +507,7 @@ def login():
 @app.route('/api/leaderboard', methods=['GET'])
 def api_leaderboard():
     try:
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         
         # Rank by MLA unresolved
         execute_db(cursor, """
@@ -516,7 +565,7 @@ def live_map(): return render_template('live_map.html', active_page='live_map')
 def profile():
     if not session.get('user'): return redirect(url_for('login'))
     try:
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         execute_db(cursor, "SELECT * FROM complaints WHERE citizen_email = ? ORDER BY date_submitted DESC", (session['user']['email'],))
         user_complaints = cursor.fetchall() or []
         for c in user_complaints: c['display_id'] = format_display_id(c['complaint_id'])
@@ -539,7 +588,7 @@ def api_search():
     query = request.args.get('q', '').lower()
     if not query: return jsonify([])
     try:
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         search_term = f"%{query}%"
         execute_db(cursor, """
             SELECT * FROM complaints 
@@ -563,7 +612,7 @@ def api_search():
 def api_notifications():
     if not session.get('user'): return jsonify([])
     try:
-        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES else conn.cursor()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         execute_db(cursor, "SELECT * FROM notifications WHERE user_email = ? ORDER BY created_at DESC LIMIT 10", (session['user']['email'],))
         notifs = cursor.fetchall() or []
         execute_db(cursor, "UPDATE notifications SET is_read = 1 WHERE user_email = ?", (session['user']['email'],))
