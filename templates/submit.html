@@ -187,18 +187,28 @@
                     const box = document.getElementById('accountability-box');
                     if (!area) { box.style.display = 'none'; return; }
                     
-                    let h = 0;
-                    for (let i = 0; i < area.length; i++) { h += area.toLowerCase().charCodeAt(i); }
-                    
-                    const wards = ["W-14", "W-23", "W-42", "W-56", "W-89", "W-112", "W-150", "W-18"];
-                    const mlas = ["Ramesh K.", "Sunil Kumar", "Priya Reddy", "Anand Rao", "Vikram Singh"];
-                    const mps = ["Tejasvi Surya", "PC Mohan", "DK Suresh", "Shobha Karandlaje"];
-                    
-                    document.getElementById('preview-ward').textContent = wards[h % wards.length];
-                    document.getElementById('preview-mla').textContent = mlas[h % mlas.length];
-                    document.getElementById('preview-mp').textContent = mps[h % mps.length];
+                    document.getElementById('preview-ward').textContent = "...";
+                    document.getElementById('preview-mla').textContent = "Loading...";
+                    document.getElementById('preview-mp').textContent = "Loading...";
                     box.style.display = 'block';
+                    
+                    const district = document.getElementById('district').value || '';
+                    
+                    fetch(`/api/resolve_accountability?area=${encodeURIComponent(area)}&district=${encodeURIComponent(district)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            document.getElementById('preview-ward').textContent = data.ward;
+                            document.getElementById('preview-mla').textContent = data.mla;
+                            document.getElementById('preview-mp').textContent = data.mp;
+                        })
+                        .catch(e => {
+                            console.error('Error fetching accountability:', e);
+                            document.getElementById('preview-ward').textContent = "Error";
+                            document.getElementById('preview-mla').textContent = "Error";
+                            document.getElementById('preview-mp').textContent = "Error";
+                        });
                 }
+
 
                 // Add manual validation to form
                 formEl.addEventListener('submit', function(e) {

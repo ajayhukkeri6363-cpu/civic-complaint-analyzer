@@ -1,0 +1,1157 @@
+{
+    "mlas": {
+        "nippani": {
+            "mla": "Shashikala Jolle",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "chikkodi-sadalga": {
+            "mla": "Ganesh Hukkeri",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "athani": {
+            "mla": "Laxman Savadi",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "kagwad": {
+            "mla": "Raju Kage",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "kudachi (sc)": {
+            "mla": "Mahendra Kallappa Tammannavar",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "raibag (sc)": {
+            "mla": "Duryodhan Aihole",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "hukkeri": {
+            "mla": "Nikhil Katti",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "arabhavi": {
+            "mla": "Balachandra Jarkiholi",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "gokak": {
+            "mla": "Ramesh Jarkiholi",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "yemkanmardi (st)": {
+            "mla": "Satish Jarkiholi",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "belgaum uttar": {
+            "mla": "Asif Sait",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "belgaum dakshin": {
+            "mla": "Abhay Patil",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "belgaum rural": {
+            "mla": "Lakshmi Hebbalkar",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "khanapur": {
+            "mla": "Vithal Halagekar",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "kittur": {
+            "mla": "Babasaheb Devanagouda Patil",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "bailhongal": {
+            "mla": "Mahantesh Koujalagi",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "saundatti yellamma": {
+            "mla": "Vishwas Vasant Vaidya",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "ramdurg": {
+            "mla": "Ashok Pattan",
+            "party": "nan",
+            "district": "Belagavi"
+        },
+        "mudhol (sc)": {
+            "mla": "R. B. Timmapur",
+            "party": "nan",
+            "district": "Bagalkot"
+        },
+        "terdal": {
+            "mla": "Siddu Savadi",
+            "party": "nan",
+            "district": "Bagalkot"
+        },
+        "jamkhandi": {
+            "mla": "Jagadish Gudagunti",
+            "party": "nan",
+            "district": "Bagalkot"
+        },
+        "bilgi": {
+            "mla": "J. T. Patil",
+            "party": "nan",
+            "district": "Bagalkot"
+        },
+        "badami": {
+            "mla": "Bhimsen Chimmanakatti",
+            "party": "nan",
+            "district": "Bagalkot"
+        },
+        "bagalkot": {
+            "mla": "U.H. Meti",
+            "party": "nan",
+            "district": "Bagalkot"
+        },
+        "hungund": {
+            "mla": "Vijayanand Kashappanavar",
+            "party": "nan",
+            "district": "Bagalkot"
+        },
+        "muddebihal": {
+            "mla": "C. S. Nadagouda",
+            "party": "nan",
+            "district": "Vijayapura"
+        },
+        "devar hippargi": {
+            "mla": "Rajugouda Patil",
+            "party": "nan",
+            "district": "Vijayapura"
+        },
+        "basavana bagevadi": {
+            "mla": "Shivanand Patil",
+            "party": "nan",
+            "district": "Vijayapura"
+        },
+        "babaleshwar": {
+            "mla": "M. B. Patil",
+            "party": "nan",
+            "district": "Vijayapura"
+        },
+        "bijapur city": {
+            "mla": "Basangouda Patil Yatnal",
+            "party": "nan",
+            "district": "Vijayapura"
+        },
+        "nagathan (sc)": {
+            "mla": "Katakadond Vittal Dondiba",
+            "party": "nan",
+            "district": "Vijayapura"
+        },
+        "indi": {
+            "mla": "Yashavant Rayagoud Patil",
+            "party": "nan",
+            "district": "Vijayapura"
+        },
+        "sindagi": {
+            "mla": "Ashok M. Managuli",
+            "party": "nan",
+            "district": "Vijayapura"
+        },
+        "afzalpur": {
+            "mla": "M. Y. Patil",
+            "party": "nan",
+            "district": "Kalaburagi"
+        },
+        "jevargi": {
+            "mla": "Ajay Singh",
+            "party": "nan",
+            "district": "Kalaburagi"
+        },
+        "shorapur (st)": {
+            "mla": "Raja Venugopal Naik",
+            "party": "nan",
+            "district": "Yadgir"
+        },
+        "shahapur": {
+            "mla": "Sharanabasappa Darshanapur",
+            "party": "nan",
+            "district": "Yadgir"
+        },
+        "yadgir": {
+            "mla": "Channareddy Patil Tunnur",
+            "party": "nan",
+            "district": "Yadgir"
+        },
+        "gurmitkal": {
+            "mla": "Sharanagouda Kandakur",
+            "party": "nan",
+            "district": "Yadgir"
+        },
+        "chittapur (sc)": {
+            "mla": "Priyank Kharge",
+            "party": "nan",
+            "district": "Kalaburagi"
+        },
+        "sedam": {
+            "mla": "Sharan Prakash Patil",
+            "party": "nan",
+            "district": "Kalaburagi"
+        },
+        "chincholi (sc)": {
+            "mla": "Avinash Jadhav",
+            "party": "nan",
+            "district": "Kalaburagi"
+        },
+        "gulbarga rural (sc)": {
+            "mla": "Basawaraj Mattimud",
+            "party": "nan",
+            "district": "Kalaburagi"
+        },
+        "gulbarga dakshin": {
+            "mla": "Allamprabhu Patil",
+            "party": "nan",
+            "district": "Kalaburagi"
+        },
+        "gulbarga uttar": {
+            "mla": "Kaneez Fathima",
+            "party": "nan",
+            "district": "Kalaburagi"
+        },
+        "aland": {
+            "mla": "B. R. Patil",
+            "party": "nan",
+            "district": "Kalaburagi"
+        },
+        "basavakalyan": {
+            "mla": "Sharanu Salagar",
+            "party": "nan",
+            "district": "Bidar"
+        },
+        "humnabad": {
+            "mla": "Siddu Patil",
+            "party": "nan",
+            "district": "Bidar"
+        },
+        "bidar south": {
+            "mla": "Shailendra Bedale",
+            "party": "nan",
+            "district": "Bidar"
+        },
+        "bidar": {
+            "mla": "Rahim Khan",
+            "party": "nan",
+            "district": "Bidar"
+        },
+        "bhalki": {
+            "mla": "Eshwara Khandre",
+            "party": "nan",
+            "district": "Bidar"
+        },
+        "aurad (sc)": {
+            "mla": "Prabhu Chauhan",
+            "party": "nan",
+            "district": "Bidar"
+        },
+        "raichur rural (st)": {
+            "mla": "Basanagouda Daddal",
+            "party": "nan",
+            "district": "Raichur"
+        },
+        "raichur": {
+            "mla": "Dr Shivaraj Patil",
+            "party": "nan",
+            "district": "Raichur"
+        },
+        "manvi (st)": {
+            "mla": "G. Hampayya Nayak",
+            "party": "nan",
+            "district": "Raichur"
+        },
+        "devadurga (st)": {
+            "mla": "Karemma",
+            "party": "nan",
+            "district": "Raichur"
+        },
+        "lingsugur (sc)": {
+            "mla": "Manappa D. Vajjal",
+            "party": "nan",
+            "district": "Raichur"
+        },
+        "sindhanur": {
+            "mla": "Hampanagouda Badarli",
+            "party": "nan",
+            "district": "Raichur"
+        },
+        "maski (st)": {
+            "mla": "Basanagouda Turvihal",
+            "party": "nan",
+            "district": "Raichur"
+        },
+        "kushtagi": {
+            "mla": "Doddanagouda Hanamagouda Patil",
+            "party": "nan",
+            "district": "Koppal"
+        },
+        "kanakagiri (sc)": {
+            "mla": "Tangadagi Shivaraj Sangappa",
+            "party": "nan",
+            "district": "Koppal"
+        },
+        "gangawati": {
+            "mla": "G. Janardhana Reddy",
+            "party": "nan",
+            "district": "Koppal"
+        },
+        "yelburga": {
+            "mla": "Basavaraj Rayareddy",
+            "party": "nan",
+            "district": "Koppal"
+        },
+        "koppal": {
+            "mla": "K. Raghavendra Hitnal",
+            "party": "nan",
+            "district": "Koppal"
+        },
+        "shirahatti (sc)": {
+            "mla": "Chandru Lamani",
+            "party": "nan",
+            "district": "Gadag"
+        },
+        "gadag": {
+            "mla": "H. K. Patil",
+            "party": "nan",
+            "district": "Gadag"
+        },
+        "ron": {
+            "mla": "Gurupadagouda Sanganagouda Patil",
+            "party": "nan",
+            "district": "Gadag"
+        },
+        "nargund": {
+            "mla": "C. C. Patil",
+            "party": "nan",
+            "district": "Gadag"
+        },
+        "navalgund": {
+            "mla": "Ningaraddi Hanamaraddi Konaraddi",
+            "party": "nan",
+            "district": "Dharwad"
+        },
+        "kundgol": {
+            "mla": "M. R. Patil",
+            "party": "nan",
+            "district": "Dharwad"
+        },
+        "dharwad": {
+            "mla": "Vinay Kulkarni",
+            "party": "nan",
+            "district": "Dharwad"
+        },
+        "hubli-dharwad east (sc)": {
+            "mla": "Abbayya Prasad",
+            "party": "nan",
+            "district": "Dharwad"
+        },
+        "hubli-dharwad central": {
+            "mla": "Mahesh Tenginakai",
+            "party": "nan",
+            "district": "Dharwad"
+        },
+        "hubli-dharwad west": {
+            "mla": "Arvind Bellad",
+            "party": "nan",
+            "district": "Dharwad"
+        },
+        "kalghatgi": {
+            "mla": "Santosh Lad",
+            "party": "nan",
+            "district": "Dharwad"
+        },
+        "haliyal": {
+            "mla": "R. V. Deshpande",
+            "party": "nan",
+            "district": "Uttara Kannada"
+        },
+        "karwar": {
+            "mla": "Satish Krishna Sail",
+            "party": "nan",
+            "district": "Uttara Kannada"
+        },
+        "kumta": {
+            "mla": "Dinakar Keshav Shetty",
+            "party": "nan",
+            "district": "Uttara Kannada"
+        },
+        "bhatkal": {
+            "mla": "Mankala Vaidya",
+            "party": "nan",
+            "district": "Uttara Kannada"
+        },
+        "sirsi": {
+            "mla": "Bhimanna T. Naik",
+            "party": "nan",
+            "district": "Uttara Kannada"
+        },
+        "yellapur": {
+            "mla": "Arbail Hebbar Shivaram",
+            "party": "nan",
+            "district": "Uttara Kannada"
+        },
+        "hangal": {
+            "mla": "Srinivas Mane",
+            "party": "nan",
+            "district": "Haveri"
+        },
+        "shiggaon": {
+            "mla": "Pathan Yasir Ahmed Khan",
+            "party": "nan",
+            "district": "Haveri"
+        },
+        "haveri (sc)": {
+            "mla": "Rudrappa Manappa Lamani",
+            "party": "nan",
+            "district": "Haveri"
+        },
+        "byadgi": {
+            "mla": "Basavaraj Neelappa Shivannanavar",
+            "party": "nan",
+            "district": "Haveri"
+        },
+        "hirekerur": {
+            "mla": "U. B. Banakar",
+            "party": "nan",
+            "district": "Haveri"
+        },
+        "ranebennur": {
+            "mla": "Prakash Koliwad",
+            "party": "nan",
+            "district": "Haveri"
+        },
+        "hoovina hadagali (sc)": {
+            "mla": "Krishna Nayaka",
+            "party": "nan",
+            "district": "Vijayanagara"
+        },
+        "hagaribommanahalli (sc)": {
+            "mla": "K. Nemaraja Naik",
+            "party": "nan",
+            "district": "Vijayanagara"
+        },
+        "vijayanagara": {
+            "mla": "H. R. Gaviyappa",
+            "party": "nan",
+            "district": "Vijayanagara"
+        },
+        "kampli (st)": {
+            "mla": "J. N. Ganesh",
+            "party": "nan",
+            "district": "Ballari"
+        },
+        "siruguppa (st)": {
+            "mla": "B. M. Nagaraja",
+            "party": "nan",
+            "district": "Ballari"
+        },
+        "bellary (st)": {
+            "mla": "B Nagendra",
+            "party": "nan",
+            "district": "Ballari"
+        },
+        "bellary city": {
+            "mla": "Nara Bharath Reddy",
+            "party": "nan",
+            "district": "Ballari"
+        },
+        "sandur (st)": {
+            "mla": "E. Annapoorna",
+            "party": "nan",
+            "district": "Ballari"
+        },
+        "kudligi (st)": {
+            "mla": "N. T. Srinivas",
+            "party": "nan",
+            "district": "Vijayanagara"
+        },
+        "molakalmuru (st)": {
+            "mla": "N. Y. Gopalakrishna",
+            "party": "nan",
+            "district": "Chitradurga"
+        },
+        "challakere (st)": {
+            "mla": "T. Raghumurthy",
+            "party": "nan",
+            "district": "Chitradurga"
+        },
+        "chitradurga": {
+            "mla": "K. C. Veerendra Puppy",
+            "party": "nan",
+            "district": "Chitradurga"
+        },
+        "hiriyur": {
+            "mla": "Vacant",
+            "party": "Vacant",
+            "district": "Chitradurga"
+        },
+        "hosadurga": {
+            "mla": "B. G. Govindappa",
+            "party": "nan",
+            "district": "Chitradurga"
+        },
+        "holalkere (sc)": {
+            "mla": "M. Chandrappa",
+            "party": "nan",
+            "district": "Chitradurga"
+        },
+        "jagalur (st)": {
+            "mla": "B. Devendrappa",
+            "party": "nan",
+            "district": "Davanagere"
+        },
+        "harapanahalli": {
+            "mla": "Latha Mallikarjun",
+            "party": "nan",
+            "district": "Vijayanagara"
+        },
+        "harihar": {
+            "mla": "B. P. Harish",
+            "party": "nan",
+            "district": "Davanagere"
+        },
+        "davanagere north": {
+            "mla": "S. S. Mallikarjun",
+            "party": "nan",
+            "district": "Davanagere"
+        },
+        "davanagere south": {
+            "mla": "Samarth Shamanur Mallikarjun",
+            "party": "nan",
+            "district": "Davanagere"
+        },
+        "mayakonda (sc)": {
+            "mla": "K. S. Basavanthappa",
+            "party": "nan",
+            "district": "Davanagere"
+        },
+        "channagiri": {
+            "mla": "Basavaraju V. Shivaganga",
+            "party": "nan",
+            "district": "Davanagere"
+        },
+        "honnali": {
+            "mla": "A. D. G. Shanthana Gowda",
+            "party": "nan",
+            "district": "Davanagere"
+        },
+        "shimoga rural (sc)": {
+            "mla": "Sharada Puryanaik",
+            "party": "nan",
+            "district": "Shimoga"
+        },
+        "bhadravati": {
+            "mla": "B. K. Sangameshwara",
+            "party": "nan",
+            "district": "Shimoga"
+        },
+        "shimoga": {
+            "mla": "Channabasappa",
+            "party": "nan",
+            "district": "Shimoga"
+        },
+        "tirthahalli": {
+            "mla": "Araga Jnanendra",
+            "party": "nan",
+            "district": "Shimoga"
+        },
+        "shikaripura": {
+            "mla": "B. Y. Vijayendra",
+            "party": "nan",
+            "district": "Shimoga"
+        },
+        "sorab": {
+            "mla": "Madhu Bangarappa",
+            "party": "nan",
+            "district": "Shimoga"
+        },
+        "sagar": {
+            "mla": "Gopala Krishna Beluru",
+            "party": "nan",
+            "district": "Shimoga"
+        },
+        "byndoor": {
+            "mla": "Gururaj Shetty Gantihole",
+            "party": "nan",
+            "district": "Udupi"
+        },
+        "kundapura": {
+            "mla": "A. Kiran Kumar Kodgi",
+            "party": "nan",
+            "district": "Udupi"
+        },
+        "udupi": {
+            "mla": "Yashpal A. Suvarna",
+            "party": "nan",
+            "district": "Udupi"
+        },
+        "kapu": {
+            "mla": "Gurme Suresh Shetty",
+            "party": "nan",
+            "district": "Udupi"
+        },
+        "karkala": {
+            "mla": "V. Sunil Kumar",
+            "party": "nan",
+            "district": "Udupi"
+        },
+        "sringeri": {
+            "mla": "T. D. Rajegowda",
+            "party": "nan",
+            "district": "Chikmagalur"
+        },
+        "mudigere (sc)": {
+            "mla": "Nayana Motamma",
+            "party": "nan",
+            "district": "Chikmagalur"
+        },
+        "chikmagalur": {
+            "mla": "H. D. Thammaiah",
+            "party": "nan",
+            "district": "Chikmagalur"
+        },
+        "tarikere": {
+            "mla": "G. H. Srinivasa",
+            "party": "nan",
+            "district": "Chikmagalur"
+        },
+        "kadur": {
+            "mla": "K. S. Anand",
+            "party": "nan",
+            "district": "Chikmagalur"
+        },
+        "chiknayakanhalli": {
+            "mla": "C. B. Suresh Babu",
+            "party": "nan",
+            "district": "Tumakuru"
+        },
+        "tiptur": {
+            "mla": "K. Shadakshari",
+            "party": "nan",
+            "district": "Tumakuru"
+        },
+        "turuvekere": {
+            "mla": "M. T. Krishnappa",
+            "party": "nan",
+            "district": "Tumakuru"
+        },
+        "kunigal": {
+            "mla": "H. D. Ranganath",
+            "party": "nan",
+            "district": "Tumakuru"
+        },
+        "tumkur city": {
+            "mla": "G. B. Jyothi Ganesh",
+            "party": "nan",
+            "district": "Tumakuru"
+        },
+        "tumkur rural": {
+            "mla": "B. Suresh Gowda",
+            "party": "nan",
+            "district": "Tumakuru"
+        },
+        "koratagere (sc)": {
+            "mla": "G. Parameshwara",
+            "party": "nan",
+            "district": "Tumakuru"
+        },
+        "gubbi": {
+            "mla": "S. R. Srinivas",
+            "party": "nan",
+            "district": "Tumakuru"
+        },
+        "sira": {
+            "mla": "T. B. Jayachandra",
+            "party": "nan",
+            "district": "Tumakuru"
+        },
+        "pavagada (sc)": {
+            "mla": "H. V. Venkatesh",
+            "party": "nan",
+            "district": "Tumakuru"
+        },
+        "madhugiri": {
+            "mla": "K. N. Rajanna",
+            "party": "nan",
+            "district": "Tumakuru"
+        },
+        "gauribidanur": {
+            "mla": "K. Puttaswamy Gowda",
+            "party": "nan",
+            "district": "Chikkaballapura"
+        },
+        "bagepalli": {
+            "mla": "S. N. Subbareddy",
+            "party": "nan",
+            "district": "Chikkaballapura"
+        },
+        "chikkaballapur": {
+            "mla": "Pradeep Eshwar",
+            "party": "nan",
+            "district": "Chikkaballapura"
+        },
+        "sidlaghatta": {
+            "mla": "B. N. Ravi Kumar",
+            "party": "nan",
+            "district": "Chikkaballapura"
+        },
+        "chintamani": {
+            "mla": "M. C. Sudhakar",
+            "party": "nan",
+            "district": "Chikkaballapura"
+        },
+        "srinivaspur": {
+            "mla": "G. K. Venkatashiva Reddy",
+            "party": "nan",
+            "district": "Kolar"
+        },
+        "mulbagal (sc)": {
+            "mla": "Samruddhi V. Manjunath",
+            "party": "nan",
+            "district": "Kolar"
+        },
+        "kolar gold field (sc)": {
+            "mla": "M. Roopakala",
+            "party": "nan",
+            "district": "Kolar"
+        },
+        "bangarapet (sc)": {
+            "mla": "S. N. Narayanaswamy",
+            "party": "nan",
+            "district": "Kolar"
+        },
+        "kolar": {
+            "mla": "Kothur G. Manjunath",
+            "party": "nan",
+            "district": "Kolar"
+        },
+        "malur": {
+            "mla": "K. Y. Nanjegowda",
+            "party": "nan",
+            "district": "Kolar"
+        },
+        "yelahanka": {
+            "mla": "S. R. Vishwanath",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "krishnarajapuram": {
+            "mla": "B.A. Basavaraja",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "byatarayanapura": {
+            "mla": "Krishna Byregowda",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "yeshwantpur": {
+            "mla": "S.T. Somashekar",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "rajarajeshwarinagar": {
+            "mla": "Munirathna",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "dasarahalli": {
+            "mla": "S. Muniraju",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "mahalakshmi layout": {
+            "mla": "K. Gopalaiah",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "malleshwaram": {
+            "mla": "C.N. Ashwath Narayan",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "hebbal": {
+            "mla": "Suresha B.S.",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "pulakeshinagar (sc)": {
+            "mla": "A.C. Srinivasa",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "sarvagnanagar": {
+            "mla": "K.J. George",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "c. v. raman nagar (sc)": {
+            "mla": "S. Raghu",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "shivajinagar": {
+            "mla": "Rizwan Arshad",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "shanti nagar": {
+            "mla": "N.A. Haris",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "gandhi nagar": {
+            "mla": "Dinesh Gundu Rao",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "rajaji nagar": {
+            "mla": "S. Suresh Kumar",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "govindraj nagar": {
+            "mla": "Priya Krishna",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "vijay nagar": {
+            "mla": "M. Krishnappa",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "chamrajpet": {
+            "mla": "B.Z. Zameer Ahmed Khan",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "chickpet": {
+            "mla": "Uday B. Garudachar",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "basavanagudi": {
+            "mla": "Ravi Subramanya L.A.",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "padmanabhanagar": {
+            "mla": "R. Ashoka",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "b.t.m. layout": {
+            "mla": "Ramalinga Reddy",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "jayanagar": {
+            "mla": "C. K. Ramamurthy",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "mahadevapura (sc)": {
+            "mla": "Manjula S.",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "bommanahalli": {
+            "mla": "Satish Reddy M.",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "bangalore south": {
+            "mla": "M. Krishnappa",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "anekal (sc)": {
+            "mla": "B. Shivanna",
+            "party": "nan",
+            "district": "Bangalore Urban"
+        },
+        "hoskote": {
+            "mla": "Sharath Kumar Bache Gowda",
+            "party": "nan",
+            "district": "Bangalore Rural"
+        },
+        "devanahalli (sc)": {
+            "mla": "K. H. Muniyappa",
+            "party": "nan",
+            "district": "Bangalore Rural"
+        },
+        "doddaballapur": {
+            "mla": "Dheeraj Muniraj",
+            "party": "nan",
+            "district": "Bangalore Rural"
+        },
+        "nelamangala (sc)": {
+            "mla": "N. Shreenivasaiah",
+            "party": "nan",
+            "district": "Bangalore Rural"
+        },
+        "magadi": {
+            "mla": "H. C. Balakrishna",
+            "party": "nan",
+            "district": "Ramanagara"
+        },
+        "ramanagara": {
+            "mla": "H. A. Iqbal Hussain",
+            "party": "nan",
+            "district": "Ramanagara"
+        },
+        "kanakapura": {
+            "mla": "D.K. Shivakumar",
+            "party": "nan",
+            "district": "Ramanagara"
+        },
+        "channapatna": {
+            "mla": "C. P. Yogeshwar",
+            "party": "nan",
+            "district": "Ramanagara"
+        },
+        "malavalli (sc)": {
+            "mla": "P. M. Narendraswamy",
+            "party": "nan",
+            "district": "Mandya"
+        },
+        "maddur": {
+            "mla": "K. M. Udaya",
+            "party": "nan",
+            "district": "Mandya"
+        },
+        "melukote": {
+            "mla": "Darshan Puttannaiah",
+            "party": "nan",
+            "district": "Mandya"
+        },
+        "mandya": {
+            "mla": "Ravikumar Gowda",
+            "party": "nan",
+            "district": "Mandya"
+        },
+        "shrirangapattana": {
+            "mla": "A. B. Ramesha Bandisiddegowda",
+            "party": "nan",
+            "district": "Mandya"
+        },
+        "nagamangala": {
+            "mla": "N. Chaluvaraya Swamy",
+            "party": "nan",
+            "district": "Mandya"
+        },
+        "krishnarajapet": {
+            "mla": "H. T. Manju",
+            "party": "nan",
+            "district": "Mandya"
+        },
+        "shravanabelagola": {
+            "mla": "C. N. Balakrishna",
+            "party": "nan",
+            "district": "Hassan"
+        },
+        "arsikere": {
+            "mla": "K. M. Shivalinge Gowda",
+            "party": "nan",
+            "district": "Hassan"
+        },
+        "belur": {
+            "mla": "H. K. Suresh",
+            "party": "nan",
+            "district": "Hassan"
+        },
+        "hassan": {
+            "mla": "Swaroop Prakash",
+            "party": "nan",
+            "district": "Hassan"
+        },
+        "holenarasipur": {
+            "mla": "H. D. Revanna",
+            "party": "nan",
+            "district": "Hassan"
+        },
+        "arkalgud": {
+            "mla": "A. Manju",
+            "party": "nan",
+            "district": "Hassan"
+        },
+        "sakleshpur (sc)": {
+            "mla": "Cement Manju",
+            "party": "nan",
+            "district": "Hassan"
+        },
+        "belthangady": {
+            "mla": "Harish Poonja",
+            "party": "nan",
+            "district": "Dakshina Kannada"
+        },
+        "moodabidri": {
+            "mla": "Umanatha Kotian",
+            "party": "nan",
+            "district": "Dakshina Kannada"
+        },
+        "mangalore city north": {
+            "mla": "Y. Bharath Shetty",
+            "party": "nan",
+            "district": "Dakshina Kannada"
+        },
+        "mangalore city south": {
+            "mla": "D. Vedavyasa Kamath",
+            "party": "nan",
+            "district": "Dakshina Kannada"
+        },
+        "mangalore": {
+            "mla": "U. T. Khader",
+            "party": "nan",
+            "district": "Dakshina Kannada"
+        },
+        "bantval": {
+            "mla": "U. Rajesh Naik",
+            "party": "nan",
+            "district": "Dakshina Kannada"
+        },
+        "puttur": {
+            "mla": "Ashok Kumar Rai",
+            "party": "nan",
+            "district": "Dakshina Kannada"
+        },
+        "sullia (sc)": {
+            "mla": "Bhagirathi Murulya",
+            "party": "nan",
+            "district": "Dakshina Kannada"
+        },
+        "madikeri": {
+            "mla": "Mantar Gowda",
+            "party": "nan",
+            "district": "Kodagu"
+        },
+        "virajpet": {
+            "mla": "A. S. Ponnanna",
+            "party": "nan",
+            "district": "Kodagu"
+        },
+        "periyapatna": {
+            "mla": "K. Venkatesh",
+            "party": "nan",
+            "district": "Mysore"
+        },
+        "krishnarajanagara": {
+            "mla": "D. Ravishankar",
+            "party": "nan",
+            "district": "Mysore"
+        },
+        "hunsur": {
+            "mla": "G. D. Harish Gowda",
+            "party": "nan",
+            "district": "Mysore"
+        },
+        "heggadadevankote (st)": {
+            "mla": "Anil Chikkamadhu",
+            "party": "nan",
+            "district": "Mysore"
+        },
+        "nanjangud (sc)": {
+            "mla": "Darshan Dhruvanarayana",
+            "party": "nan",
+            "district": "Mysore"
+        },
+        "chamundeshwari": {
+            "mla": "G. T. Devegowda",
+            "party": "nan",
+            "district": "Mysore"
+        },
+        "krishnaraja": {
+            "mla": "T. S. Srivatsa",
+            "party": "nan",
+            "district": "Mysore"
+        },
+        "chamaraja": {
+            "mla": "K. Harish Gowda",
+            "party": "nan",
+            "district": "Mysore"
+        },
+        "narasimharaja": {
+            "mla": "Tanveer Sait",
+            "party": "nan",
+            "district": "Mysore"
+        },
+        "varuna": {
+            "mla": "Siddaramaiah",
+            "party": "nan",
+            "district": "Mysore"
+        },
+        "t. narasipur (sc)": {
+            "mla": "H. C. Mahadevappa",
+            "party": "nan",
+            "district": "Mysore"
+        },
+        "hanur": {
+            "mla": "M. R. Manjunath",
+            "party": "nan",
+            "district": "Chamarajanagar"
+        },
+        "kollegal (sc)": {
+            "mla": "A. R. Krishnamurthy",
+            "party": "nan",
+            "district": "Chamarajanagar"
+        },
+        "chamarajanagar": {
+            "mla": "C. Puttarangashetty",
+            "party": "nan",
+            "district": "Chamarajanagar"
+        },
+        "gundlupet": {
+            "mla": "H M Ganesh Prasad",
+            "party": "nan",
+            "district": "Chamarajanagar"
+        }
+    },
+    "mps_by_district": {
+        "bagalkot": "P. C. Gaddigoudar",
+        "bangalore urban": "Tejasvi Surya",
+        "bangalore rural": "C. N. Manjunath",
+        "belagavi": "Jagadish Shettar",
+        "bellary": "E. Tukaram",
+        "bidar": "Sagar Khandre",
+        "bijapur": "Ramesh Jigajinagi",
+        "chamarajanagar": "Sunil Bose",
+        "chikkaballapur": "K. Sudhakar",
+        "chikkamagaluru": "Kota Srinivas Poojary",
+        "chitradurga": "Govind Karjol",
+        "dakshina kannada": "Brijesh Chowta",
+        "davanagere": "Prabha Mallikarjun",
+        "dharwad": "Pralhad Joshi",
+        "gadag": "Basavaraj Bommai",
+        "hassan": "Shreyas M. Patel",
+        "haveri": "Basavaraj Bommai",
+        "kalaburagi": "Radhakrishna Doddamani",
+        "kodagu": "Yaduveer Krishnadatta Chamaraja Wadiyar",
+        "kolar": "M. Mallesh Babu",
+        "koppal": "K. Rajashekar Basavaraj Hitnal",
+        "mandya": "H. D. Kumaraswamy",
+        "mysuru": "Yaduveer Krishnadatta Chamaraja Wadiyar",
+        "raichur": "G. Kumar Naik",
+        "ramanagara": "C. N. Manjunath",
+        "shivamogga": "B. Y. Raghavendra",
+        "tumakuru": "V. Somanna",
+        "udupi": "Kota Srinivas Poojary",
+        "uttara kannada": "Vishweshwar Hegde Kageri",
+        "vijayapura": "Ramesh Jigajinagi",
+        "yadgir": "Radhakrishna Doddamani"
+    }
+}

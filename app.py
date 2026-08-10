@@ -211,13 +211,49 @@ def get_stats():
         return {'total': total, 'resolved_complaints': resolved, 'active': active, 'pending': active, 'top_issue': top_issue}
     except: return {'total': 0, 'resolved_complaints': 0, 'active': 0, 'pending': 0, 'top_issue': "N/A"}
 
-def resolve_accountability(area_str):
+KARNATAKA_REPS = {}
+try:
+    if os.path.exists('karnataka_reps.json'):
+        with open('karnataka_reps.json', 'r') as f:
+            KARNATAKA_REPS = json.load(f)
+except Exception as e:
+    print("Error loading reps:", e)
+
+def resolve_accountability(area_str, district_str=""):
     if not area_str: return "W-Unknown", "Unassigned", "Unassigned"
-    h = sum(ord(c) for c in area_str.lower())
+    
+    area_lower = area_str.lower().strip()
+    district_lower = district_str.lower().strip()
+    
+    h = sum(ord(c) for c in area_lower)
     wards = ["W-14", "W-23", "W-42", "W-56", "W-89", "W-112", "W-150", "W-18"]
-    mlas = ["Ramesh K.", "Sunil Kumar", "Priya Reddy", "Anand Rao", "Vikram Singh"]
-    mps = ["Tejasvi Surya", "PC Mohan", "DK Suresh", "Shobha Karandlaje"]
-    return wards[h % len(wards)], mlas[h % len(mlas)], mps[h % len(mps)]
+    ward = wards[h % len(wards)]
+    
+    mla = "Pending Allocation"
+    mp = "Pending Allocation"
+    
+    if KARNATAKA_REPS:
+        # Match MP
+        for d, m in KARNATAKA_REPS.get('mps_by_district', {}).items():
+            if d in district_lower or district_lower in d:
+                mp = m
+                break
+        
+        # Match MLA
+        for c, m_data in KARNATAKA_REPS.get('mlas', {}).items():
+            c_clean = c.split('(')[0].strip()
+            if area_lower == c_clean or area_lower in c_clean or c_clean in area_lower:
+                mla = m_data['mla']
+                break
+                
+    if mla == "Pending Allocation":
+        mlas = ["Ramesh K.", "Sunil Kumar", "Priya Reddy", "Anand Rao", "Vikram Singh"]
+        mla = mlas[h % len(mlas)]
+    if mp == "Pending Allocation":
+        mps = ["Tejasvi Surya", "PC Mohan", "DK Suresh", "Shobha Karandlaje"]
+        mp = mps[h % len(mps)]
+        
+    return ward, mla, mp
 
 # --- AUTH ---
 def admin_required(f):
@@ -231,6 +267,13 @@ def admin_required(f):
 def inject_user(): return dict(user=session.get('user'))
 
 # --- ROUTES ---
+@app.route('/api/resolve_accountability')
+def api_resolve_accountability():
+    area = request.args.get('area', '')
+    district = request.args.get('district', '')
+    ward, mla, mp = resolve_accountability(area, district)
+    return jsonify({'ward': ward, 'mla': mla, 'mp': mp})
+
 @app.route('/')
 def index():
     try:
@@ -304,7 +347,7 @@ def submit():
             elif 'electr' in issue: assigned_department = 'Electricity Department'
             elif 'garbag' in issue: assigned_department = 'Garbage Department'
 
-            ward, mla, mp = resolve_accountability(p.get('area', ''))
+            ward, mla, mp = resolve_accountability(p.get('area', ''), p.get('district', ''))
             
             c_name = p.get('name', '').strip() or 'Anonymous Citizen'
             c_email = p.get('email', '').strip() or 'no-email@local'
