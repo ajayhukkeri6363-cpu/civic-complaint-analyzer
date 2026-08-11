@@ -244,13 +244,13 @@ def resolve_accountability(area_str, district_str=""):
                 mla = m
                 break
                 
-    # 2. Dynamic Wikipedia Fallback
+    # 2. Dynamic Wikipedia Fallback for MLA
     if mla == "Pending Allocation" or mla == "Unassigned":
         try:
             import requests
             import urllib.parse
-            # Look up MLA dynamically
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) CivicAnalyzer/1.0'}
+            # Look up MLA dynamically
             search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(area_str + ' Assembly constituency')}&utf8=&format=json"
             res = requests.get(search_url, headers=headers, timeout=3).json()
             if res.get('query', {}).get('search'):
@@ -265,15 +265,36 @@ def resolve_accountability(area_str, district_str=""):
                             mla = val
                             break
         except Exception as e:
-            print("Wikipedia fetch error:", e)
-
-    # 3. Last fallback to fake data
-    if mla == "Pending Allocation" or mla == "Unassigned":
-        mlas = ["Ramesh K.", "Sunil Kumar", "Priya Reddy", "Anand Rao", "Vikram Singh"]
-        mla = mlas[h % len(mlas)]
+            print("Wikipedia fetch error (MLA):", e)
+            
+    # 3. Dynamic Wikipedia Fallback for MP
     if mp == "Pending Allocation" or mp == "Unassigned":
-        mps = ["Tejasvi Surya", "PC Mohan", "DK Suresh", "Shobha Karandlaje"]
-        mp = mps[h % len(mps)]
+        try:
+            import requests
+            import urllib.parse
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) CivicAnalyzer/1.0'}
+            # Look up MP dynamically
+            search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(district_str + ' Lok Sabha constituency')}&utf8=&format=json"
+            res = requests.get(search_url, headers=headers, timeout=3).json()
+            if res.get('query', {}).get('search'):
+                pageid = res['query']['search'][0]['pageid']
+                page_url = f"https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&pageids={pageid}&format=json"
+                res2 = requests.get(page_url, headers=headers, timeout=3).json()
+                content = res2['query']['pages'][str(pageid)]['revisions'][0]['slots']['main']['*']
+                for line in content.split('\n'):
+                    if '| mp ' in line.lower() or '| member ' in line.lower():
+                        val = line.split('=')[-1].strip().split('<')[0].split('{')[0].replace('[[', '').replace(']]', '').split('|')[-1].strip()
+                        if len(val) > 3 and val.lower() != 'nan':
+                            mp = val
+                            break
+        except Exception as e:
+            print("Wikipedia fetch error (MP):", e)
+
+    # 4. If everything fails, do NOT show fake names, show an informative missing text
+    if mla == "Pending Allocation" or mla == "Unassigned":
+        mla = "MLA Data Unavailable"
+    if mp == "Pending Allocation" or mp == "Unassigned":
+        mp = "MP Data Unavailable"
         
     return ward, mla, mp
 
