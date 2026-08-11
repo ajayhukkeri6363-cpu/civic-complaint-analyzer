@@ -224,6 +224,7 @@ def resolve_accountability(area_str, district_str=""):
     
     area_lower = area_str.lower().strip()
     district_lower = district_str.lower().strip()
+    clean_area = area_str.replace(" City", "").replace(" Town", "").replace(" Rural", "").replace(" Urban", "")
     
     h = sum(ord(c) for c in area_lower)
     wards = ["W-14", "W-23", "W-42", "W-56", "W-89", "W-112", "W-150", "W-18"]
@@ -232,17 +233,29 @@ def resolve_accountability(area_str, district_str=""):
     mla = "Pending Allocation"
     mp = "Pending Allocation"
     
-    # 1. Try pre-existing JSON DB first
+    # 1. First check our preloaded JSON data (Fastest)
     if INDIA_REPS:
         for c, m in INDIA_REPS.get('mps', {}).items():
-            if district_lower in c or c in district_lower or area_lower in c or c in area_lower:
+            if area_lower == c or area_lower in c or c in area_lower:
                 mp = m
                 break
         
+        # MP District Fallback
+        if mp in ["Pending Allocation", "Unassigned", "MP Data Unavailable"]:
+            for c, m in INDIA_REPS.get('mps', {}).items():
+                if district_lower == c or district_lower in c or c in district_lower:
+                    mp = m
+                    break
+                    
         for c, m in INDIA_REPS.get('mlas', {}).items():
             if area_lower == c or area_lower in c or c in area_lower:
                 mla = m
                 break
+                
+        # MLA District Fallback
+        if mla in ["Pending Allocation", "Unassigned", "MLA Data Unavailable"]:
+            if district_lower in INDIA_REPS.get('district_mlas', {}):
+                mla = INDIA_REPS['district_mlas'][district_lower]
                 
     # 2. Dynamic Wikipedia Fallback for MLA
     if mla in ["Pending Allocation", "Unassigned", "MLA Data Unavailable"]:
@@ -281,11 +294,26 @@ def resolve_accountability(area_str, district_str=""):
             import requests
             import urllib.parse
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) CivicAnalyzer/1.0'}
-            # Look up MP dynamically
-            search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(district_str + ' Lok Sabha constituency')}&utf8=&format=json"
+            
+            # Try area first
+            search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(clean_area + ' Lok Sabha constituency')}&utf8=&format=json"
             res = requests.get(search_url, headers=headers, timeout=3).json()
+            
+            # If not found or top result isn't Lok Sabha, try district
+            if not res.get('query', {}).get('search') or 'Lok Sabha' not in res['query']['search'][0]['title']:
+                search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(district_str + ' Lok Sabha constituency')}&utf8=&format=json"
+                res = requests.get(search_url, headers=headers, timeout=3).json()
+                
             if res.get('query', {}).get('search'):
-                pageid = res['query']['search'][0]['pageid']
+                pageid = None
+                for item in res['query']['search']:
+                    if 'Lok Sabha' in item['title']:
+                        pageid = item['pageid']
+                        break
+                
+                if not pageid:
+                    pageid = res['query']['search'][0]['pageid']
+                    
                 page_url = f"https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&pageids={pageid}&format=json"
                 res2 = requests.get(page_url, headers=headers, timeout=3).json()
                 content = res2['query']['pages'][str(pageid)]['revisions'][0]['slots']['main']['*']
