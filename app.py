@@ -77,6 +77,8 @@ def get_db_connection():
             issue_type TEXT,
             description TEXT,
             image_path TEXT,
+            latitude REAL,
+            longitude REAL,
             status TEXT DEFAULT 'Pending',
             priority TEXT DEFAULT 'Medium',
             assigned_department TEXT,
@@ -176,6 +178,8 @@ def init_db():
         try_alter("ALTER TABLE complaints ADD COLUMN ward TEXT")
         try_alter("ALTER TABLE complaints ADD COLUMN mla TEXT")
         try_alter("ALTER TABLE complaints ADD COLUMN mp TEXT")
+        try_alter("ALTER TABLE complaints ADD COLUMN latitude REAL")
+        try_alter("ALTER TABLE complaints ADD COLUMN longitude REAL")
         
         if IS_POSTGRES_ACTIVE:
             cursor.execute("CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_email TEXT, message TEXT, type TEXT, is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
