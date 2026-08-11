@@ -747,5 +747,8 @@ def api_notifications():
         return jsonify(notifs)
     except: return jsonify([])
 
+# Initialize database on startup (works for gunicorn too)
+init_db()
+
 if __name__ == "__main__":
-    init_db(); app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
