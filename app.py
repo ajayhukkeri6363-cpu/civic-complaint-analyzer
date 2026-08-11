@@ -245,21 +245,29 @@ def resolve_accountability(area_str, district_str=""):
                 break
                 
     # 2. Dynamic Wikipedia Fallback for MLA
-    if mla == "Pending Allocation" or mla == "Unassigned":
+    if mla in ["Pending Allocation", "Unassigned", "MLA Data Unavailable"]:
         try:
             import requests
             import urllib.parse
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) CivicAnalyzer/1.0'}
             # Look up MLA dynamically
-            search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(area_str + ' Assembly constituency')}&utf8=&format=json"
+            clean_area = area_str.replace(' City', '').replace(' Town', '').replace(' Rural', '').replace(' Urban', '')
+            search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(clean_area + ' Assembly constituency')}&utf8=&format=json"
             res = requests.get(search_url, headers=headers, timeout=3).json()
+            
+            # Fallback to general search if assembly search fails
+            if not res.get('query', {}).get('search'):
+                search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(clean_area)}&utf8=&format=json"
+                res = requests.get(search_url, headers=headers, timeout=3).json()
+                
             if res.get('query', {}).get('search'):
                 pageid = res['query']['search'][0]['pageid']
                 page_url = f"https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&pageids={pageid}&format=json"
                 res2 = requests.get(page_url, headers=headers, timeout=3).json()
                 content = res2['query']['pages'][str(pageid)]['revisions'][0]['slots']['main']['*']
                 for line in content.split('\n'):
-                    if '| mla ' in line.lower() or '| member ' in line.lower():
+                    clean_line = line.lower().replace(' ', '')
+                    if clean_line.startswith('|mla=') or clean_line.startswith('|member='):
                         val = line.split('=')[-1].strip().split('<')[0].split('{')[0].replace('[[', '').replace(']]', '').split('|')[-1].strip()
                         if len(val) > 3 and val.lower() != 'nan':
                             mla = val
@@ -268,7 +276,7 @@ def resolve_accountability(area_str, district_str=""):
             print("Wikipedia fetch error (MLA):", e)
             
     # 3. Dynamic Wikipedia Fallback for MP
-    if mp == "Pending Allocation" or mp == "Unassigned":
+    if mp in ["Pending Allocation", "Unassigned", "MP Data Unavailable"]:
         try:
             import requests
             import urllib.parse
@@ -282,7 +290,8 @@ def resolve_accountability(area_str, district_str=""):
                 res2 = requests.get(page_url, headers=headers, timeout=3).json()
                 content = res2['query']['pages'][str(pageid)]['revisions'][0]['slots']['main']['*']
                 for line in content.split('\n'):
-                    if '| mp ' in line.lower() or '| member ' in line.lower():
+                    clean_line = line.lower().replace(' ', '')
+                    if clean_line.startswith('|mp=') or clean_line.startswith('|member='):
                         val = line.split('=')[-1].strip().split('<')[0].split('{')[0].replace('[[', '').replace(']]', '').split('|')[-1].strip()
                         if len(val) > 3 and val.lower() != 'nan':
                             mp = val
