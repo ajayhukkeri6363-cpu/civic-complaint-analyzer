@@ -671,9 +671,24 @@ def api_leaderboard():
 def register():
     if request.method == 'POST':
         try:
-            p = request.form; hashed_pw = generate_password_hash(p['password']); conn = get_db_connection(); cursor = conn.cursor(); execute_db(cursor, "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)", (p['name'], p['email'], hashed_pw, p.get('role', 'citizen')))
-            conn.commit(); conn.close(); flash('Account created! Please login.', 'success'); return redirect(url_for('login'))
-        except Exception as e: flash(f'Registration Error: {e}', 'error')
+            p = request.form
+            role = p.get('role', 'citizen')
+            
+            if role == 'admin':
+                if p.get('govt_id') != 'CIVIC-2006':
+                    flash('Invalid Admin Enrollment Key. Registration failed.', 'error')
+                    return render_template('register.html')
+                    
+            hashed_pw = generate_password_hash(p['password'])
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            execute_db(cursor, "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)", (p['name'], p['email'], hashed_pw, role))
+            conn.commit()
+            conn.close()
+            flash('Account created! Please login.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            flash(f'Registration Error: {e}', 'error')
     return render_template('register.html')
 
 @app.route('/logout')
