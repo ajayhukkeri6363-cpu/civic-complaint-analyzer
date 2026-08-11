@@ -211,11 +211,11 @@ def get_stats():
         return {'total': total, 'resolved_complaints': resolved, 'active': active, 'pending': active, 'top_issue': top_issue}
     except: return {'total': 0, 'resolved_complaints': 0, 'active': 0, 'pending': 0, 'top_issue': "N/A"}
 
-KARNATAKA_REPS = {}
+INDIA_REPS = {}
 try:
-    if os.path.exists('karnataka_reps.json'):
-        with open('karnataka_reps.json', 'r') as f:
-            KARNATAKA_REPS = json.load(f)
+    if os.path.exists('india_reps.json'):
+        with open('india_reps.json', 'r') as f:
+            INDIA_REPS = json.load(f)
 except Exception as e:
     print("Error loading reps:", e)
 
@@ -232,24 +232,46 @@ def resolve_accountability(area_str, district_str=""):
     mla = "Pending Allocation"
     mp = "Pending Allocation"
     
-    if KARNATAKA_REPS:
-        # Match MP
-        for d, m in KARNATAKA_REPS.get('mps_by_district', {}).items():
-            if d in district_lower or district_lower in d:
+    # 1. Try pre-existing JSON DB first
+    if INDIA_REPS:
+        for c, m in INDIA_REPS.get('mps', {}).items():
+            if district_lower in c or c in district_lower or area_lower in c or c in area_lower:
                 mp = m
                 break
         
-        # Match MLA
-        for c, m_data in KARNATAKA_REPS.get('mlas', {}).items():
-            c_clean = c.split('(')[0].strip()
-            if area_lower == c_clean or area_lower in c_clean or c_clean in area_lower:
-                mla = m_data['mla']
+        for c, m in INDIA_REPS.get('mlas', {}).items():
+            if area_lower == c or area_lower in c or c in area_lower:
+                mla = m
                 break
                 
-    if mla == "Pending Allocation":
+    # 2. Dynamic Wikipedia Fallback
+    if mla == "Pending Allocation" or mla == "Unassigned":
+        try:
+            import requests
+            import urllib.parse
+            # Look up MLA dynamically
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) CivicAnalyzer/1.0'}
+            search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(area_str + ' Assembly constituency')}&utf8=&format=json"
+            res = requests.get(search_url, headers=headers, timeout=3).json()
+            if res.get('query', {}).get('search'):
+                pageid = res['query']['search'][0]['pageid']
+                page_url = f"https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&pageids={pageid}&format=json"
+                res2 = requests.get(page_url, headers=headers, timeout=3).json()
+                content = res2['query']['pages'][str(pageid)]['revisions'][0]['slots']['main']['*']
+                for line in content.split('\n'):
+                    if '| mla ' in line.lower() or '| member ' in line.lower():
+                        val = line.split('=')[-1].strip().split('<')[0].split('{')[0].replace('[[', '').replace(']]', '').split('|')[-1].strip()
+                        if len(val) > 3 and val.lower() != 'nan':
+                            mla = val
+                            break
+        except Exception as e:
+            print("Wikipedia fetch error:", e)
+
+    # 3. Last fallback to fake data
+    if mla == "Pending Allocation" or mla == "Unassigned":
         mlas = ["Ramesh K.", "Sunil Kumar", "Priya Reddy", "Anand Rao", "Vikram Singh"]
         mla = mlas[h % len(mlas)]
-    if mp == "Pending Allocation":
+    if mp == "Pending Allocation" or mp == "Unassigned":
         mps = ["Tejasvi Surya", "PC Mohan", "DK Suresh", "Shobha Karandlaje"]
         mp = mps[h % len(mps)]
         
