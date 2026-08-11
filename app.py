@@ -399,10 +399,14 @@ def index():
             for c in cat: c['display_id'] = format_display_id(c['complaint_id'])
         
         conn.close()
-        return render_template('index.html', top_priority=top_priority, categories=categories, active_page='index')
+        
+        # Get live stats for hero section
+        live_stats = get_stats()
+        
+        return render_template('index.html', top_priority=top_priority, categories=categories, stats=live_stats, active_page='index')
     except Exception as e:
         print(f"Index Error: {e}")
-        return render_template('index.html', top_priority=[], categories={}, active_page='index')
+        return render_template('index.html', top_priority=[], categories={}, stats={'total': 0, 'resolved_complaints': 0, 'active': 0, 'pending': 0}, active_page='index')
 
 @app.route('/submit', methods=['GET', 'POST'])
 def submit():

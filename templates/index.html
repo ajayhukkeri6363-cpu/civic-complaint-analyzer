@@ -13,30 +13,146 @@
     <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to top, rgba(2,4,10,1) 0%, rgba(2,4,10,0.8) 20%, transparent 100%); z-index: -1;"></div>
     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100px; background: linear-gradient(to bottom, rgba(2,4,10,0.8) 0%, transparent 100%); z-index: -1;"></div>
 
-    <div class="hero-content cinematic-fade" style="max-width: 600px; z-index: 1;">
+    <div class="hero-content cinematic-fade" style="max-width: 800px; z-index: 1;">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;">
-            <div style="width: 20px; height: 3px; background: var(--accent-color);"></div>
-            <span style="color: var(--text-muted); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; font-size: 0.8rem;">Smart City Initiative</span>
+            <div style="width: 30px; height: 3px; background: var(--accent-color); box-shadow: 0 0 10px var(--accent-color);"></div>
+            <span style="color: var(--primary-color); font-weight: 800; letter-spacing: 3px; text-transform: uppercase; font-size: 0.9rem; text-shadow: 0 0 10px rgba(0,245,255,0.5);">Smart City Initiative</span>
         </div>
-        <h1 class="hero-title" style="font-size: 4rem; line-height: 1.1; margin-bottom: 1rem; color: var(--white); text-shadow: 0 5px 15px rgba(0,0,0,0.8);">
-            <span style="color: var(--primary-color);">Civic</span> Analyzer
+        <h1 class="hero-title" style="font-size: 4.5rem; line-height: 1.1; margin-bottom: 1.5rem; color: var(--white); text-shadow: 0 10px 30px rgba(0,0,0,0.9);">
+            Report. <span style="color: var(--primary-color);">Analyze.</span> Resolve.
         </h1>
-        <p class="hero-subtitle" style="font-size: 1.2rem; color: #ddd; margin-bottom: 2.5rem; text-shadow: 0 2px 10px rgba(0,0,0,0.8); line-height: 1.6;">
-            Advanced Public Issue Intelligence. A unified platform for citizens to report civic issues and for administrators to analyze patterns and streamline resolutions in real-time.
+        <p class="hero-subtitle" style="font-size: 1.3rem; color: #eef2f6; margin-bottom: 3rem; text-shadow: 0 5px 15px rgba(0,0,0,0.9); line-height: 1.6; max-width: 650px;">
+            A premium unified platform for citizens to report civic issues and for administrators to analyze patterns and streamline resolutions in real-time.
         </p>
-        <div class="hero-btn-group" style="display: flex; gap: 1rem;">
-            <a href="{{ url_for('submit') }}" class="btn" style="background: var(--white); color: #000; font-weight: 800; border-radius: 4px; padding: 0.8rem 2rem; box-shadow: 0 4px 15px rgba(255,255,255,0.2); transition: all 0.3s;">
-                <i class="fa-solid fa-bullhorn"></i> Report Issue
+        
+        <div class="hero-btn-group" style="display: flex; gap: 1.5rem; margin-bottom: 3rem;">
+            <a href="{{ url_for('submit') }}" class="btn" style="background: var(--primary-color); color: #000; font-weight: 800; border-radius: 8px; padding: 1rem 2.5rem; box-shadow: 0 10px 25px rgba(0,245,255,0.4); transition: all 0.3s; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px;">
+                <i class="fa-solid fa-bullhorn"></i> Report an Issue
             </a>
-            <a href="{{ url_for('analytics') }}" class="btn" style="background: rgba(109, 109, 110, 0.7); color: white; border-radius: 4px; padding: 0.8rem 2rem; backdrop-filter: blur(5px); transition: all 0.3s;">
-                <i class="fa-solid fa-circle-info"></i> More Info
+            <a href="{{ url_for('track', id='') }}" class="btn glass-btn" style="background: rgba(255, 255, 255, 0.1); color: white; border-radius: 8px; padding: 1rem 2.5rem; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px;">
+                <i class="fa-solid fa-satellite-dish"></i> Track Complaint
             </a>
+        </div>
+
+        <!-- Hero Stats Bar -->
+        <div class="hero-stats" style="display: flex; gap: 2rem; background: rgba(10, 15, 30, 0.6); backdrop-filter: blur(15px); padding: 1.5rem 2.5rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); display: inline-flex; box-shadow: 0 15px 35px rgba(0,0,0,0.6);">
+            <div class="stat-item" style="text-align: center;">
+                <h3 style="color: var(--white); font-size: 2rem; margin: 0; font-family: 'Space Grotesk', sans-serif;">{{ stats.total }}</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Total Complaints</p>
+            </div>
+            <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
+            <div class="stat-item" style="text-align: center;">
+                <h3 style="color: var(--success-color); font-size: 2rem; margin: 0; font-family: 'Space Grotesk', sans-serif; text-shadow: 0 0 15px rgba(0,255,163,0.4);">{{ stats.resolved_complaints }}</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Resolved Issues</p>
+            </div>
+            <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
+            <div class="stat-item" style="text-align: center;">
+                <h3 style="color: var(--warning-color); font-size: 2rem; margin: 0; font-family: 'Space Grotesk', sans-serif; text-shadow: 0 0 15px rgba(255,204,0,0.4);">{{ stats.active }}</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Active Complaints</p>
+            </div>
         </div>
     </div>
 </section>
 
+<!-- Features Grid (BookMyShow Style) -->
+<div class="container" style="padding: 0 4%; margin-top: 4rem; margin-bottom: 4rem; z-index: 10; position: relative;">
+    <h2 style="font-size: 1.8rem; color: var(--white); font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-shapes" style="color: var(--primary-color);"></i> Civic Tools
+    </h2>
+    <div class="feature-grid">
+        <a href="{{ url_for('submit') }}" class="feature-card glass-widget">
+            <div class="icon-wrapper"><i class="fa-solid fa-bullhorn" style="color: var(--accent-color);"></i></div>
+            <h3>Report Issue</h3>
+            <p>Log civic complaints directly to authorities.</p>
+        </a>
+        <a href="{{ url_for('track', id='') }}" class="feature-card glass-widget">
+            <div class="icon-wrapper"><i class="fa-solid fa-satellite-dish" style="color: var(--success-color);"></i></div>
+            <h3>Track Status</h3>
+            <p>Get live updates on your reported issues.</p>
+        </a>
+        <a href="{{ url_for('live_map') }}" class="feature-card glass-widget">
+            <div class="icon-wrapper"><i class="fa-solid fa-map-location-dot" style="color: var(--warning-color);"></i></div>
+            <h3>Live Map</h3>
+            <p>Explore complaints visually across the city.</p>
+        </a>
+        <a href="{{ url_for('analytics') }}" class="feature-card glass-widget">
+            <div class="icon-wrapper"><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i></div>
+            <h3>Analytics</h3>
+            <p>Deep dive into resolution metrics and data.</p>
+        </a>
+    </div>
+</div>
+
+<!-- How It Works (Timeline) -->
+<div class="container timeline-container" style="padding: 2rem 4%; margin-bottom: 5rem;">
+    <h2 style="font-size: 1.8rem; color: var(--white); font-weight: 700; text-align: center; margin-bottom: 3rem;">How It Works</h2>
+    <div style="display: flex; justify-content: space-between; position: relative; flex-wrap: wrap; gap: 2rem;" class="timeline-wrapper">
+        <div class="timeline-line" style="position: absolute; top: 30px; left: 10%; right: 10%; height: 3px; background: rgba(255,255,255,0.1); z-index: 0;"></div>
+        
+        <div class="timeline-step" style="flex: 1; text-align: center; z-index: 1; min-width: 200px;">
+            <div class="step-icon" style="width: 60px; height: 60px; border-radius: 50%; background: var(--bg-dark); border: 2px solid var(--primary-color); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 0 15px rgba(0,245,255,0.3); font-size: 1.5rem;"><i class="fa-solid fa-mobile-screen" style="color: var(--white);"></i></div>
+            <h4 style="color: var(--white); margin-bottom: 0.5rem;">1. Report</h4>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Snap a photo and submit your issue instantly.</p>
+        </div>
+        
+        <div class="timeline-step" style="flex: 1; text-align: center; z-index: 1; min-width: 200px;">
+            <div class="step-icon" style="width: 60px; height: 60px; border-radius: 50%; background: var(--bg-dark); border: 2px solid var(--secondary-color); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 0 15px rgba(112,0,255,0.3); font-size: 1.5rem;"><i class="fa-solid fa-brain" style="color: var(--white);"></i></div>
+            <h4 style="color: var(--white); margin-bottom: 0.5rem;">2. AI Analysis</h4>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">AI auto-categorizes and detects duplicates.</p>
+        </div>
+        
+        <div class="timeline-step" style="flex: 1; text-align: center; z-index: 1; min-width: 200px;">
+            <div class="step-icon" style="width: 60px; height: 60px; border-radius: 50%; background: var(--bg-dark); border: 2px solid var(--warning-color); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 0 15px rgba(255,204,0,0.3); font-size: 1.5rem;"><i class="fa-solid fa-building-columns" style="color: var(--white);"></i></div>
+            <h4 style="color: var(--white); margin-bottom: 0.5rem;">3. Authorities</h4>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Routed to the correct civic department.</p>
+        </div>
+        
+        <div class="timeline-step" style="flex: 1; text-align: center; z-index: 1; min-width: 200px;">
+            <div class="step-icon" style="width: 60px; height: 60px; border-radius: 50%; background: var(--bg-dark); border: 2px solid var(--success-color); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 0 15px rgba(0,255,163,0.3); font-size: 1.5rem;"><i class="fa-solid fa-check-double" style="color: var(--white);"></i></div>
+            <h4 style="color: var(--white); margin-bottom: 0.5rem;">4. Resolution</h4>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Track live progress until the issue is fixed.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Map Preview Banner -->
+<div class="map-preview-banner" style="position: relative; height: 350px; display: flex; align-items: center; justify-content: center; margin-bottom: 5rem; overflow: hidden; box-shadow: inset 0 0 50px rgba(0,0,0,0.8);">
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('/static/img/hero_bg.png') no-repeat center center/cover; filter: blur(5px) brightness(0.4) sepia(1) hue-rotate(180deg) saturate(2); z-index: 1;"></div>
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to right, rgba(2,4,10,0.9), transparent, rgba(2,4,10,0.9)); z-index: 2;"></div>
+    
+    <div style="z-index: 3; text-align: center; padding: 2rem; background: rgba(5,10,20,0.6); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
+        <h2 style="font-size: 2.2rem; color: var(--white); margin-bottom: 1rem;"><i class="fa-solid fa-earth-asia" style="color: var(--primary-color);"></i> Live Issue Map</h2>
+        <p style="color: #ddd; margin-bottom: 1.5rem; max-width: 500px;">Visualize civic health in real-time. See active complaints, heatmaps, and resolution zones across the city.</p>
+        <a href="{{ url_for('live_map') }}" class="btn" style="background: var(--white); color: #000; font-weight: 800; border-radius: 30px; padding: 0.8rem 2.5rem; transition: all 0.3s; box-shadow: 0 5px 20px rgba(255,255,255,0.2);">Explore Map <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+</div>
+
+<!-- Analytics Preview -->
+<div class="container" style="padding: 0 4%; margin-bottom: 5rem;">
+    <div class="glass-widget" style="display: flex; flex-wrap: wrap; align-items: center; gap: 3rem; padding: 3rem; background: linear-gradient(135deg, rgba(20,20,20,0.8), rgba(5,10,20,0.9));">
+        <div style="flex: 1; min-width: 300px;">
+            <h2 style="font-size: 2rem; color: var(--white); margin-bottom: 1rem;"><i class="fa-solid fa-chart-pie" style="color: var(--secondary-color);"></i> Civic Analytics</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1.1rem;">Dive deep into transparent government data. We provide real-time metrics on department efficiency, issue resolution speeds, and geographical trends.</p>
+            <a href="{{ url_for('analytics') }}" class="btn glass-btn" style="border: 1px solid var(--secondary-color); color: var(--secondary-color); padding: 0.8rem 2rem; border-radius: 8px;">View Full Dashboard</a>
+        </div>
+        <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 1rem;">
+            <!-- CSS Mock Charts -->
+            <div style="width: 100%; height: 12px; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; position: relative;">
+                <div style="width: 75%; height: 100%; background: linear-gradient(90deg, var(--primary-color), var(--success-color));"></div>
+            </div>
+            <p style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: -8px;">Resolution Rate (75%)</p>
+            
+            <div style="width: 100%; height: 12px; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; position: relative;">
+                <div style="width: 40%; height: 100%; background: linear-gradient(90deg, var(--warning-color), var(--accent-color));"></div>
+            </div>
+            <p style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: -8px;">High Priority Issues (40%)</p>
+        </div>
+    </div>
+</div>
+
 <!-- AI Civic Insights (BookMyShow Style Glass Widgets) -->
-<div class="container" style="position: relative; z-index: 5; margin-top: -80px; margin-bottom: 3rem;">
+<div class="container" style="position: relative; z-index: 5; margin-bottom: 3rem; padding: 0 4%;">
+    <h2 style="font-size: 1.8rem; color: var(--white); font-weight: 700; margin-bottom: 1.5rem; padding-left: 0.5rem;"><i class="fa-solid fa-robot" style="color: var(--primary-color);"></i> Live Civic Data</h2>
     <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;" id="aiInsightsContainer">
         <!-- Most Affected -->
         <div class="glass-widget" style="flex: 1; min-width: 280px;">
