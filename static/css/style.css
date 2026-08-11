@@ -28,7 +28,7 @@
 }
 
 body {
-    font-family: 'Inter', sans-serif !important;
+    font-family: 'Outfit', sans-serif !important;
     background: radial-gradient(circle at top right, #0a1020, #02040a) !important;
     background-attachment: fixed !important;
     color: var(--text-main) !important;
@@ -71,7 +71,7 @@ body::after {
 
 /* Typography */
 h1, h2, h3, h4 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     text-transform: uppercase;
     letter-spacing: 2px;
     color: var(--primary-color);
@@ -1372,4 +1372,50 @@ main {
 @keyframes slideUpFade {
     from { opacity: 0; transform: translateY(30px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- CINEMATIC V2.5 UPGRADES --- */
+.glass-widget {
+    background: rgba(20, 20, 20, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+}
+
+.glass-widget::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.05), transparent);
+    transform: skewX(-25deg);
+    transition: all 0.7s;
+}
+
+.glass-widget:hover::before {
+    animation: shine 1.5s forwards;
+}
+
+@keyframes shine {
+    100% { left: 200%; }
+}
+
+.glass-widget:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 245, 255, 0.15), inset 0 0 20px rgba(0, 245, 255, 0.05);
+    border-color: rgba(0, 245, 255, 0.4);
+}
+
+.hero-title span {
+    animation: neonPulse 3s infinite alternate;
+}
+
+@keyframes neonPulse {
+    0% { text-shadow: 0 0 10px rgba(0, 245, 255, 0.5); }
+    100% { text-shadow: 0 0 25px rgba(0, 245, 255, 1), 0 0 50px rgba(0, 245, 255, 0.8); }
 }
