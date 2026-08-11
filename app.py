@@ -91,8 +91,8 @@ def get_db_connection():
         CREATE TABLE IF NOT EXISTS votes (
             vote_id INTEGER PRIMARY KEY AUTOINCREMENT,
             complaint_id INTEGER,
-            ip_address TEXT,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            voter_identifier TEXT,
+            date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (complaint_id) REFERENCES complaints (complaint_id)
         )
     ''')
@@ -180,6 +180,8 @@ def init_db():
         try_alter("ALTER TABLE complaints ADD COLUMN mp TEXT")
         try_alter("ALTER TABLE complaints ADD COLUMN latitude REAL")
         try_alter("ALTER TABLE complaints ADD COLUMN longitude REAL")
+        try_alter("ALTER TABLE votes ADD COLUMN voter_identifier TEXT")
+        try_alter("ALTER TABLE votes ADD COLUMN date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
         
         if IS_POSTGRES_ACTIVE:
             cursor.execute("CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_email TEXT, message TEXT, type TEXT, is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
