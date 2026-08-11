@@ -195,6 +195,18 @@
         });
         // Toggle display using the 'show' class trick
         document.addEventListener('DOMContentLoaded', function() {
+            // Navbar Scroll Effect
+            const header = document.querySelector('.site-header');
+            if (header) {
+                window.addEventListener('scroll', () => {
+                    if (window.scrollY > 50) {
+                        header.classList.add('scrolled');
+                    } else {
+                        header.classList.remove('scrolled');
+                    }
+                });
+            }
+
             const dropdown = document.getElementById('userDropdown');
             if (dropdown) {
                 const observer = new MutationObserver(() => {

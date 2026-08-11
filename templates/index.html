@@ -3,233 +3,378 @@
 {% block title %}Home - Civic Complaint Analyzer{% endblock %}
 
 {% block content %}
-<section class="hero cinematic-hero">
-    <div class="hero-glass-card cinematic-fade">
-        <h1 class="hero-title">
-            <span class="text-neon">Civic</span> Analyzer
-        </h1>
-        <p class="hero-subtitle">Advanced Public Issue Intelligence. A unified platform for citizens to report civic issues and for administrators to analyze patterns and streamline resolutions.</p>
-        <div class="hero-btn-group">
-            <a href="{{ url_for('submit') }}" class="btn btn-primary btn-glow">
-                <i class="fa-solid fa-bullhorn"></i> Report Issue Now
-            </a>
-            <a href="{{ url_for('analytics') }}" class="btn btn-secondary btn-glass">
-                <i class="fa-solid fa-chart-line"></i> View City Analytics
-            </a>
+<!-- Immersive Cinematic Hero -->
+<section class="hero cinematic-hero" style="position: relative; height: 85vh; min-height: 600px; display: flex; align-items: center; justify-content: flex-start; padding-left: 5%; overflow: hidden; margin-top: -80px; margin-bottom: 2rem;">
+    <!-- Background Image -->
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('/static/img/hero_bg.png') no-repeat center center/cover; z-index: -2;"></div>
+    
+    <!-- Netflix-style Vignette/Gradient Overlays -->
+    <div style="position: absolute; top: 0; left: 0; width: 50%; height: 100%; background: linear-gradient(to right, rgba(2,4,10,0.95) 0%, rgba(2,4,10,0.6) 50%, transparent 100%); z-index: -1;"></div>
+    <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to top, rgba(2,4,10,1) 0%, rgba(2,4,10,0.8) 20%, transparent 100%); z-index: -1;"></div>
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100px; background: linear-gradient(to bottom, rgba(2,4,10,0.8) 0%, transparent 100%); z-index: -1;"></div>
+
+    <div class="hero-content cinematic-fade" style="max-width: 600px; z-index: 1;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;">
+            <div style="width: 20px; height: 3px; background: var(--accent-color);"></div>
+            <span style="color: var(--text-muted); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; font-size: 0.8rem;">Smart City Initiative</span>
         </div>
+        <h1 class="hero-title" style="font-size: 4rem; line-height: 1.1; margin-bottom: 1rem; color: var(--white); text-shadow: 0 5px 15px rgba(0,0,0,0.8);">
+            <span style="color: var(--primary-color);">Civic</span> Analyzer
+        </h1>
+        <p class="hero-subtitle" style="font-size: 1.2rem; color: #ddd; margin-bottom: 2.5rem; text-shadow: 0 2px 10px rgba(0,0,0,0.8); line-height: 1.6;">
+            Advanced Public Issue Intelligence. A unified platform for citizens to report civic issues and for administrators to analyze patterns and streamline resolutions in real-time.
+        </p>
+        <div class="hero-btn-group" style="display: flex; gap: 1rem;">
+            <a href="{{ url_for('submit') }}" class="btn" style="background: var(--white); color: #000; font-weight: 800; border-radius: 4px; padding: 0.8rem 2rem; box-shadow: 0 4px 15px rgba(255,255,255,0.2); transition: all 0.3s;">
+                <i class="fa-solid fa-bullhorn"></i> Report Issue
+            </a>
+            <a href="{{ url_for('analytics') }}" class="btn" style="background: rgba(109, 109, 110, 0.7); color: white; border-radius: 4px; padding: 0.8rem 2rem; backdrop-filter: blur(5px); transition: all 0.3s;">
+                <i class="fa-solid fa-circle-info"></i> More Info
+            </a>
         </div>
     </div>
 </section>
 
-<!-- AI Civic Insights -->
-<div class="insights-section mt-4" style="background: rgba(0, 245, 255, 0.05); border: 1px solid rgba(0, 245, 255, 0.2); border-radius: 12px; padding: 1.5rem; position: relative; overflow: hidden;">
-    <div style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; background: var(--primary-color); filter: blur(50px); opacity: 0.3;"></div>
-    <h3 style="color: var(--primary-color); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
-        <i class="fa-solid fa-robot"></i> AI Civic Insights
-    </h3>
-    <div id="aiInsightsContainer" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 200px; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-            <h4 style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-location-crosshairs" style="color: #ffb700;"></i> Most Affected Locations</h4>
-            <ul id="aiTopAreas" style="color: var(--text-muted); font-size: 0.85rem; padding-left: 1.2rem; margin: 0; line-height: 1.6;"><li>Analyzing...</li></ul>
-        </div>
-        <div style="flex: 1; min-width: 200px; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-            <h4 style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-chart-pie" style="color: #3498db;"></i> Recurring Patterns</h4>
-            <ul id="aiTopIssues" style="color: var(--text-muted); font-size: 0.85rem; padding-left: 1.2rem; margin: 0; line-height: 1.6;"><li>Analyzing...</li></ul>
-        </div>
-        <div style="flex: 1; min-width: 200px; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-            <h4 style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-triangle-exclamation" style="color: #ff2a55;"></i> Predicted High-Risk Zones</h4>
-            <ul id="aiPredictions" style="color: #ff2a55; font-size: 0.85rem; padding-left: 1.2rem; margin: 0; line-height: 1.6;"><li>Analyzing...</li></ul>
-        </div>
-    </div>
-</div>
-
-
-
-<div class="priority-section mt-4">
-    <div class="dashboard-header">
-        <h2><i class="fa-solid fa-fire-flame-curved"></i> Top Priority Issues</h2>
-        <p style="color: var(--text-muted);">Issues with the most crowd-priority votes from citizens.</p>
-    </div>
-    
-    {% if top_priority %}
-        <div class="netflix-slider" style="margin-top: 1.5rem;">
-            {% for complaint in top_priority %}
-            <div class="card netflix-card">
-                <div class="vote-control" style="background: rgba(0, 245, 255, 0.1); border-radius: 8px; padding: 0.5rem; text-align: center; border: 1px solid rgba(0, 245, 255, 0.2); min-width: 80px;">
-                    <span class="vote-count" id="vote-count-{{ complaint.complaint_id }}" style="font-size: 1.5rem; color: var(--primary-color);">{{ complaint.vote_count }}</span>
-                    <button class="vote-btn" onclick="voteIssue({{ complaint.complaint_id }})" style="color: var(--primary-color);">
-                        <i class="fa-solid fa-caret-up"></i>
-                    </button>
-                    <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">VOTES</div>
-                </div>
-                
-                {% if complaint.image_path %}
-                <div class="priority-img-wrapper" style="width: 150px; height: 100px; overflow: hidden; border-radius: 8px; border: 1px solid var(--border-color); margin-left: 1rem;">
-                    <img src="/static/uploads/{{ complaint.image_path }}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/static/img/placeholder.png'">
-                </div>
-                {% endif %}
-                <div class="priority-content" style="flex: 1; padding-left: 1.5rem;">
-                    <div class="priority-meta" style="margin-bottom: 0.5rem;">
-                        <span class="status-badge status-{{ complaint.status.split(' ')[0] }}">{{ complaint.status }}</span>
-                        <span class="date-text" style="color: var(--text-muted); float: right;">{{ complaint.date_submitted.strftime('%b %d, %Y') }}</span>
-                    </div>
-                    <h4 style="margin-top: 0.5rem; color: var(--text-main);">
-                        {% if complaint.issue_type == 'Road' %}<i class="fa-solid fa-road issue-icon" style="color: #f1c40f;"></i>
-                        {% elif complaint.issue_type == 'Water' %}<i class="fa-solid fa-faucet-drip issue-icon" style="color: #3498db;"></i>
-                        {% elif complaint.issue_type == 'Electricity' %}<i class="fa-solid fa-bolt issue-icon" style="color: #f39c12;"></i>
-                        {% elif complaint.issue_type == 'Garbage' %}<i class="fa-solid fa-trash-can issue-icon" style="color: #7f8c8d;"></i>
-                        {% else %}<i class="fa-solid fa-circle-exclamation issue-icon"></i>{% endif %}
-                        {{ complaint.area }}, {{ complaint.district }}, {{ complaint.state }}
-                    </h4>
-                    <p class="text-muted" style="font-size: 0.9rem;">Tracking ID: <span style="color: var(--primary-color);">{{ complaint.display_id }}</span></p>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
-                        <button class="btn btn-secondary btn-sm" onclick="voteIssue({{ complaint.complaint_id }})">
-                            <i class="fa-solid fa-hand-fist"></i> Me Too
-                        </button>
-                        <a href="{{ url_for('track', id=complaint.display_id) }}" class="btn btn-primary btn-sm">
-                            <i class="fa-solid fa-magnifying-glass-location"></i> Track
-                        </a>
-                    </div>
-                </div>
+<!-- AI Civic Insights (BookMyShow Style Glass Widgets) -->
+<div class="container" style="position: relative; z-index: 5; margin-top: -80px; margin-bottom: 3rem;">
+    <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;" id="aiInsightsContainer">
+        <!-- Most Affected -->
+        <div style="flex: 1; min-width: 280px; background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: transform 0.3s;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h4 style="color: var(--white); font-size: 1rem; margin: 0;"><i class="fa-solid fa-location-crosshairs" style="color: var(--warning-color);"></i> Affected Areas</h4>
+                <span style="font-size: 0.7rem; background: rgba(255,204,0,0.2); color: var(--warning-color); padding: 3px 8px; border-radius: 4px;">Live AI</span>
             </div>
-            {% endfor %}
+            <ul id="aiTopAreas" style="color: #bbb; font-size: 0.9rem; padding-left: 1.2rem; margin: 0; line-height: 1.6;"><li>Analyzing patterns...</li></ul>
         </div>
-    {% else %}
-        <p class="text-muted text-center pt-2">No priority issues reported yet.</p>
-    {% endif %}
+        <!-- Recurring Patterns -->
+        <div style="flex: 1; min-width: 280px; background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: transform 0.3s;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h4 style="color: var(--white); font-size: 1rem; margin: 0;"><i class="fa-solid fa-chart-pie" style="color: var(--primary-color);"></i> Trends</h4>
+                <span style="font-size: 0.7rem; background: rgba(0,245,255,0.2); color: var(--primary-color); padding: 3px 8px; border-radius: 4px;">Live AI</span>
+            </div>
+            <ul id="aiTopIssues" style="color: #bbb; font-size: 0.9rem; padding-left: 1.2rem; margin: 0; line-height: 1.6;"><li>Analyzing patterns...</li></ul>
+        </div>
+        <!-- High Risk Zones -->
+        <div style="flex: 1; min-width: 280px; background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: transform 0.3s;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h4 style="color: var(--white); font-size: 1rem; margin: 0;"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-color);"></i> High Risk</h4>
+                <span style="font-size: 0.7rem; background: rgba(255,0,85,0.2); color: var(--accent-color); padding: 3px 8px; border-radius: 4px;">Predicted</span>
+            </div>
+            <ul id="aiPredictions" style="color: #ff8a9f; font-size: 0.9rem; padding-left: 1.2rem; margin: 0; line-height: 1.6;"><li>Analyzing patterns...</li></ul>
+        </div>
+    </div>
 </div>
 
-<div class="categories-section mt-4">
-    {% for category_name, complaints in categories.items() %}
-        {% if complaints|length > 0 %}
-        <div class="category-row" style="margin-bottom: 2rem;">
-            <h3>
-                {% if 'Road' in category_name %}<i class="fa-solid fa-road issue-icon" style="color: #00f5ff;"></i>
-                {% elif 'Water' in category_name %}<i class="fa-solid fa-faucet-drip issue-icon" style="color: #3498db;"></i>
-                {% elif 'Electricity' in category_name %}<i class="fa-solid fa-bolt issue-icon" style="color: #ffb700;"></i>
-                {% elif 'Garbage' in category_name %}<i class="fa-solid fa-trash-can issue-icon" style="color: #7f5af0;"></i>
-                {% else %}<i class="fa-solid fa-circle-exclamation issue-icon" style="color: var(--text-muted);"></i>{% endif %}
-                {{ category_name }}
-            </h3>
-            
-            <div class="netflix-slider" style="margin-top: 1rem;">
-                {% for complaint in complaints %}
-                <div class="card netflix-card">
-                    <div class="card-img-wrapper" style="width: 100%; height: 120px; overflow: hidden; background: #000;">
-                        <img src="{% if complaint.image_path %}/static/uploads/{{ complaint.image_path }}{% else %}/static/img/placeholder.png{% endif %}" 
-                             style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: opacity 0.3s;"
-                             onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'"
-                             onerror="this.src='/static/img/placeholder.png'">
-                    </div>
-                    <div class="priority-content" style="flex: 1; padding: 1rem;">
-                        <div class="priority-meta" style="margin-bottom: 0.5rem;">
-                            <span class="status-badge status-{{ complaint.status.split(' ')[0] }}">{{ complaint.status }}</span>
-                            <span class="date-text" style="color: var(--text-muted); float: right;">{{ complaint.date_submitted.strftime('%b %d, %Y') }}</span>
+<div class="container" style="padding: 0 4%;">
+    <!-- Top Priority Issues (Netflix Slider) -->
+    <div class="priority-section mt-4">
+        <h2 style="font-size: 1.4rem; color: #e5e5e5; font-weight: 700; margin-bottom: 1rem; padding-left: 0.5rem;"><i class="fa-solid fa-fire" style="color: var(--accent-color);"></i> Trending Priorities</h2>
+        
+        {% if top_priority %}
+            <div class="netflix-slider cinematic-slider">
+                {% for complaint in top_priority %}
+                <div class="cinematic-card">
+                    <img class="card-bg-img" src="{% if complaint.image_path %}/static/uploads/{{ complaint.image_path }}{% else %}/static/img/placeholder.png{% endif %}" onerror="this.src='/static/img/placeholder.png'">
+                    <div class="card-overlay">
+                        <div class="vote-badge">
+                            <i class="fa-solid fa-caret-up"></i> <span id="vote-count-{{ complaint.complaint_id }}">{{ complaint.vote_count }}</span>
                         </div>
-                        <h4 style="margin-top: 0.5rem; color: var(--text-main); font-size: 1.1rem;">
-                            {{ complaint.area }}, {{ complaint.district }}, {{ complaint.state }}
-                        </h4>
-                        <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1rem; flex-grow: 1;">
-                            {{ complaint.description[:60] }}{% if complaint.description|length > 60 %}...{% endif %}
-                        </p>
-                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 1rem;">
-                            <button class="btn btn-secondary btn-sm" onclick="voteIssue({{ complaint.complaint_id }})">
-                                <i class="fa-solid fa-hand-fist"></i> Support <span class="vote-count" id="list-vote-{{ complaint.complaint_id }}" style="margin-left: 4px; color: var(--primary-color);">{{ complaint.vote_count }}</span>
-                            </button>
-                            <a href="{{ url_for('track', id=complaint.display_id) }}" class="btn btn-primary btn-sm">
-                                Track Details
-                            </a>
+                        <div class="card-content-bottom">
+                            <span class="status-badge status-{{ complaint.status.split(' ')[0] }}" style="font-size: 0.65rem; padding: 2px 6px;">{{ complaint.status }}</span>
+                            <h4 class="card-title">{{ complaint.area }}, {{ complaint.district }}</h4>
+                            <p class="card-subtitle">{{ complaint.issue_type }}</p>
+                            <div class="hover-actions">
+                                <button class="btn-circular" title="Me Too" onclick="voteIssue({{ complaint.complaint_id }})">
+                                    <i class="fa-solid fa-hand-fist"></i>
+                                </button>
+                                <a href="{{ url_for('track', id=complaint.display_id) }}" class="btn-circular btn-primary-circular" title="Track">
+                                    <i class="fa-solid fa-play"></i> Track
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
                 {% endfor %}
             </div>
-        </div>
+        {% else %}
+            <p class="text-muted" style="padding-left: 0.5rem;">No priority issues reported yet.</p>
         {% endif %}
-    {% endfor %}
-</div>
-
-<!-- Accountability Leaderboard -->
-<div class="leaderboard-section mt-5" style="margin-bottom: 3rem;">
-    <h2 style="display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-ranking-star" style="color: #ffb700;"></i> Public Accountability Board</h2>
-    <p style="color: var(--text-muted); opacity: 0.8; margin-bottom: 1.5rem;">Tracking which representatives have the most unresolved civic issues in their jurisdiction.</p>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;" id="leaderboard-container">
-        <!-- Injected via JS -->
     </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    fetch('/api/leaderboard')
-        .then(res => res.json())
-        .then(data => {
-            const container = document.getElementById('leaderboard-container');
-            let html = '';
-            
-            const renderCard = (title, items) => {
-                let cardHtml = `<div class="card" style="padding: 1.5rem; border-top: 3px solid #ffb700;">
-                                    <h3 style="margin-bottom: 1rem; color: var(--text-main);">${title} Rankings</h3>`;
-                if (!items || items.length === 0) {
-                    cardHtml += `<p style="color: var(--text-muted); font-size: 0.9rem;">No data available yet.</p>`;
-                } else {
-                    items.slice(0, 5).forEach((item, index) => {
-                        cardHtml += `
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-weight: 700; color: #ffb700; width: 20px;">#${index+1}</span>
-                                    <div>
-                                        <div style="font-weight: 600; font-size: 0.95rem;">${item.name}</div>
-                                        <div style="font-size: 0.75rem; color: var(--text-muted);">${item.role}</div>
-                                    </div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <div style="color: #ff2a55; font-weight: 700;">${item.unresolved} Pending</div>
-                                    <div style="font-size: 0.75rem; color: #00ff88;">${item.resolved} Resolved</div>
+    <!-- Dynamic Categories (Netflix Sliders) -->
+    <div class="categories-section mt-5">
+        {% for category_name, complaints in categories.items() %}
+            {% if complaints|length > 0 %}
+            <div class="category-row" style="margin-bottom: 3rem;">
+                <h3 style="font-size: 1.2rem; color: #e5e5e5; font-weight: 700; margin-bottom: 1rem; padding-left: 0.5rem;">
+                    {{ category_name }} Issues
+                </h3>
+                
+                <div class="netflix-slider cinematic-slider">
+                    {% for complaint in complaints %}
+                    <div class="cinematic-card">
+                        <img class="card-bg-img" src="{% if complaint.image_path %}/static/uploads/{{ complaint.image_path }}{% else %}/static/img/placeholder.png{% endif %}" onerror="this.src='/static/img/placeholder.png'">
+                        <div class="card-overlay">
+                            <div class="card-content-bottom">
+                                <span class="status-badge status-{{ complaint.status.split(' ')[0] }}" style="font-size: 0.65rem; padding: 2px 6px;">{{ complaint.status }}</span>
+                                <h4 class="card-title">{{ complaint.area }}, {{ complaint.district }}</h4>
+                                <p class="card-desc">{{ complaint.description[:40] }}{% if complaint.description|length > 40 %}...{% endif %}</p>
+                                <div class="hover-actions">
+                                    <button class="btn-circular" title="Support" onclick="voteIssue({{ complaint.complaint_id }})">
+                                        <i class="fa-solid fa-plus"></i>
+                                    </button>
+                                    <a href="{{ url_for('track', id=complaint.display_id) }}" class="btn-circular btn-primary-circular" title="Track Details">
+                                        <i class="fa-solid fa-play"></i>
+                                    </a>
                                 </div>
                             </div>
-                        `;
-                    });
-                }
-                cardHtml += `</div>`;
-                return cardHtml;
-            };
-            
-            html += renderCard('MLA', data.mlas);
-            html += renderCard('MP', data.mps);
-            container.innerHTML = html;
-        })
-        .catch(err => console.error("Leaderboard Error:", err));
-});
-</script>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
 
-    {% if not categories.values()|length %}
-        <div class="card text-center" style="margin-top: 2rem; display: none;"></div>
-    {% endif %}
-</div>
-
-<!-- Live Public Feed -->
-<div class="live-feed-section mt-4" style="margin-bottom: 3rem;">
-    <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-        <div>
-            <h2><i class="fa-solid fa-rss" style="color: #00ff88;"></i> Live Public Feed</h2>
-            <p style="color: var(--text-muted);">Real-time stream of community issues, sorted by support score.</p>
-        </div>
-        <div style="font-size: 0.85rem; color: #00ff88; display: flex; align-items: center; gap: 8px; background: rgba(0, 255, 136, 0.1); padding: 5px 12px; border-radius: 50px; border: 1px solid rgba(0, 255, 136, 0.3);">
-            <i class="fa-solid fa-circle fa-fade"></i> Auto-updating
+    <!-- Accountability Leaderboard -->
+    <div class="leaderboard-section mt-5" style="margin-bottom: 4rem;">
+        <h2 style="font-size: 1.4rem; color: #e5e5e5; font-weight: 700; margin-bottom: 0.5rem; padding-left: 0.5rem;">
+            Public Accountability Board
+        </h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; padding-left: 0.5rem; margin-bottom: 1.5rem;">Which representatives have the most pending civic issues?</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; padding: 0 0.5rem;" id="leaderboard-container">
+            <!-- Injected via JS -->
         </div>
     </div>
     
-    <div id="liveFeedContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
-        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary-color);"></i>
-            <p class="text-muted mt-2">Loading live feed...</p>
+    <!-- Live Public Feed (BookMyShow Masonry/Grid) -->
+    <div class="live-feed-section mt-5" style="margin-bottom: 4rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-left: 0.5rem; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.4rem; color: #e5e5e5; font-weight: 700; margin: 0;">
+                Live Public Feed
+            </h2>
+            <div style="font-size: 0.8rem; color: var(--success-color); border: 1px solid rgba(0,255,163,0.3); padding: 4px 10px; border-radius: 50px;">
+                <i class="fa-solid fa-circle fa-fade"></i> Live Updates
+            </div>
+        </div>
+        
+        <div id="liveFeedContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; padding: 0 0.5rem;">
+            <div style="grid-column: 1 / -1; text-align: center; padding: 4rem;">
+                <div class="spinner" style="margin: 0 auto;"></div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Inline voting logic for SPA compatibility -->
+<!-- Add specific styles for the Netflix aesthetic cards -->
+<style>
+    /* Slider Container */
+    .cinematic-slider {
+        display: flex;
+        overflow-x: auto;
+        overflow-y: hidden;
+        gap: 10px;
+        padding: 2rem 0.5rem; /* give space for hover scale */
+        margin-top: -1.5rem;
+        scroll-behavior: smooth;
+    }
+    
+    .cinematic-slider::-webkit-scrollbar {
+        height: 6px;
+    }
+    .cinematic-slider::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.05);
+        border-radius: 10px;
+    }
+    .cinematic-slider::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.2);
+        border-radius: 10px;
+    }
+    .cinematic-slider::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,0.4);
+    }
+
+    /* Cinematic Card */
+    .cinematic-card {
+        flex: 0 0 calc(20% - 8px);
+        min-width: 240px;
+        max-width: 300px;
+        aspect-ratio: 16 / 9;
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1), z-index 0s, box-shadow 0.4s;
+        background: #141414;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    /* Hover Scale Effect */
+    .cinematic-card:hover {
+        transform: scale(1.3) translateY(-10%);
+        z-index: 10;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+        border-radius: 4px;
+    }
+
+    .card-bg-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.7;
+        transition: opacity 0.4s;
+    }
+
+    .cinematic-card:hover .card-bg-img {
+        opacity: 1;
+    }
+
+    .card-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 40%, transparent 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 1rem;
+        transition: background 0.4s;
+    }
+
+    .cinematic-card:hover .card-overlay {
+        background: linear-gradient(to top, rgba(20,20,20,1) 0%, rgba(20,20,20,0.7) 60%, transparent 100%);
+    }
+
+    .card-content-bottom {
+        transform: translateY(20px);
+        transition: transform 0.4s;
+    }
+
+    .cinematic-card:hover .card-content-bottom {
+        transform: translateY(0);
+    }
+
+    .card-title {
+        color: #fff;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin: 0.25rem 0 0 0;
+        text-transform: none;
+        letter-spacing: normal;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+
+    .card-subtitle {
+        color: #a3a3a3;
+        font-size: 0.75rem;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .card-desc {
+        color: #d2d2d2;
+        font-size: 0.65rem;
+        margin: 0.25rem 0 0.5rem 0;
+        opacity: 0;
+        transition: opacity 0.4s;
+        display: none;
+    }
+
+    .cinematic-card:hover .card-desc {
+        opacity: 1;
+        display: block;
+    }
+
+    .hover-actions {
+        display: flex;
+        gap: 8px;
+        opacity: 0;
+        transition: opacity 0.4s;
+    }
+
+    .cinematic-card:hover .hover-actions {
+        opacity: 1;
+    }
+
+    .btn-circular {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(40,40,40,0.8);
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        font-size: 0.8rem;
+    }
+
+    .btn-circular:hover {
+        border-color: white;
+        background: rgba(80,80,80,0.8);
+        color: white;
+    }
+
+    .btn-primary-circular {
+        background: white;
+        color: black;
+        border-color: white;
+    }
+    .btn-primary-circular:hover {
+        background: #e6e6e6;
+        color: black;
+    }
+
+    .vote-badge {
+        position: absolute;
+        top: 10px; right: 10px;
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(4px);
+        color: var(--primary-color);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        border: 1px solid rgba(0,245,255,0.3);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Leaderboard Custom Styles */
+    .bms-card {
+        background: #1a1a1a;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #333;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    
+    .bms-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.8rem 0;
+        border-bottom: 1px solid #2a2a2a;
+    }
+    .bms-row:last-child {
+        border-bottom: none;
+    }
+
+    @media (max-width: 768px) {
+        .hero-title { font-size: 2.5rem !important; }
+        .cinematic-card { flex: 0 0 calc(40% - 10px); aspect-ratio: 4/5; }
+        .cinematic-slider { padding: 1rem 0.5rem; }
+        .cinematic-card:hover { transform: scale(1.05) translateY(-5%); }
+    }
+</style>
+
 <script>
+// Logic remains identical
 function voteIssue(complaintId) {
     const btn = event.currentTarget;
     const originalHTML = btn.innerHTML;
@@ -240,20 +385,11 @@ function voteIssue(complaintId) {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                // Flash success logic integrated with SPA
-                const alertContainer = document.querySelector('.alerts-container');
-                const alert = document.createElement('div');
-                alert.className = 'alert alert-success';
-                alert.innerHTML = `<span><i class="fa-solid fa-check-circle"></i> ${data.message}</span>`;
-                alertContainer.appendChild(alert);
-                
                 // Update counts on page
-                ['vote-count-', 'list-vote-'].forEach(prefix => {
-                    const el = document.getElementById(prefix + complaintId);
-                    if (el) el.textContent = parseInt(el.textContent) + 1;
+                const counts = document.querySelectorAll(`[id$="vote-count-${complaintId}"]`);
+                counts.forEach(el => {
+                    el.textContent = parseInt(el.textContent) + 1;
                 });
-
-                setTimeout(() => { alert.style.opacity = '0'; setTimeout(() => alert.remove(), 300); }, 3000);
             } else {
                 alert(data.message);
             }
@@ -264,7 +400,6 @@ function voteIssue(complaintId) {
         });
 }
 
-// AI Insights & Live Feed Logic
 async function loadInsights() {
     try {
         const res = await fetch('/api/insights');
@@ -273,9 +408,9 @@ async function loadInsights() {
             const predictionsList = document.getElementById('aiPredictions');
             const issuesList = document.getElementById('aiTopIssues');
             const areasList = document.getElementById('aiTopAreas');
-            if(predictionsList) predictionsList.innerHTML = data.predictions.map(p => `<li>${p}</li>`).join('');
-            if(issuesList) issuesList.innerHTML = data.clusters.map(c => `<li>${c}</li>`).join('');
-            if(areasList) areasList.innerHTML = data.recommendations.map(r => `<li>${r}</li>`).join('');
+            if(predictionsList) predictionsList.innerHTML = data.predictions.map(p => `<li style="margin-bottom:6px;">${p}</li>`).join('');
+            if(issuesList) issuesList.innerHTML = data.clusters.map(c => `<li style="margin-bottom:6px;">${c}</li>`).join('');
+            if(areasList) areasList.innerHTML = data.recommendations.map(r => `<li style="margin-bottom:6px;">${r}</li>`).join('');
         }
     } catch(e) {}
 }
@@ -290,56 +425,82 @@ async function loadLiveFeed() {
             data.sort((a, b) => (b.support_score || 0) - (a.support_score || 0));
             container.innerHTML = data.map(c => {
                 let prioColor = c.priority === 'High' ? '#ff2a55' : (c.priority === 'Medium' ? '#ffb700' : '#00f5ff');
-                let deptBadge = c.assigned_department ? `<span style="font-size: 0.7rem; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block;">${c.assigned_department}</span>` : '';
+                let deptBadge = c.assigned_department ? `<span style="font-size: 0.65rem; background: #333; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; color: #ccc;">${c.assigned_department}</span>` : '';
                 
                 return `
-                <div class="card netflix-card" style="display: flex; flex-direction: column; position: relative;">
-                    <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: ${prioColor}; border-top-left-radius: 16px; border-bottom-left-radius: 16px;"></div>
-                    <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-                        <span class="status-badge status-${c.status.split(' ')[0]}">${c.status}</span>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">${new Date(c.date_submitted).toLocaleString()}</span>
+                <div class="bms-card" style="border-left: 3px solid ${prioColor}; position: relative; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <div>
+                            <span class="status-badge status-${c.status.split(' ')[0]}" style="font-size: 0.7rem; margin-bottom: 8px;">${c.status}</span>
+                            <h4 style="color: #fff; margin: 0; font-size: 1.1rem; font-family: 'Inter', sans-serif;">${c.issue_type}</h4>
+                            ${deptBadge}
+                        </div>
+                        <span style="font-size: 0.75rem; color: #888;">${new Date(c.date_submitted).toLocaleString(undefined, {month:'short', day:'numeric'})}</span>
                     </div>
-                    <div style="padding: 1rem 1.5rem; flex: 1;">
-                        <h4 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-circle-exclamation" style="color: ${prioColor};"></i> ${c.issue_type}
-                        </h4>
-                        ${deptBadge}
-                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 1rem 0;">
-                            <i class="fa-solid fa-location-dot"></i> ${c.area}, ${c.district}<br>
-                            <i class="fa-solid fa-user" style="margin-top: 6px;"></i> ${c.citizen_name || 'Citizen'}
-                        </p>
-                        <p style="color: var(--text-main); font-size: 0.9rem; line-height: 1.5;">${(c.description || '').substring(0, 80)}${(c.description && c.description.length > 80) ? '...' : ''}</p>
-                    </div>
-                    <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2);">
-                        <button class="btn btn-sm" onclick="voteLiveFeed(${c.complaint_id})" id="btn-feed-${c.complaint_id}" style="background: rgba(0, 245, 255, 0.1); color: var(--primary-color); border: 1px solid rgba(0, 245, 255, 0.3); display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-hand-fist"></i> Support <span id="feed-vote-count-${c.complaint_id}" style="font-weight: bold; font-size: 1.1rem;">${c.support_score || 0}</span>
+                    <p style="color: #888; font-size: 0.8rem; margin: 0 0 1rem 0;">
+                        <i class="fa-solid fa-location-dot" style="color: #555;"></i> ${c.area}, ${c.district}
+                    </p>
+                    <p style="color: #ddd; font-size: 0.9rem; line-height: 1.5; flex-grow: 1;">${(c.description || '').substring(0, 100)}${(c.description && c.description.length > 100) ? '...' : ''}</p>
+                    
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #2a2a2a; display: flex; justify-content: space-between; align-items: center;">
+                        <button class="btn btn-sm" onclick="voteIssue(${c.complaint_id})" style="background: transparent; color: var(--success-color); border: 1px solid var(--success-color); border-radius: 4px; padding: 4px 12px; font-weight: 600;">
+                            <i class="fa-solid fa-arrow-up"></i> Support <span id="feed-vote-count-${c.complaint_id}">${c.support_score || 0}</span>
                         </button>
-                        <a href="/track/CIV-${1000 + c.complaint_id}" class="btn btn-sm btn-primary">Track Details</a>
+                        <a href="/track/CIV-${1000 + c.complaint_id}" style="color: #aaa; font-size: 0.85rem; text-decoration: underline;">View Details</a>
                     </div>
                 </div>
             `}).join('');
         } else {
-            container.innerHTML = '<p class="text-muted text-center pt-2" style="grid-column: 1 / -1;">No complaints found in the live feed.</p>';
+            container.innerHTML = '<p class="text-muted text-center pt-2" style="grid-column: 1 / -1;">No live feed data.</p>';
         }
     } catch(e) {}
 }
 
-function voteLiveFeed(complaintId) {
-    const btn = document.getElementById('btn-feed-' + complaintId);
-    if(btn) btn.disabled = true;
-    voteIssue(complaintId);
-    setTimeout(() => {
-        const feedCount = document.getElementById('feed-vote-count-' + complaintId);
-        if(feedCount) {
-            feedCount.textContent = parseInt(feedCount.textContent) + 1;
-        }
-    }, 500);
-}
-
 document.addEventListener('DOMContentLoaded', () => {
+    // Leaderboard
+    fetch('/api/leaderboard')
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('leaderboard-container');
+            let html = '';
+            const renderCard = (title, items) => {
+                let cardHtml = `<div class="bms-card">
+                                    <h3 style="margin-bottom: 1rem; color: #fff; font-size: 1.2rem; display:flex; align-items:center; gap: 8px;">
+                                        <i class="fa-solid fa-user-tie" style="color:#ffb700;"></i> ${title} Pending
+                                    </h3>`;
+                if (!items || items.length === 0) {
+                    cardHtml += `<p style="color: #888; font-size: 0.9rem;">No data.</p>`;
+                } else {
+                    items.slice(0, 5).forEach((item, index) => {
+                        cardHtml += `
+                            <div class="bms-row">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="color: #555; font-weight: bold; font-size: 1.1rem; width: 20px;">${index+1}</span>
+                                    <div>
+                                        <div style="font-weight: 600; color: #eee; font-size: 0.95rem;">${item.name}</div>
+                                        <div style="font-size: 0.75rem; color: #888;">${item.role}</div>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="color: var(--accent-color); font-weight: 700; font-size: 0.95rem;">${item.unresolved}</div>
+                                    <div style="font-size: 0.65rem; color: #888; text-transform:uppercase;">Pending</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                cardHtml += `</div>`;
+                return cardHtml;
+            };
+            html += renderCard('Top MLA', data.mlas);
+            html += renderCard('Top MP', data.mps);
+            container.innerHTML = html;
+        })
+        .catch(err => console.error(err));
+
     loadInsights();
     loadLiveFeed();
-    setInterval(loadLiveFeed, 30000); // 30 seconds
+    setInterval(loadLiveFeed, 30000);
 });
 </script>
 {% endblock %}

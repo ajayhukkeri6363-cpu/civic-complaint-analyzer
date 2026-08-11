@@ -183,13 +183,18 @@ main {
 
 /* Header & Navigation - Cinematic Glass */
 .site-header {
-    background: rgba(2, 4, 10, 0.7);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(0, 245, 255, 0.1);
+    background: transparent;
+    border-bottom: 1px solid transparent;
+    transition: background 0.4s, border-bottom 0.4s;
     position: sticky;
     top: 0;
     z-index: 1000;
     height: 80px;
+}
+.site-header.scrolled {
+    background: rgba(2, 4, 10, 0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 245, 255, 0.1);
 }
 
 .nav-container {
