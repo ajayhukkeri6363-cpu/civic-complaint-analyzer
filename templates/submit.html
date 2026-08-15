@@ -137,7 +137,8 @@
                         const states = Object.keys(locationData).sort();
                         
                         const ssSettings = (placeholder) => ({
-                            placeholderText: placeholder
+                            placeholderText: placeholder,
+                            contentLocation: document.body
                         });
 
                         window.stateSS = new SlimSelect({
