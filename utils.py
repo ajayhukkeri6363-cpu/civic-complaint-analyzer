@@ -26,24 +26,26 @@ def send_notification_email(to_email, subject, body_html):
     part = MIMEText(body_html, "html")
     msg.attach(part)
     
-    if smtp_email and smtp_password:
-        try:
-            server = smtplib.SMTP(smtp_server, smtp_port)
-            server.starttls()
-            server.login(smtp_email, smtp_password)
-            server.sendmail(msg['From'], [msg['To']], msg.as_string())
-            server.quit()
-            print(f"[EMAIL SYSTEM] Successfully sent email to {to_email}")
-            return True
-        except Exception as e:
-            print(f"[EMAIL SYSTEM] Failed to send email via SMTP to {to_email}: {e}")
-            return False
-    else:
-        print("\n" + "="*60)
-        print(f"[EMAIL SYSTEM MOCK - NO CREDENTIALS PROVIDED]")
-        print(f"To: {to_email}")
-        print(f"Subject: {subject}")
-        print("Body (HTML):")
-        print(body_html)
-        print("="*60 + "\n")
-        return True
+    def send_async():
+        if smtp_email and smtp_password:
+            try:
+                server = smtplib.SMTP(smtp_server, smtp_port, timeout=5)
+                server.starttls()
+                server.login(smtp_email, smtp_password)
+                server.sendmail(msg['From'], [msg['To']], msg.as_string())
+                server.quit()
+                print(f"[EMAIL SYSTEM] Successfully sent email to {to_email}")
+            except Exception as e:
+                print(f"[EMAIL SYSTEM] Failed to send email via SMTP to {to_email}: {e}")
+        else:
+            print("\n" + "="*60)
+            print(f"[EMAIL SYSTEM MOCK - NO CREDENTIALS PROVIDED]")
+            print(f"To: {to_email}")
+            print(f"Subject: {subject}")
+            print("Body (HTML):")
+            print(body_html)
+            print("="*60 + "\n")
+            
+    import threading
+    threading.Thread(target=send_async, daemon=True).start()
+    return True
