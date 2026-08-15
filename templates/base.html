@@ -139,9 +139,12 @@
 
     <!-- Main Content wrapper for SPA -->
     <main id="app-content">
+        {% if active_page != 'index' %}
         <div class="container">
+        {% endif %}
+            
             <!-- Flash Messages -->
-            <div class="alerts-container">
+            <div class="alerts-container {% if active_page == 'index' %}container{% endif %}" style="{% if active_page == 'index' %}margin-top: 1rem; position: relative; z-index: 1000;{% endif %}">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
@@ -155,7 +158,10 @@
             </div>
 
             {% block content %}{% endblock %}
+
+        {% if active_page != 'index' %}
         </div>
+        {% endif %}
     </main>
 
     <footer class="site-footer cinematic-fade">
