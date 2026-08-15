@@ -4,7 +4,7 @@
 
 {% block content %}
 <!-- Immersive Cinematic Hero -->
-<section class="hero cinematic-hero" style="position: relative; height: 85vh; min-height: 600px; display: flex; align-items: center; justify-content: flex-start; padding-left: 5%; overflow: hidden; margin-top: -80px; margin-bottom: 2rem;">
+<section class="hero cinematic-hero" style="position: relative; height: 85vh; min-height: 700px; display: flex; align-items: center; justify-content: flex-start; padding-left: 5%; margin-top: -80px; margin-bottom: 2rem;">
     <!-- Background Image -->
     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('/static/img/dream_city_bg.png') no-repeat center center/cover; z-index: -2; opacity: 0.85;"></div>
     
@@ -32,7 +32,7 @@
             <a href="{{ url_for('submit') }}" class="btn" style="background: var(--white); color: #000; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; border-radius: 50px; padding: 1.1rem 2.5rem; box-shadow: 0 10px 30px rgba(255,255,255,0.2); transition: all 0.3s; font-size: 1.05rem; letter-spacing: 0.5px;">
                 Report an Issue <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
             </a>
-            <a href="{{ url_for('track', id='') }}" class="btn glass-btn" style="background: rgba(255, 255, 255, 0.05); color: white; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; border-radius: 50px; padding: 1.1rem 2.5rem; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.15); transition: all 0.3s; font-size: 1.05rem; letter-spacing: 0.5px;">
+            <a href="{{ url_for('track') }}" class="btn glass-btn" style="background: rgba(255, 255, 255, 0.05); color: white; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; border-radius: 50px; padding: 1.1rem 2.5rem; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.15); transition: all 0.3s; font-size: 1.05rem; letter-spacing: 0.5px;">
                 <i class="fa-solid fa-satellite-dish" style="margin-right: 8px;"></i> Track Progress
             </a>
         </div>
@@ -68,7 +68,7 @@
             <h3>Report Issue</h3>
             <p>Log civic complaints directly to authorities.</p>
         </a>
-        <a href="{{ url_for('track', id='') }}" class="feature-card glass-widget">
+        <a href="{{ url_for('track') }}" class="feature-card glass-widget">
             <div class="icon-wrapper"><i class="fa-solid fa-satellite-dish" style="color: var(--success-color);"></i></div>
             <h3>Track Status</h3>
             <p>Get live updates on your reported issues.</p>
