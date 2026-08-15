@@ -505,7 +505,40 @@ def api_insights():
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         execute_db(cursor, "SELECT area, COUNT(*) as count FROM complaints GROUP BY area ORDER BY count DESC LIMIT 3"); top_areas = cursor.fetchall() or []
         execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type ORDER BY count DESC LIMIT 3"); top_issues = cursor.fetchall() or []; conn.close()
-        return jsonify({'predictions': [f"Critical {a['area']} infrastructure vector indicates 85% risk" for a in top_areas], 'clusters': [f"{i['issue_type']} detected in {len(top_areas)} sectors" for i in top_issues], 'recommendations': ["Deploy preventative maintenance in high-risk zones", "Increase sector-wide infrastructure redundancy"]})
+        
+        def get_val(row, key, idx):
+            return row[key] if isinstance(row, dict) else row[idx]
+
+        predictions = []
+        for a in top_areas:
+            count_val = get_val(a, 'count', 1)
+            predictions.append({
+                'area': get_val(a, 'area', 0),
+                'recent_volume': count_val,
+                'growth': 15 + count_val,
+                'risk_level': 'Critical' if count_val > 5 else 'High'
+            })
+            
+        clusters = []
+        for idx, i in enumerate(top_issues):
+            area_val = get_val(top_areas[idx], 'area', 0) if idx < len(top_areas) else 'Multiple Areas'
+            clusters.append({
+                'area': area_val,
+                'issue_type': get_val(i, 'issue_type', 0),
+                'count': get_val(i, 'count', 1)
+            })
+            
+        recommendations = []
+        for i in top_issues:
+            issue_val = get_val(i, 'issue_type', 0)
+            recommendations.append({
+                'issue': issue_val,
+                'action': 'Prioritize',
+                'area': 'High Risk Zones',
+                'suggestion': f"Immediate intervention recommended for {issue_val} to prevent cascading failures."
+            })
+            
+        return jsonify({'predictions': predictions, 'clusters': clusters, 'recommendations': recommendations})
     except: return jsonify({'error': 'insights fail'})
 
 @app.route('/api/vote/<int:complaint_id>', methods=['POST'])
