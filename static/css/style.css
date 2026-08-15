@@ -1472,6 +1472,9 @@ body {
 }
 
 /* SlimSelect Dark Mode Cinematic Styling */
+.ss-main {
+    position: relative !important;
+}
 .ss-main .ss-single-selected,
 .ss-main .ss-multi-selected {
     background-color: rgba(20, 20, 20, 0.9) !important;
@@ -1488,6 +1491,17 @@ body {
     border-radius: 8px !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
     color: #fff !important;
+    position: absolute !important;
+    top: calc(100% + 5px) !important;
+    left: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    transform: none !important;
+}
+
+.form-group {
+    position: relative;
+    margin-bottom: 1.25rem;
 }
 
 .ss-content .ss-search input {
