@@ -5,9 +5,10 @@
     --accent-color: #FFB300 !important; /* Warm Gold */
     --success-color: #00d084 !important; /* Clean Mint */
     --warning-color: #FFB300 !important; /* Clean Gold */
-    --bg-dark: #070B19 !important; /* Deep Navy Black */
-    --bg-gradient: radial-gradient(circle at top right, #0F172A, #070B19) !important;
-    --card-bg: rgba(15, 23, 42, 0.85) !important;
+    --bg-color: #141414;
+    --bg-dark: #000000;
+    --bg-gradient: radial-gradient(circle at top right, #141414, #000000) !important;
+    --card-bg: rgba(20, 20, 20, 0.9) !important;
     --white: #ffffff !important;
     --text-main: #F1F5F9 !important;
     --text-muted: #94A3B8 !important;
