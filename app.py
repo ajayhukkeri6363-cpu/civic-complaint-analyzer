@@ -23,6 +23,7 @@ import logging
 import traceback
 from email_validator import validate_email, EmailNotValidError
 from india_locations import india_locations
+from utils import send_notification_email
 
 load_dotenv()
 
@@ -466,6 +467,26 @@ def submit():
             # Notification
             if c_email != 'no-email@local':
                 execute_db(cursor, "INSERT INTO notifications (user_email, message, type) VALUES (?, ?, ?)", (c_email, "Your complaint has been successfully submitted.", "status"))
+                
+                # Send Email Notification
+                email_body = f"""
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                    <h2 style="color: #4CAF50;">Complaint Submitted Successfully</h2>
+                    <p>Hello {c_name},</p>
+                    <p>Thank you for submitting your civic issue. Your complaint has been recorded and will be routed to the appropriate authorities.</p>
+                    <h3>Complaint Details:</h3>
+                    <ul>
+                        <li><strong>Issue Type:</strong> {p.get('issue_type')}</li>
+                        <li><strong>Area:</strong> {p.get('area')}</li>
+                        <li><strong>Assigned MLA:</strong> {mla}</li>
+                        <li><strong>Assigned MP:</strong> {mp}</li>
+                    </ul>
+                    <p>You can track the live progress of your issue on our portal.</p>
+                    <br>
+                    <p>Best regards,<br>Civic Analyzer Team</p>
+                </div>
+                """
+                send_notification_email(c_email, "Civic Analyzer: Complaint Submitted", email_body)
             
             conn.commit(); conn.close(); flash('Complaint submitted successfully!', 'success'); return redirect(url_for('index'))
         except Exception as e: 
@@ -660,10 +681,31 @@ def admin_update_status():
                 else:
                     execute_db(cursor, "INSERT INTO resolution (complaint_id, action_taken, admin_image_path) VALUES (?, ?, ?)", (c_id, action, admin_image_filename))
         
-        execute_db(cursor, "SELECT citizen_email FROM complaints WHERE complaint_id = ?", (c_id,))
-        email_res = cursor.fetchone()
-        if email_res:
-            execute_db(cursor, "INSERT INTO notifications (user_email, message, type) VALUES (?, ?, ?)", (email_res['citizen_email'], f"Your complaint status is now: {status}", "status"))
+        execute_db(cursor, "SELECT citizen_email, citizen_name, issue_type, area FROM complaints WHERE complaint_id = ?", (c_id,))
+        complaint_res = cursor.fetchone()
+        if complaint_res and complaint_res['citizen_email'] != 'no-email@local':
+            c_email = complaint_res['citizen_email']
+            c_name = complaint_res['citizen_name']
+            execute_db(cursor, "INSERT INTO notifications (user_email, message, type) VALUES (?, ?, ?)", (c_email, f"Your complaint status is now: {status}", "status"))
+            
+            # Send Email Notification on Resolution
+            if status == "Resolved":
+                email_body = f"""
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                    <h2 style="color: #2196F3;">Your Complaint Has Been Resolved</h2>
+                    <p>Hello {c_name},</p>
+                    <p>Great news! Your complaint regarding <strong>{complaint_res['issue_type']}</strong> in <strong>{complaint_res['area']}</strong> has been marked as <strong>Resolved</strong> by the authorities.</p>
+                    <p>If action was taken, you can view the resolution details on the portal.</p>
+                    <hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;">
+                    <h3>How did we do?</h3>
+                    <p>Please take a moment to rate the resolution process and provide your feedback on our portal.</p>
+                    <a href="http://localhost:5000/" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Rate Resolution</a>
+                    <br><br>
+                    <p>Best regards,<br>Civic Analyzer Team</p>
+                </div>
+                """
+                send_notification_email(c_email, f"Civic Analyzer: Issue Resolved", email_body)
+            
             
         conn.commit(); conn.close(); return jsonify({'success': True})
     except Exception as e: return jsonify({'success': False, 'message': str(e)})
