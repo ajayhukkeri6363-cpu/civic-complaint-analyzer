@@ -183,6 +183,8 @@ def init_db():
         try_alter("ALTER TABLE complaints ADD COLUMN longitude REAL")
         try_alter("ALTER TABLE votes ADD COLUMN voter_identifier TEXT")
         try_alter("ALTER TABLE votes ADD COLUMN date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+        try_alter("ALTER TABLE resolution ADD COLUMN rating INTEGER")
+        try_alter("ALTER TABLE resolution ADD COLUMN feedback_text TEXT")
         
         if IS_POSTGRES_ACTIVE:
             cursor.execute("CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_email TEXT, message TEXT, type TEXT, is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
@@ -621,7 +623,7 @@ def admin_dashboard():
 def admin_complaints():
     try:
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
-        execute_db(cursor, "SELECT * FROM complaints ORDER BY date_submitted DESC"); complaints = cursor.fetchall() or []
+        execute_db(cursor, "SELECT c.*, r.rating FROM complaints c LEFT JOIN resolution r ON c.complaint_id = r.complaint_id ORDER BY c.date_submitted DESC"); complaints = cursor.fetchall() or []
         for c in complaints: c['display_id'] = format_display_id(c['complaint_id'])
         conn.close(); return render_template('admin/complaints.html', complaints=complaints, active_page='complaints')
     except: return render_template('admin/complaints.html', complaints=[], active_page='complaints')
@@ -699,7 +701,7 @@ def admin_update_status():
                     <hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;">
                     <h3>How did we do?</h3>
                     <p>Please take a moment to rate the resolution process and provide your feedback on our portal.</p>
-                    <a href="http://localhost:5000/" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Rate Resolution</a>
+                    <a href="{request.host_url}rate/{c_id}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Rate Resolution</a>
                     <br><br>
                     <p>Best regards,<br>Civic Analyzer Team</p>
                 </div>
@@ -729,6 +731,26 @@ def login():
             flash('Invalid credentials.', 'error')
         except: flash('Login error', 'error')
     return render_template('login.html')
+
+@app.route('/rate/<int:complaint_id>', methods=['GET', 'POST'])
+def rate_resolution(complaint_id):
+    conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
+    
+    if request.method == 'POST':
+        rating = request.form.get('rating')
+        feedback = request.form.get('feedback', '')
+        if rating:
+            execute_db(cursor, "UPDATE resolution SET rating = ?, feedback_text = ? WHERE complaint_id = ?", (rating, feedback, complaint_id))
+            conn.commit()
+            flash('Thank you for your feedback!', 'success')
+        conn.close()
+        return redirect(url_for('index'))
+        
+    execute_db(cursor, "SELECT rating, feedback_text FROM resolution WHERE complaint_id = ?", (complaint_id,))
+    res = cursor.fetchone()
+    conn.close()
+    
+    return render_template('rate.html', complaint_id=complaint_id, existing_rating=res if res and res.get('rating') else None)
 
 @app.route('/api/leaderboard', methods=['GET'])
 def api_leaderboard():

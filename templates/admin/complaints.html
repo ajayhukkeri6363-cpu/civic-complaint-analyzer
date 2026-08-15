@@ -113,6 +113,11 @@
                                     </select>
                                     <div id="loader-{{ complaint.complaint_id }}" style="display: none; color: var(--admin-text-secondary);"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
                                 </div>
+                                {% if complaint.rating %}
+                                <div style="margin-top: 8px; font-size: 0.75rem; background: rgba(255, 204, 0, 0.1); color: #ffcc00; padding: 2px 6px; border-radius: 4px; display: inline-block;">
+                                    <i class="fa-solid fa-star"></i> {{ complaint.rating }}/5 Citizen Rating
+                                </div>
+                                {% endif %}
                             </td>
                             <td>
                                 <div class="admin-action-bar">
