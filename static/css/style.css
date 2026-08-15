@@ -287,12 +287,12 @@ main {
 
 .hero-title {
     font-family: 'Clash Display', sans-serif;
-    font-size: 4rem;
+    font-size: clamp(3rem, 6vw, 5rem);
     line-height: 1.1;
     margin-bottom: 1.5rem;
-    text-transform: uppercase;
-    font-weight: 800;
-    letter-spacing: 1px;
+    font-weight: 600;
+    letter-spacing: -1px;
+    color: var(--white);
 }
 
 .text-neon {
@@ -1411,17 +1411,8 @@ main {
 
 .glass-widget:hover {
     transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(0, 245, 255, 0.15), inset 0 0 20px rgba(0, 245, 255, 0.05);
-    border-color: rgba(0, 245, 255, 0.4);
-}
-
-.hero-title span {
-    animation: neonPulse 3s infinite alternate;
-}
-
-@keyframes neonPulse {
-    0% { text-shadow: 0 0 10px rgba(0, 245, 255, 0.5); }
-    100% { text-shadow: 0 0 25px rgba(0, 245, 255, 1), 0 0 50px rgba(0, 245, 255, 0.8); }
+    box-shadow: 0 20px 40px rgba(0, 119, 255, 0.15), inset 0 0 20px rgba(0, 119, 255, 0.05);
+    border-color: rgba(0, 119, 255, 0.2);
 }
 
 /* Feature Grid */
