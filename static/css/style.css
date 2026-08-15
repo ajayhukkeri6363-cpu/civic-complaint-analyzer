@@ -28,7 +28,7 @@
 }
 
 body {
-    font-family: 'Outfit', sans-serif !important;
+    font-family: 'Rajdhani', sans-serif !important;
     background: var(--bg-gradient) !important;
     background-attachment: fixed !important;
     color: var(--text-main) !important;
@@ -71,7 +71,7 @@ body::after {
 
 /* Typography */
 h1, h2, h3, h4 {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Syne', sans-serif;
     text-transform: uppercase;
     letter-spacing: 2px;
     color: var(--primary-color);
@@ -205,12 +205,12 @@ main {
 }
 
 .brand-title {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 1.5rem;
-    background: linear-gradient(to right, #00f5ff, #7000ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: 1px;
+    font-family: 'Syncopate', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--white);
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
 .nav-links {
@@ -286,9 +286,11 @@ main {
 }
 
 .hero-title {
+    font-family: 'Syncopate', sans-serif;
     font-size: 3.5rem;
     line-height: 1.1;
     margin-bottom: 1.5rem;
+    text-transform: uppercase;
 }
 
 .text-neon {
