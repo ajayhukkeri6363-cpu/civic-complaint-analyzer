@@ -4,7 +4,7 @@
 
 {% block content %}
 <!-- Immersive Cinematic Hero -->
-<section class="hero cinematic-hero" style="position: relative; height: 85vh; min-height: 700px; display: flex; align-items: center; justify-content: flex-start; padding-left: 5%; padding-top: 80px; margin-top: -80px; margin-bottom: 2rem;">
+<section class="hero cinematic-hero" style="position: relative; height: 100vh; min-height: 700px; display: flex; flex-direction: column; justify-content: center; padding-left: 5%; padding-top: 120px; margin-top: -80px; margin-bottom: 2rem;">
     <!-- Background Image -->
     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('/static/img/dream_city_bg.png') no-repeat center center/cover; z-index: -2; opacity: 0.85;"></div>
     
@@ -84,18 +84,16 @@
             </div>
             
             <div style="background: rgba(0,0,0,0.2); border-radius: 16px; padding: 1.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: #e2e8f0; font-weight: 600; font-size: 1.1rem;">Central District</span>
-                    <span style="background: rgba(255, 204, 0, 0.1); color: var(--warning-color); padding: 5px 12px; border-radius: 20px; font-weight: 700; font-size: 0.9rem;">432 Reports</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: #94A3B8; font-weight: 500;">North Assembly</span>
-                    <span style="color: #cbd5e1; font-weight: 700;">289 Reports</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #94A3B8; font-weight: 500;">East Zone</span>
-                    <span style="color: #cbd5e1; font-weight: 700;">145 Reports</span>
-                </div>
+                {% if top_mla_areas %}
+                    {% for area in top_mla_areas %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <span style="color: {% if loop.first %}#e2e8f0{% else %}#94A3B8{% endif %}; font-weight: {% if loop.first %}600{% else %}500{% endif %}; font-size: {% if loop.first %}1.1rem{% else %}1rem{% endif %};">{{ area.name }}</span>
+                        <span style="{% if loop.first %}background: rgba(255, 204, 0, 0.1); color: var(--warning-color); padding: 5px 12px; border-radius: 20px; font-weight: 700;{% else %}color: #cbd5e1; font-weight: 700;{% endif %} font-size: 0.9rem;">{{ area.count }} Reports</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="color: #94A3B8; text-align: center; padding: 1rem;">No reports available yet.</div>
+                {% endif %}
             </div>
         </div>
 
@@ -114,18 +112,16 @@
             </div>
             
             <div style="background: rgba(0,0,0,0.2); border-radius: 16px; padding: 1.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: #e2e8f0; font-weight: 600; font-size: 1.1rem;">Metropolitan Region</span>
-                    <span style="background: rgba(255, 51, 102, 0.1); color: #ff3366; padding: 5px 12px; border-radius: 20px; font-weight: 700; font-size: 0.9rem;">1,204 Reports</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: #94A3B8; font-weight: 500;">Suburban District</span>
-                    <span style="color: #cbd5e1; font-weight: 700;">856 Reports</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #94A3B8; font-weight: 500;">Industrial Corridor</span>
-                    <span style="color: #cbd5e1; font-weight: 700;">612 Reports</span>
-                </div>
+                {% if top_mp_areas %}
+                    {% for district in top_mp_areas %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <span style="color: {% if loop.first %}#e2e8f0{% else %}#94A3B8{% endif %}; font-weight: {% if loop.first %}600{% else %}500{% endif %}; font-size: {% if loop.first %}1.1rem{% else %}1rem{% endif %};">{{ district.name }}</span>
+                        <span style="{% if loop.first %}background: rgba(255, 51, 102, 0.1); color: #ff3366; padding: 5px 12px; border-radius: 20px; font-weight: 700;{% else %}color: #cbd5e1; font-weight: 700;{% endif %} font-size: 0.9rem;">{{ district.count }} Reports</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="color: #94A3B8; text-align: center; padding: 1rem;">No reports available yet.</div>
+                {% endif %}
             </div>
         </div>
     </div>

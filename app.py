@@ -398,15 +398,23 @@ def index():
         for cat in categories.values():
             for c in cat: c['display_id'] = format_display_id(c['complaint_id'])
         
+        # Get Top MLA Areas (Top 3 areas by count)
+        execute_db(cursor, "SELECT area as name, COUNT(*) as count FROM complaints WHERE area IS NOT NULL AND area != '' GROUP BY area ORDER BY count DESC LIMIT 3")
+        top_mla_areas = cursor.fetchall() or []
+        
+        # Get Top MP Areas (Top 3 districts by count)
+        execute_db(cursor, "SELECT district as name, COUNT(*) as count FROM complaints WHERE district IS NOT NULL AND district != '' GROUP BY district ORDER BY count DESC LIMIT 3")
+        top_mp_areas = cursor.fetchall() or []
+        
         conn.close()
         
         # Get live stats for hero section
         live_stats = get_stats()
         
-        return render_template('index.html', top_priority=top_priority, categories=categories, stats=live_stats, active_page='index')
+        return render_template('index.html', top_priority=top_priority, categories=categories, stats=live_stats, top_mla_areas=top_mla_areas, top_mp_areas=top_mp_areas, active_page='index')
     except Exception as e:
         print(f"Index Error: {e}")
-        return render_template('index.html', top_priority=[], categories={}, stats={'total': 0, 'resolved_complaints': 0, 'active': 0, 'pending': 0}, active_page='index')
+        return render_template('index.html', top_priority=[], categories={}, stats={'total': 0, 'resolved_complaints': 0, 'active': 0, 'pending': 0}, top_mla_areas=[], top_mp_areas=[], active_page='index')
 
 @app.route('/submit', methods=['GET', 'POST'])
 def submit():
