@@ -561,9 +561,9 @@ async function loadInsights() {
             const predictionsList = document.getElementById('aiPredictions');
             const issuesList = document.getElementById('aiTopIssues');
             const areasList = document.getElementById('aiTopAreas');
-            if(predictionsList) predictionsList.innerHTML = data.predictions.map(p => `<li style="margin-bottom:6px;">${p}</li>`).join('');
-            if(issuesList) issuesList.innerHTML = data.clusters.map(c => `<li style="margin-bottom:6px;">${c}</li>`).join('');
-            if(areasList) areasList.innerHTML = data.recommendations.map(r => `<li style="margin-bottom:6px;">${r}</li>`).join('');
+            if(predictionsList) predictionsList.innerHTML = data.predictions.map(p => `<li style="margin-bottom:6px;"><i class="fa-solid fa-circle-exclamation" style="font-size:0.7rem; margin-right:4px;"></i> ${p.area} <span style="opacity:0.7">(${p.risk_level})</span></li>`).join('');
+            if(issuesList) issuesList.innerHTML = data.clusters.map(c => `<li style="margin-bottom:6px;"><i class="fa-solid fa-arrow-trend-up" style="font-size:0.7rem; margin-right:4px;"></i> ${c.issue_type} <span style="opacity:0.7">in ${c.area}</span></li>`).join('');
+            if(areasList) areasList.innerHTML = data.recommendations.map(r => `<li style="margin-bottom:6px; line-height: 1.4;"><i class="fa-solid fa-bolt" style="font-size:0.7rem; margin-right:4px;"></i> ${r.suggestion}</li>`).join('');
         }
     } catch(e) {}
 }
