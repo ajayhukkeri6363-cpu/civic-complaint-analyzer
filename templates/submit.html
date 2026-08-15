@@ -93,8 +93,7 @@
             <div id="accountability-box" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(0, 245, 255, 0.05); border-left: 3px solid var(--primary-color); border-radius: 4px;">
                 <div style="font-size: 0.75rem; color: var(--primary-color); font-weight: 700; margin-bottom: 5px; text-transform: uppercase;">Accountability Routing</div>
                 <div style="font-size: 0.9rem; color: var(--text-main);">
-                    <i class="fa-solid fa-map-location-dot" style="width: 20px; color: var(--text-muted);"></i> <strong>Ward:</strong> <span id="preview-ward">...</span><br>
-                    <i class="fa-solid fa-user-tie" style="width: 20px; color: var(--text-muted); margin-top: 4px;"></i> <strong>MLA:</strong> <span id="preview-mla">...</span><br>
+                    <i class="fa-solid fa-user-tie" style="width: 20px; color: var(--text-muted);"></i> <strong>MLA:</strong> <span id="preview-mla">...</span><br>
                     <i class="fa-solid fa-building-columns" style="width: 20px; color: var(--text-muted); margin-top: 4px;"></i> <strong>MP:</strong> <span id="preview-mp">...</span>
                 </div>
                 <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">These representatives will be publicly tagged on the Live Feed.</div>
@@ -186,7 +185,6 @@
                     const box = document.getElementById('accountability-box');
                     if (!area) { box.style.display = 'none'; return; }
                     
-                    document.getElementById('preview-ward').textContent = "...";
                     document.getElementById('preview-mla').textContent = "Loading...";
                     document.getElementById('preview-mp').textContent = "Loading...";
                     box.style.display = 'block';
@@ -196,13 +194,11 @@
                     fetch(`/api/resolve_accountability?area=${encodeURIComponent(area)}&district=${encodeURIComponent(district)}`)
                         .then(r => r.json())
                         .then(data => {
-                            document.getElementById('preview-ward').textContent = data.ward;
                             document.getElementById('preview-mla').textContent = data.mla;
                             document.getElementById('preview-mp').textContent = data.mp;
                         })
                         .catch(e => {
                             console.error('Error fetching accountability:', e);
-                            document.getElementById('preview-ward').textContent = "Error";
                             document.getElementById('preview-mla').textContent = "Error";
                             document.getElementById('preview-mp').textContent = "Error";
                         });

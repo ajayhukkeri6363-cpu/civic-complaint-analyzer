@@ -26,21 +26,16 @@
                 <div style="color: var(--text-muted); font-size: 0.9rem;">TIMESTAMP: <span style="color: var(--white); font-weight: 600;">{{ complaint.date_submitted.strftime('%Y-%m-%d %H:%M') }}</span></div>
                 <div style="color: var(--text-muted); font-size: 0.9rem;">SECTOR: <span style="color: var(--white); font-weight: 600;">{{ complaint.area }}</span></div>
                 <div style="color: var(--text-muted); font-size: 0.9rem;">CLASSIFICATION: <span style="color: var(--white); font-weight: 600;">{{ complaint.issue_type }}</span></div>
-                
-                <div style="grid-column: 1 / -1; display: flex; gap: 1rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border-left: 3px solid #ffb700;">
-                    <div style="flex: 1;">
-                        <div style="color: #ffb700; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">Ward</div>
-                        <div style="color: var(--white); font-weight: 600; font-size: 0.9rem;">{{ complaint.ward or 'Pending' }}</div>
+                                <div style="display: flex; gap: 2rem; margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                        <div>
+                            <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">MLA</div>
+                            <div style="color: var(--white); font-weight: 600; font-size: 0.9rem;">{{ complaint.mla or 'Pending' }}</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">MP</div>
+                            <div style="color: var(--white); font-weight: 600; font-size: 0.9rem;">{{ complaint.mp or 'Pending' }}</div>
+                        </div>
                     </div>
-                    <div style="flex: 1;">
-                        <div style="color: #ffb700; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">MLA</div>
-                        <div style="color: var(--white); font-weight: 600; font-size: 0.9rem;">{{ complaint.mla or 'Pending' }}</div>
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="color: #ffb700; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">MP</div>
-                        <div style="color: var(--white); font-weight: 600; font-size: 0.9rem;">{{ complaint.mp or 'Pending' }}</div>
-                    </div>
-                </div>
                 <div style="grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
                     <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.5rem;">Intelligence Brief:</div>
                     <div style="color: var(--text-main); font-size: 1rem;">{{ complaint.description }}</div>

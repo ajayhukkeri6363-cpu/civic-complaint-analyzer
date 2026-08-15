@@ -233,8 +233,7 @@ def resolve_accountability(area_str, district_str=""):
     clean_area = area_str.replace(" City", "").replace(" Town", "").replace(" Rural", "").replace(" Urban", "")
     
     h = sum(ord(c) for c in area_lower)
-    wards = ["W-14", "W-23", "W-42", "W-56", "W-89", "W-112", "W-150", "W-18"]
-    ward = wards[h % len(wards)]
+    h = sum(ord(c) for c in area) if area else sum(ord(c) for c in district)
     
     mla = "Pending Allocation"
     mp = "Pending Allocation"
@@ -339,7 +338,7 @@ def resolve_accountability(area_str, district_str=""):
     if mp == "Pending Allocation" or mp == "Unassigned":
         mp = "MP Data Unavailable"
         
-    return ward, mla, mp
+    return mla, mp
 
 # --- AUTH ---
 def admin_required(f):
@@ -357,8 +356,8 @@ def inject_user(): return dict(user=session.get('user'))
 def api_resolve_accountability():
     area = request.args.get('area', '')
     district = request.args.get('district', '')
-    ward, mla, mp = resolve_accountability(area, district)
-    return jsonify({'ward': ward, 'mla': mla, 'mp': mp})
+    mla, mp = resolve_accountability(area, district)
+    return jsonify({'mla': mla, 'mp': mp})
 
 @app.route('/')
 def index():
@@ -445,13 +444,13 @@ def submit():
             elif 'electr' in issue: assigned_department = 'Electricity Department'
             elif 'garbag' in issue: assigned_department = 'Garbage Department'
 
-            ward, mla, mp = resolve_accountability(p.get('area', ''), p.get('district', ''))
+            mla, mp = resolve_accountability(p.get('area', ''), p.get('district', ''))
             
             c_name = p.get('name', '').strip() or 'Anonymous Citizen'
             c_email = p.get('email', '').strip() or 'no-email@local'
 
             conn = get_db_connection(); cursor = conn.cursor()
-            execute_db(cursor, "INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude, is_anonymous, assigned_department, priority, status, ward, mla, mp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Submitted', ?, ?, ?)", (c_name, c_email, p.get('state'), p.get('district'), p.get('area'), p.get('issue_type'), p.get('description'), image_filename, lat, lng, is_anonymous, assigned_department, priority, ward, mla, mp))
+            execute_db(cursor, "INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude, is_anonymous, assigned_department, priority, status, mla, mp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Submitted', ?, ?)", (c_name, c_email, p.get('state'), p.get('district'), p.get('area'), p.get('issue_type'), p.get('description'), image_filename, lat, lng, is_anonymous, assigned_department, priority, mla, mp))
             
             # Notification
             if c_email != 'no-email@local':
