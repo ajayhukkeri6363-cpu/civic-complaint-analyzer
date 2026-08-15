@@ -1470,3 +1470,45 @@ body {
     .hero-stats { flex-direction: column; width: 100%; gap: 1rem; }
     .hero-stats > div:nth-child(even) { display: none; } /* hide dividers */
 }
+
+/* SlimSelect Dark Mode Cinematic Styling */
+.ss-main .ss-single-selected,
+.ss-main .ss-multi-selected {
+    background-color: rgba(20, 20, 20, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+    padding: 12px 16px !important;
+    height: auto !important;
+}
+
+.ss-content {
+    background-color: #1a1a1a !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+    color: #fff !important;
+}
+
+.ss-content .ss-search input {
+    background-color: #2a2a2a !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+    border-radius: 6px !important;
+}
+
+.ss-content .ss-search input:focus {
+    box-shadow: 0 0 0 2px var(--primary-color) !important;
+}
+
+.ss-content .ss-list .ss-option {
+    color: #ddd !important;
+    background-color: transparent !important;
+    transition: background 0.2s, color 0.2s !important;
+}
+
+.ss-content .ss-list .ss-option:hover,
+.ss-content .ss-list .ss-option.ss-highlighted {
+    background-color: var(--primary-color) !important;
+    color: #000 !important;
+}
