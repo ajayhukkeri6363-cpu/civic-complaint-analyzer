@@ -230,7 +230,19 @@ def resolve_accountability(area_str, district_str=""):
     
     area_lower = area_str.lower().strip()
     district_lower = district_str.lower().strip()
-    clean_area = area_str.replace(" City", "").replace(" Town", "").replace(" Rural", "").replace(" Urban", "")
+    
+    # Aggressive Normalization for Indian Cities
+    normalize_map = {
+        "bengaluru": "bangalore", "bengalooru": "bangalore", "mumbai": "bombay",
+        "chennai": "madras", "kolkata": "calcutta", "pune": "poona",
+        " urban": "", " rural": "", " city": "", " town": "", " district": ""
+    }
+    for k, v in normalize_map.items():
+        area_lower = area_lower.replace(k, v)
+        district_lower = district_lower.replace(k, v)
+        
+    area_lower = area_lower.strip()
+    district_lower = district_lower.strip()
     
     mla = "Pending Allocation"
     mp = "Pending Allocation"
@@ -245,7 +257,7 @@ def resolve_accountability(area_str, district_str=""):
         # MP District Fallback
         if mp in ["Pending Allocation", "Unassigned", "MP Data Unavailable"]:
             for c, m in INDIA_REPS.get('mps', {}).items():
-                if district_lower == c or district_lower in c or c in district_lower:
+                if district_lower and (district_lower in c or c in district_lower):
                     mp = m
                     break
                     
@@ -256,8 +268,10 @@ def resolve_accountability(area_str, district_str=""):
                 
         # MLA District Fallback
         if mla in ["Pending Allocation", "Unassigned", "MLA Data Unavailable"]:
-            if district_lower in INDIA_REPS.get('district_mlas', {}):
-                mla = INDIA_REPS['district_mlas'][district_lower]
+            for c, m in INDIA_REPS.get('mlas', {}).items():
+                if district_lower and (district_lower in c or c in district_lower):
+                    mla = m
+                    break
                 
     # 2. Dynamic Wikipedia Fallback for MLA
     if mla in ["Pending Allocation", "Unassigned", "MLA Data Unavailable"]:
