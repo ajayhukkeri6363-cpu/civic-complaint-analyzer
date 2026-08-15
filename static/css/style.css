@@ -205,7 +205,7 @@ main {
 }
 
 .brand-title {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 1.6rem;
     font-weight: 800;
     color: var(--white);
@@ -286,13 +286,14 @@ main {
 }
 
 .hero-title {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: clamp(3rem, 6vw, 5rem);
     line-height: 1.1;
     margin-bottom: 1.5rem;
     font-weight: 800;
     letter-spacing: -2px;
     color: var(--white);
+    text-align: left;
 }
 
 .text-neon {
@@ -627,6 +628,14 @@ main {
     margin: 0 auto 10px;
     font-size: 1.2rem;
     transition: var(--transition);
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+}
+
+.hero-title {
+    font-family: 'Space Grotesk', sans-serif;
 }
 
 .progressbar li.active {
