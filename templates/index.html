@@ -6,49 +6,52 @@
 <!-- Immersive Cinematic Hero -->
 <section class="hero cinematic-hero" style="position: relative; height: 85vh; min-height: 600px; display: flex; align-items: center; justify-content: flex-start; padding-left: 5%; overflow: hidden; margin-top: -80px; margin-bottom: 2rem;">
     <!-- Background Image -->
-    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('/static/img/hero_bg.png') no-repeat center center/cover; z-index: -2;"></div>
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('/static/img/dream_city_bg.png') no-repeat center center/cover; z-index: -2; opacity: 0.85;"></div>
     
-    <!-- Netflix-style Vignette/Gradient Overlays -->
-    <div style="position: absolute; top: 0; left: 0; width: 50%; height: 100%; background: linear-gradient(to right, rgba(7,11,25,0.95) 0%, rgba(7,11,25,0.6) 50%, transparent 100%); z-index: -1;"></div>
-    <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to top, rgba(7,11,25,1) 0%, rgba(7,11,25,0.8) 20%, transparent 100%); z-index: -1;"></div>
-    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100px; background: linear-gradient(to bottom, rgba(7,11,25,0.8) 0%, transparent 100%); z-index: -1;"></div>
+    <!-- Ultra-Premium Gradients -->
+    <div style="position: absolute; top: 0; left: 0; width: 60%; height: 100%; background: linear-gradient(to right, rgba(7,11,25,0.95) 0%, rgba(7,11,25,0.8) 40%, transparent 100%); z-index: -1;"></div>
+    <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 40%; background: linear-gradient(to top, rgba(7,11,25,1) 0%, rgba(7,11,25,0.7) 30%, transparent 100%); z-index: -1;"></div>
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 120px; background: linear-gradient(to bottom, rgba(7,11,25,0.9) 0%, transparent 100%); z-index: -1;"></div>
 
     <div class="hero-content cinematic-fade" style="max-width: 800px; z-index: 1;">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;">
-            <div style="width: 30px; height: 3px; background: var(--accent-color); box-shadow: 0 0 10px var(--accent-color);"></div>
-            <span style="color: var(--primary-color); font-weight: 800; letter-spacing: 3px; text-transform: uppercase; font-size: 0.9rem; text-shadow: 0 0 10px rgba(0,119,255,0.5);">Dream City Initiative</span>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 2rem;">
+            <div style="width: 40px; height: 2px; background: var(--accent-color); box-shadow: 0 0 15px var(--accent-color);"></div>
+            <span style="color: var(--accent-color); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; font-size: 0.85rem;">Welcome to Dream City</span>
         </div>
-        <h1 class="hero-title" style="font-size: 4.5rem; line-height: 1.1; margin-bottom: 1.5rem; color: var(--white); text-shadow: 0 10px 30px rgba(0,0,0,0.9);">
-            Report. <span style="color: var(--primary-color);">Analyze.</span> Resolve.
+        
+        <h1 class="hero-title" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 5rem; font-weight: 800; line-height: 1.05; margin-bottom: 1.5rem; color: var(--white); letter-spacing: -2px;">
+            Empowering Citizens.<br>
+            <span style="background: linear-gradient(to right, #0077ff, #00d084); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Transforming Cities.</span>
         </h1>
-        <p class="hero-subtitle" style="font-size: 1.3rem; color: #eef2f6; margin-bottom: 3rem; text-shadow: 0 5px 15px rgba(0,0,0,0.9); line-height: 1.6; max-width: 650px;">
-            A premium unified platform for citizens to report issues and for administrators to analyze patterns and streamline resolutions in real-time.
+        
+        <p class="hero-subtitle" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.35rem; font-weight: 400; color: #94A3B8; margin-bottom: 3.5rem; line-height: 1.6; max-width: 600px;">
+            A deeply integrated, high-performance intelligence platform connecting people with their government in real-time.
         </p>
         
-        <div class="hero-btn-group" style="display: flex; gap: 1.5rem; margin-bottom: 3rem;">
-            <a href="{{ url_for('submit') }}" class="btn" style="background: var(--primary-color); color: #000; font-weight: 800; border-radius: 8px; padding: 1rem 2.5rem; box-shadow: 0 10px 25px rgba(0,245,255,0.4); transition: all 0.3s; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px;">
-                <i class="fa-solid fa-bullhorn"></i> Report an Issue
+        <div class="hero-btn-group" style="display: flex; gap: 1.5rem; margin-bottom: 4rem;">
+            <a href="{{ url_for('submit') }}" class="btn" style="background: var(--white); color: #000; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; border-radius: 50px; padding: 1.1rem 2.5rem; box-shadow: 0 10px 30px rgba(255,255,255,0.2); transition: all 0.3s; font-size: 1.05rem; letter-spacing: 0.5px;">
+                Report an Issue <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
             </a>
-            <a href="{{ url_for('track', id='') }}" class="btn glass-btn" style="background: rgba(255, 255, 255, 0.1); color: white; border-radius: 8px; padding: 1rem 2.5rem; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px;">
-                <i class="fa-solid fa-satellite-dish"></i> Track Complaint
+            <a href="{{ url_for('track', id='') }}" class="btn glass-btn" style="background: rgba(255, 255, 255, 0.05); color: white; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; border-radius: 50px; padding: 1.1rem 2.5rem; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.15); transition: all 0.3s; font-size: 1.05rem; letter-spacing: 0.5px;">
+                <i class="fa-solid fa-satellite-dish" style="margin-right: 8px;"></i> Track Progress
             </a>
         </div>
 
-        <!-- Hero Stats Bar -->
-        <div class="hero-stats" style="display: flex; gap: 2rem; background: rgba(10, 15, 30, 0.6); backdrop-filter: blur(15px); padding: 1.5rem 2.5rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); display: inline-flex; box-shadow: 0 15px 35px rgba(0,0,0,0.6);">
-            <div class="stat-item" style="text-align: center;">
-                <h3 style="color: var(--white); font-size: 2rem; margin: 0; font-family: 'Space Grotesk', sans-serif;">{{ stats.total }}</h3>
-                <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Total Complaints</p>
+        <!-- Hero Stats Bar (Ultra Clean) -->
+        <div class="hero-stats" style="display: flex; gap: 3rem; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(25px); padding: 1.5rem 3rem; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); display: inline-flex; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <div class="stat-item" style="text-align: left;">
+                <h3 style="color: var(--white); font-size: 2.2rem; margin: 0; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1;">{{ stats.total }}</h3>
+                <p style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 5px; font-weight: 600;">Total Reports</p>
             </div>
             <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
-            <div class="stat-item" style="text-align: center;">
-                <h3 style="color: var(--success-color); font-size: 2rem; margin: 0; font-family: 'Space Grotesk', sans-serif; text-shadow: 0 0 15px rgba(0,255,163,0.4);">{{ stats.resolved_complaints }}</h3>
-                <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Resolved Issues</p>
+            <div class="stat-item" style="text-align: left;">
+                <h3 style="color: var(--white); font-size: 2.2rem; margin: 0; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1;">{{ stats.resolved_complaints }}</h3>
+                <p style="color: var(--success-color); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 5px; font-weight: 600;">Resolved</p>
             </div>
             <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
-            <div class="stat-item" style="text-align: center;">
-                <h3 style="color: var(--warning-color); font-size: 2rem; margin: 0; font-family: 'Space Grotesk', sans-serif; text-shadow: 0 0 15px rgba(255,204,0,0.4);">{{ stats.active }}</h3>
-                <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Active Complaints</p>
+            <div class="stat-item" style="text-align: left;">
+                <h3 style="color: var(--white); font-size: 2.2rem; margin: 0; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1;">{{ stats.active }}</h3>
+                <p style="color: var(--warning-color); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 5px; font-weight: 600;">In Progress</p>
             </div>
         </div>
     </div>
