@@ -226,14 +226,11 @@ except Exception as e:
     print("Error loading reps:", e)
 
 def resolve_accountability(area_str, district_str=""):
-    if not area_str: return "W-Unknown", "Unassigned", "Unassigned"
+    if not area_str: return "Unassigned", "Unassigned"
     
     area_lower = area_str.lower().strip()
     district_lower = district_str.lower().strip()
     clean_area = area_str.replace(" City", "").replace(" Town", "").replace(" Rural", "").replace(" Urban", "")
-    
-    h = sum(ord(c) for c in area_lower)
-    h = sum(ord(c) for c in area) if area else sum(ord(c) for c in district)
     
     mla = "Pending Allocation"
     mp = "Pending Allocation"
