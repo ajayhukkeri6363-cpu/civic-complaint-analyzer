@@ -4,7 +4,7 @@
 
 {% block content %}
 <!-- Immersive Cinematic Hero -->
-<section class="hero cinematic-hero" style="position: relative; height: 85vh; min-height: 700px; display: flex; align-items: center; justify-content: flex-start; padding-left: 5%; margin-top: -80px; margin-bottom: 2rem;">
+<section class="hero cinematic-hero" style="position: relative; height: 85vh; min-height: 700px; display: flex; align-items: center; justify-content: flex-start; padding-left: 5%; padding-top: 80px; margin-top: -80px; margin-bottom: 2rem;">
     <!-- Background Image -->
     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('/static/img/dream_city_bg.png') no-repeat center center/cover; z-index: -2; opacity: 0.85;"></div>
     
@@ -57,32 +57,77 @@
     </div>
 </section>
 
-<!-- Features Grid (BookMyShow Style) -->
-<div class="container" style="padding: 0 4%; margin-top: 4rem; margin-bottom: 4rem; z-index: 10; position: relative;">
-    <h2 style="font-size: 1.8rem; color: var(--white); font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 10px;">
-        <i class="fa-solid fa-shapes" style="color: var(--primary-color);"></i> Civic Tools
-    </h2>
-    <div class="feature-grid">
-        <a href="{{ url_for('submit') }}" class="feature-card glass-widget">
-            <div class="icon-wrapper"><i class="fa-solid fa-bullhorn" style="color: var(--accent-color);"></i></div>
-            <h3>Report Issue</h3>
-            <p>Log civic complaints directly to authorities.</p>
-        </a>
-        <a href="{{ url_for('track') }}" class="feature-card glass-widget">
-            <div class="icon-wrapper"><i class="fa-solid fa-satellite-dish" style="color: var(--success-color);"></i></div>
-            <h3>Track Status</h3>
-            <p>Get live updates on your reported issues.</p>
-        </a>
-        <a href="{{ url_for('live_map') }}" class="feature-card glass-widget">
-            <div class="icon-wrapper"><i class="fa-solid fa-map-location-dot" style="color: var(--warning-color);"></i></div>
-            <h3>Live Map</h3>
-            <p>Explore complaints visually across the city.</p>
-        </a>
-        <a href="{{ url_for('analytics') }}" class="feature-card glass-widget">
-            <div class="icon-wrapper"><i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i></div>
-            <h3>Analytics</h3>
-            <p>Deep dive into resolution metrics and data.</p>
-        </a>
+<!-- Unique Insights: Top MLA / MP Areas -->
+<div class="container" style="padding: 0 4%; margin-top: 5rem; margin-bottom: 5rem; z-index: 10; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem;">
+        <div>
+            <h2 style="font-size: 2.2rem; color: var(--white); font-weight: 800; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                <span style="color: var(--accent-color);">Area</span> Insights
+            </h2>
+            <p style="color: #94A3B8; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.1rem; margin-top: 10px;">Monitor complaint density across political jurisdictions in real-time.</p>
+        </div>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+        <!-- Top MLA Area -->
+        <div class="glass-widget" style="padding: 2.5rem; border-radius: 24px; position: relative; overflow: hidden; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.08); transition: transform 0.3s;">
+            <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: var(--primary-color); filter: blur(100px); opacity: 0.2;"></div>
+            
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(0, 119, 255, 0.1); display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-building-columns" style="color: var(--primary-color); font-size: 1.5rem;"></i>
+                </div>
+                <div>
+                    <h3 style="color: var(--white); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.4rem; font-weight: 700; margin: 0;">Top MLA Area Issues</h3>
+                    <p style="color: var(--primary-color); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Most Active Constituency</p>
+                </div>
+            </div>
+            
+            <div style="background: rgba(0,0,0,0.2); border-radius: 16px; padding: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: #e2e8f0; font-weight: 600; font-size: 1.1rem;">Central District</span>
+                    <span style="background: rgba(255, 204, 0, 0.1); color: var(--warning-color); padding: 5px 12px; border-radius: 20px; font-weight: 700; font-size: 0.9rem;">432 Reports</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: #94A3B8; font-weight: 500;">North Assembly</span>
+                    <span style="color: #cbd5e1; font-weight: 700;">289 Reports</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #94A3B8; font-weight: 500;">East Zone</span>
+                    <span style="color: #cbd5e1; font-weight: 700;">145 Reports</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top MP Area -->
+        <div class="glass-widget" style="padding: 2.5rem; border-radius: 24px; position: relative; overflow: hidden; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.08); transition: transform 0.3s;">
+            <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: var(--success-color); filter: blur(100px); opacity: 0.2;"></div>
+            
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(0, 255, 163, 0.1); display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-landmark-dome" style="color: var(--success-color); font-size: 1.5rem;"></i>
+                </div>
+                <div>
+                    <h3 style="color: var(--white); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.4rem; font-weight: 700; margin: 0;">Top MP Area Issues</h3>
+                    <p style="color: var(--success-color); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Highest Parliamentary Volume</p>
+                </div>
+            </div>
+            
+            <div style="background: rgba(0,0,0,0.2); border-radius: 16px; padding: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: #e2e8f0; font-weight: 600; font-size: 1.1rem;">Metropolitan Region</span>
+                    <span style="background: rgba(255, 51, 102, 0.1); color: #ff3366; padding: 5px 12px; border-radius: 20px; font-weight: 700; font-size: 0.9rem;">1,204 Reports</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: #94A3B8; font-weight: 500;">Suburban District</span>
+                    <span style="color: #cbd5e1; font-weight: 700;">856 Reports</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #94A3B8; font-weight: 500;">Industrial Corridor</span>
+                    <span style="color: #cbd5e1; font-weight: 700;">612 Reports</span>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
