@@ -1,22 +1,22 @@
 :root {
-    /* Cinematic Futuristic Tokens - FORCED */
-    --primary-color: #00f5ff !important; /* Cyber Cyan */
-    --secondary-color: #7000ff !important; /* Electric Purple */
-    --accent-color: #ff0055 !important; /* Neon Pink */
-    --success-color: #00ffa3 !important; /* Neon Mint */
-    --warning-color: #ffcc00 !important; /* Cyber Gold */
-    --bg-dark: #02040a !important; /* Deep Space Black */
-    --bg-gradient: radial-gradient(circle at top right, #0a1020, #02040a) !important;
-    --card-bg: rgba(5, 10, 20, 0.85) !important;
+    /* Premium Dream City Tokens - FORCED */
+    --primary-color: #0077ff !important; /* Premium Royal Blue */
+    --secondary-color: #f84464 !important; /* Vibrant Red/Pink (BookMyShow style) */
+    --accent-color: #FFB300 !important; /* Warm Gold */
+    --success-color: #00d084 !important; /* Clean Mint */
+    --warning-color: #FFB300 !important; /* Clean Gold */
+    --bg-dark: #070B19 !important; /* Deep Navy Black */
+    --bg-gradient: radial-gradient(circle at top right, #0F172A, #070B19) !important;
+    --card-bg: rgba(15, 23, 42, 0.85) !important;
     --white: #ffffff !important;
-    --text-main: #eef2f6 !important;
-    --text-muted: #8492a6 !important;
-    --border-color: rgba(0, 245, 255, 0.2) !important;
-    --border-radius: 20px !important;
-    --transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1) !important;
-    --shadow-lg: 0 25px 50px rgba(0, 0, 0, 0.8) !important;
-    --neon-glow: 0 0 30px rgba(0, 245, 255, 0.4) !important;
-    --glass-blur: blur(25px) !important;
+    --text-main: #F1F5F9 !important;
+    --text-muted: #94A3B8 !important;
+    --border-color: rgba(255, 255, 255, 0.1) !important;
+    --border-radius: 12px !important;
+    --transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    --shadow-lg: 0 25px 50px rgba(0, 0, 0, 0.5) !important;
+    --neon-glow: 0 0 30px rgba(0, 119, 255, 0.2) !important;
+    --glass-blur: blur(20px) !important;
 }
 
 
@@ -29,7 +29,7 @@
 
 body {
     font-family: 'Outfit', sans-serif !important;
-    background: radial-gradient(circle at top right, #0a1020, #02040a) !important;
+    background: var(--bg-gradient) !important;
     background-attachment: fixed !important;
     color: var(--text-main) !important;
     line-height: 1.6;
@@ -42,12 +42,12 @@ body {
 
 /* Diagnostic Badge - Visible only if new CSS loads */
 body::after {
-    content: 'CINEMATIC ENGINE v2.0 ACTIVE';
+    content: 'DREAM CITY ENGINE v3.0 ACTIVE';
     position: fixed;
     bottom: 10px;
     right: 10px;
-    background: rgba(0, 245, 255, 0.2);
-    color: #00f5ff;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 10px;
