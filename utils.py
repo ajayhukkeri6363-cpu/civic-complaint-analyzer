@@ -12,8 +12,8 @@ def send_notification_email(to_email, subject, body_html):
     if to_email == 'no-email@local' or not to_email:
         return False
         
-    smtp_email = os.environ.get('SMTP_EMAIL')
-    smtp_password = os.environ.get('SMTP_PASSWORD')
+    smtp_email = os.environ.get('SMTP_EMAIL', 'complaintanalyzer@gmail.com')
+    smtp_password = os.environ.get('SMTP_PASSWORD', 'CIVI-2006')
     smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
     smtp_port = int(os.environ.get('SMTP_PORT', 587))
     
