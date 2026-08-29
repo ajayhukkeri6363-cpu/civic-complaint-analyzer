@@ -24,6 +24,8 @@ import traceback
 from email_validator import validate_email, EmailNotValidError
 from india_locations import india_locations
 from utils import send_notification_email
+from area_coords import area_coords, get_coords
+from photo_verifier import analyze_photo_authenticity
 
 load_dotenv()
 
@@ -31,13 +33,22 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-123')
 
 # --- STORAGE CONFIG ---
-UPLOAD_FOLDER = os.path.join('static', 'uploads')
+UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'jfif', 'heic', 'bmp', 'svg'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def get_image_url(image_path):
+    if not image_path:
+        return None
+    clean_name = str(image_path).strip().replace('\\', '/')
+    clean_name = re.sub(r'^(/?static/)?(/?uploads/)?', '', clean_name)
+    if clean_name:
+        return f"/static/uploads/{clean_name}"
+    return None
 
 # --- DATABASE CONFIG ---
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -184,7 +195,14 @@ def init_db():
         try_alter("ALTER TABLE votes ADD COLUMN voter_identifier TEXT")
         try_alter("ALTER TABLE votes ADD COLUMN date_voted TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
         try_alter("ALTER TABLE resolution ADD COLUMN rating INTEGER")
-        try_alter("ALTER TABLE resolution ADD COLUMN feedback_text TEXT")
+        try_alter("ALTER TABLE complaints ADD COLUMN photo_lat REAL")
+        try_alter("ALTER TABLE complaints ADD COLUMN photo_lng REAL")
+        try_alter("ALTER TABLE complaints ADD COLUMN photo_taken_time TEXT")
+        try_alter("ALTER TABLE complaints ADD COLUMN photo_camera_device TEXT")
+        try_alter("ALTER TABLE complaints ADD COLUMN photo_verification_status TEXT")
+        try_alter("ALTER TABLE complaints ADD COLUMN photo_distance_km REAL")
+        try_alter("ALTER TABLE complaints ADD COLUMN photo_ai_risk_score INTEGER")
+        try_alter("ALTER TABLE complaints ADD COLUMN photo_details_json TEXT")
         
         if IS_POSTGRES_ACTIVE:
             cursor.execute("CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_email TEXT, message TEXT, type TEXT, is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
@@ -389,7 +407,7 @@ def index():
         top_priority = cursor.fetchall() or []
         for c in top_priority: 
             c['display_id'] = format_display_id(c['complaint_id'])
-            c['image_url'] = f"/static/uploads/{c['image_path']}" if c.get('image_path') else None
+            c['image_url'] = get_image_url(c.get('image_path'))
             
         # Optimized query for all categories
         execute_db(cursor, """
@@ -397,19 +415,28 @@ def index():
             FROM complaints c 
             LEFT JOIN votes v ON c.complaint_id = v.complaint_id 
             GROUP BY c.complaint_id 
-            ORDER BY date_submitted DESC LIMIT 30
+            ORDER BY date_submitted DESC LIMIT 50
         """)
         all_c = cursor.fetchall() or []
+        for c in all_c:
+            c['display_id'] = format_display_id(c['complaint_id'])
+            c['image_url'] = get_image_url(c.get('image_path'))
         
         def safe_cat(list_c, term): return [c for c in list_c if c.get('issue_type') and term.lower() in c['issue_type'].lower()]
         categories = {
-            'Road & Infrastructure': safe_cat(all_c, 'road'), 
-            'Water Supply': safe_cat(all_c, 'water'), 
-            'Electricity': safe_cat(all_c, 'electr'), 
-            'Garbage': safe_cat(all_c, 'garbag')
+            'Road & Infrastructure': safe_cat(all_c, 'road') + safe_cat(all_c, 'pothole'), 
+            'Water Supply': safe_cat(all_c, 'water') + safe_cat(all_c, 'leak'), 
+            'Electricity & Lighting': safe_cat(all_c, 'electr') + safe_cat(all_c, 'light'), 
+            'Garbage & Sanitation': safe_cat(all_c, 'garbag') + safe_cat(all_c, 'waste') + safe_cat(all_c, 'sewag')
         }
-        for cat in categories.values():
-            for c in cat: c['display_id'] = format_display_id(c['complaint_id'])
+        for k in categories:
+            seen_ids = set()
+            unique_list = []
+            for item in categories[k]:
+                if item['complaint_id'] not in seen_ids:
+                    seen_ids.add(item['complaint_id'])
+                    unique_list.append(item)
+            categories[k] = unique_list
         
         # Get Top MLA Areas (Top 3 areas by count)
         execute_db(cursor, "SELECT area as name, COUNT(*) as count FROM complaints WHERE area IS NOT NULL AND area != '' GROUP BY area ORDER BY count DESC LIMIT 3")
@@ -433,16 +460,65 @@ def index():
 def submit():
     if request.method == 'POST':
         try:
-            p = request.form; lat, lng = area_coords.get(p['area'], area_coords.get(p['district'], (12.9716, 77.5946)))
+            p = request.form
+            lat, lng = get_coords(p.get('area'), p.get('district'), p.get('state'), jitter=True)
             image_filename = None
             if 'image' in request.files:
                 file = request.files['image']
-                if file and allowed_file(file.filename):
+                if file and file.filename and allowed_file(file.filename):
                     ext = file.filename.rsplit('.', 1)[1].lower()
                     image_filename = f"{uuid.uuid4().hex}.{ext}"
                     save_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
                     file.save(save_path)
             
+            
+            photo_lat = None
+            photo_lng = None
+            photo_taken_time = None
+            photo_camera_device = None
+            photo_verification_status = "No Photo Attached"
+            photo_distance_km = None
+            photo_ai_risk_score = 0
+            photo_details_json = "{}"
+
+            if image_filename:
+                try:
+                    analysis = analyze_photo_authenticity(save_path, lat, lng)
+                    
+                    # STRICT ENFORCEMENT 1: BLOCK & REJECT FAKE / NON-GPS-MAP-CAMERA PHOTOS
+                    has_gps_proof = bool(analysis.get('photo_lat') and analysis.get('photo_lng')) or bool(analysis.get('is_gps_app_detected'))
+                    if not has_gps_proof or analysis.get('is_fake_or_unverified') or analysis.get('is_ai_suspected') or analysis.get('ai_risk_score', 0) >= 50:
+                        try:
+                            if os.path.exists(save_path):
+                                os.remove(save_path)
+                        except:
+                            pass
+                        flash("❌ Submission Blocked: Fake photo detected! upload photo from GPS map camera app only.", "danger")
+                        return redirect(url_for('submit'))
+                    
+                    # STRICT ENFORCEMENT 2: BLOCK & REJECT LOCATION MISMATCHES (> 25 km away)
+                    if analysis.get('is_location_mismatch') and (analysis.get('distance_km') or 0) > 25.0:
+                        try:
+                            if os.path.exists(save_path):
+                                os.remove(save_path)
+                        except:
+                            pass
+                        dist_val = analysis.get('distance_km')
+                        area_name = p.get('area') or 'selected area'
+                        dist_name = p.get('district') or ''
+                        flash(f"❌ Submission Blocked: Location Mismatch. Your photo was captured {dist_val} km away from {area_name}, {dist_name}. Please upload a photo taken at the actual site of the issue.", "danger")
+                        return redirect(url_for('submit'))
+
+                    photo_lat = analysis.get('photo_lat')
+                    photo_lng = analysis.get('photo_lng')
+                    photo_taken_time = analysis.get('datetime_taken')
+                    photo_camera_device = analysis.get('device_name')
+                    photo_verification_status = analysis.get('verification_status')
+                    photo_distance_km = analysis.get('distance_km')
+                    photo_ai_risk_score = analysis.get('ai_risk_score')
+                    photo_details_json = json.dumps(analysis)
+                except Exception as p_err:
+                    print(f"Photo verification analysis error: {p_err}")
             
             # --- NEW PRIORITY & ASSIGNMENT LOGIC ---
             is_anonymous = 1 if p.get('is_anonymous') else 0
@@ -464,7 +540,19 @@ def submit():
             c_email = p.get('email', '').strip() or 'no-email@local'
 
             conn = get_db_connection(); cursor = conn.cursor()
-            execute_db(cursor, "INSERT INTO complaints (citizen_name, citizen_email, state, district, area, issue_type, description, image_path, latitude, longitude, is_anonymous, assigned_department, priority, status, mla, mp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Submitted', ?, ?)", (c_name, c_email, p.get('state'), p.get('district'), p.get('area'), p.get('issue_type'), p.get('description'), image_filename, lat, lng, is_anonymous, assigned_department, priority, mla, mp))
+            execute_db(cursor, """
+                INSERT INTO complaints (
+                    citizen_name, citizen_email, state, district, area, issue_type, description,
+                    image_path, latitude, longitude, is_anonymous, assigned_department, priority, status,
+                    mla, mp, photo_lat, photo_lng, photo_taken_time, photo_camera_device,
+                    photo_verification_status, photo_distance_km, photo_ai_risk_score, photo_details_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Submitted', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                c_name, c_email, p.get('state'), p.get('district'), p.get('area'), p.get('issue_type'), p.get('description'),
+                image_filename, lat, lng, is_anonymous, assigned_department, priority, mla, mp,
+                photo_lat, photo_lng, photo_taken_time, photo_camera_device,
+                photo_verification_status, photo_distance_km, photo_ai_risk_score, photo_details_json
+            ))
             
             # Notification
             if c_email != 'no-email@local':
@@ -504,9 +592,9 @@ def api_analytics():
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         execute_db(cursor, "SELECT issue_type, COUNT(*) as count FROM complaints GROUP BY issue_type"); by_issue = cursor.fetchall() or []
         execute_db(cursor, "SELECT area, COUNT(*) as count FROM complaints GROUP BY area"); by_area = cursor.fetchall() or []
-        if IS_POSTGRES_ACTIVE: execute_db(cursor, "SELECT TO_CHAR(date_submitted, 'YYYY-MM') as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
-        else: execute_db(cursor, "SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month")
-        trends = cursor.fetchall() or []; conn.close(); stats = get_stats()
+        execute_db(cursor, "SELECT strftime('%Y-%m', date_submitted) as month, COUNT(*) as count FROM complaints GROUP BY month ORDER BY month ASC"); trends = cursor.fetchall() or []
+        stats = get_stats()
+        conn.close()
         return jsonify({'by_issue': by_issue, 'by_area': by_area, 'trends': trends, 'total_complaints': stats['total'], 'resolved_complaints': stats['resolved_complaints'], 'issue_types': {'labels': [r['issue_type'] for r in by_issue], 'data': [r['count'] for r in by_issue]}, 'areas': {'labels': [r['area'] for r in by_area], 'data': [r['count'] for r in by_area]}, 'monthly': {'labels': [r['month'] for r in trends], 'data': [r['count'] for r in trends]}})
     except: return jsonify({'error': 'api fail'})
 
@@ -521,17 +609,25 @@ def api_live_complaints():
             FROM complaints c 
             LEFT JOIN votes v ON c.complaint_id = v.complaint_id 
             GROUP BY c.complaint_id
+            ORDER BY c.date_submitted DESC
         """)
         data = cursor.fetchall() or []; conn.close()
         for c in data:
-            c['lat'] = c.get('latitude'); c['lng'] = c.get('longitude'); c['type'] = c.get('issue_type')
-            c['image_url'] = f"/static/uploads/{c['image_path']}" if c.get('image_path') else None
+            c['display_id'] = format_display_id(c['complaint_id'])
+            c['lat'] = c.get('latitude')
+            c['lng'] = c.get('longitude')
+            if not c['lat'] or not c['lng']:
+                c['lat'], c['lng'] = get_coords(c.get('area'), c.get('district'), c.get('state'), jitter=True)
+            c['type'] = c.get('issue_type')
+            c['image_url'] = get_image_url(c.get('image_path'))
             c['support_score'] = c.get('support_score', 0)
             if c.get('is_anonymous') in (1, True, '1', 'true', 'True'):
                 c['citizen_name'] = 'Anonymous Citizen'
                 c['citizen_email'] = 'Hidden'
         return jsonify(data)
-    except: return jsonify([])
+    except Exception as e:
+        print(f"api_live_complaints error: {e}")
+        return jsonify([])
 
 @app.route('/api/insights')
 def api_insights():
@@ -603,7 +699,10 @@ def track(id=None):
                 c_id = int(raw_id) - 1000; conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
                 execute_db(cursor, "SELECT c.*, r.action_taken, r.admin_image_path FROM complaints c LEFT JOIN resolution r ON c.complaint_id = r.complaint_id WHERE c.complaint_id = ?", (c_id,))
                 complaint = cursor.fetchone()
-                if complaint: complaint['display_id'] = format_display_id(complaint['complaint_id'])
+                if complaint:
+                    complaint['display_id'] = format_display_id(complaint['complaint_id'])
+                    complaint['image_url'] = get_image_url(complaint.get('image_path'))
+                    complaint['admin_image_url'] = get_image_url(complaint.get('admin_image_path'))
                 conn.close()
         except: pass
     return render_template('track.html', complaint=complaint, search_id=search_id, active_page='track')
@@ -613,8 +712,10 @@ def track(id=None):
 def admin_dashboard():
     try:
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
-        execute_db(cursor, "SELECT * FROM complaints WHERE status = 'Pending' ORDER BY date_submitted DESC LIMIT 5"); urgent = cursor.fetchall() or []
-        for c in urgent: c['display_id'] = format_display_id(c['complaint_id'])
+        execute_db(cursor, "SELECT * FROM complaints WHERE status != 'Resolved' ORDER BY date_submitted DESC LIMIT 5"); urgent = cursor.fetchall() or []
+        for c in urgent:
+            c['display_id'] = format_display_id(c['complaint_id'])
+            c['image_url'] = get_image_url(c.get('image_path'))
         conn.close(); return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=urgent, alerts=[], active_page='dashboard')
     except: return render_template('admin/dashboard.html', stats=get_stats(), urgent_complaints=[], alerts=[], active_page='dashboard')
 
@@ -624,7 +725,9 @@ def admin_complaints():
     try:
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
         execute_db(cursor, "SELECT c.*, r.rating FROM complaints c LEFT JOIN resolution r ON c.complaint_id = r.complaint_id ORDER BY c.date_submitted DESC"); complaints = cursor.fetchall() or []
-        for c in complaints: c['display_id'] = format_display_id(c['complaint_id'])
+        for c in complaints:
+            c['display_id'] = format_display_id(c['complaint_id'])
+            c['image_url'] = get_image_url(c.get('image_path'))
         conn.close(); return render_template('admin/complaints.html', complaints=complaints, active_page='complaints')
     except: return render_template('admin/complaints.html', complaints=[], active_page='complaints')
 
@@ -883,8 +986,157 @@ def api_notifications():
         return jsonify(notifs)
     except: return jsonify([])
 
+@app.route('/api/verify-photo', methods=['POST'])
+def api_verify_photo():
+    try:
+        if 'image' not in request.files:
+            return jsonify({'success': False, 'message': 'No image file uploaded'}), 400
+            
+        file = request.files['image']
+        if not file or not file.filename or not allowed_file(file.filename):
+            return jsonify({'success': False, 'message': 'Invalid file format'}), 400
+            
+        area = request.form.get('area')
+        district = request.form.get('district')
+        state = request.form.get('state')
+        
+        rep_lat, rep_lng = None, None
+        if area or district or state:
+            rep_lat, rep_lng = get_coords(area, district, state)
+            
+        # Save temporary file for deep analysis
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        temp_filename = f"scan_{uuid.uuid4().hex}.{ext}"
+        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
+        file.save(temp_path)
+        
+        analysis = analyze_photo_authenticity(temp_path, rep_lat, rep_lng)
+        
+        # Clean up temporary scan file
+        try:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+        except:
+            pass
+            
+        analysis['success'] = True
+        return jsonify(analysis)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/parse-gmap-link', methods=['POST'])
+def api_parse_gmap_link():
+    try:
+        data = request.get_json() or {}
+        gmap_url = data.get('url', '').strip()
+        if not gmap_url:
+            return jsonify({'success': False, 'message': 'Please provide a valid Google Maps link'}), 400
+            
+        resolved_url = gmap_url
+        if 'maps.app.goo.gl' in gmap_url or 'goo.gl/maps' in gmap_url:
+            try:
+                resp = requests.head(gmap_url, allow_redirects=True, timeout=5)
+                resolved_url = resp.url
+            except Exception:
+                try:
+                    resp = requests.get(gmap_url, allow_redirects=True, timeout=5)
+                    resolved_url = resp.url
+                except Exception:
+                    pass
+
+        # Regex extract lat, lng from Google Maps URL patterns
+        lat, lng = None, None
+        match = re.search(r'[@=](-?\d+\.\d+),(-?\d+\.\d+)', resolved_url)
+        if match:
+            lat = float(match.group(1))
+            lng = float(match.group(2))
+        else:
+            match2 = re.search(r'(-?\d{1,2}\.\d{4,}),\s*(-?\d{1,3}\.\d{4,})', resolved_url)
+            if match2:
+                lat = float(match2.group(1))
+                lng = float(match2.group(2))
+
+        if lat is None or lng is None:
+            return jsonify({'success': False, 'message': 'Could not extract GPS coordinates from this Google Maps link. Please verify the URL or upload a photo directly.'}), 400
+
+        # Find closest known area in area_coords
+        best_area = None
+        min_dist = float('inf')
+        from photo_verifier import haversine_distance
+        for area_name, coords in area_coords.items():
+            d = haversine_distance(lat, lng, coords[0], coords[1])
+            if d is not None and d < min_dist:
+                min_dist = d
+                best_area = area_name
+
+        return jsonify({
+            'success': True,
+            'lat': round(lat, 6),
+            'lng': round(lng, 6),
+            'resolved_url': resolved_url,
+            'closest_area': best_area if min_dist <= 25.0 else None,
+            'distance_km': round(min_dist, 2) if best_area else None
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/photo-intel/<int:complaint_id>')
+@admin_required
+def api_admin_photo_intel(complaint_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor) if IS_POSTGRES_ACTIVE else conn.cursor()
+        execute_db(cursor, "SELECT * FROM complaints WHERE complaint_id = ?", (complaint_id,))
+        c = cursor.fetchone()
+        conn.close()
+        
+        if not c:
+            return jsonify({'success': False, 'message': 'Complaint record not found'}), 404
+            
+        c['display_id'] = format_display_id(c['complaint_id'])
+        c['image_url'] = get_image_url(c.get('image_path'))
+        
+        details = {}
+        if c.get('photo_details_json'):
+            try:
+                details = json.loads(c['photo_details_json'])
+            except:
+                pass
+                
+        return jsonify({
+            'success': True,
+            'complaint': {
+                'id': c['complaint_id'],
+                'display_id': c['display_id'],
+                'citizen_name': c.get('citizen_name'),
+                'citizen_email': c.get('citizen_email'),
+                'citizen_phone': c.get('citizen_phone'),
+                'is_anonymous': c.get('is_anonymous'),
+                'area': c.get('area'),
+                'district': c.get('district'),
+                'state': c.get('state'),
+                'issue_type': c.get('issue_type'),
+                'description': c.get('description'),
+                'image_url': c['image_url'],
+                'latitude': c.get('latitude'),
+                'longitude': c.get('longitude'),
+                'photo_lat': c.get('photo_lat'),
+                'photo_lng': c.get('photo_lng'),
+                'photo_taken_time': c.get('photo_taken_time'),
+                'photo_camera_device': c.get('photo_camera_device'),
+                'photo_verification_status': c.get('photo_verification_status'),
+                'photo_distance_km': c.get('photo_distance_km'),
+                'distance_km': c.get('photo_distance_km'),
+                'photo_ai_risk_score': c.get('photo_ai_risk_score'),
+                'ai_risk_score': c.get('photo_ai_risk_score'),
+                'details': details
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 # Initialize database on startup (works for gunicorn too)
 init_db()
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)

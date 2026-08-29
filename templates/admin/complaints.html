@@ -65,9 +65,10 @@
                     <thead>
                         <tr>
                             <th>ID/Date</th>
-                            <th>Target Vector</th>
+                            <th>Citizen & Target Vector</th>
                             <th>Anomaly Type</th>
                             <th>Evidence</th>
+                            <th>GPS & AI Verification</th>
                             <th>Status Matrix</th>
                             <th>Actions</th>
                         </tr>
@@ -80,26 +81,74 @@
                                 <div style="font-size: 0.75rem; color: var(--admin-text-secondary); margin-top: 4px;"><i class="fa-regular fa-clock"></i> {{ complaint.date_submitted.strftime('%y-%m-%d %H:%M') }}</div>
                             </td>
                             <td>
-                                <div style="font-weight: 500;">{{ complaint.citizen_name }}</div>
-                                <div style="font-size: 0.8rem; color: var(--admin-text-secondary); margin-top: 2px;">{{ complaint.area }}, {{ complaint.district }}</div>
+                                <div style="font-weight: 600; color: #fff;">{{ complaint.citizen_name }}</div>
+                                <div style="font-size: 0.78rem; color: var(--admin-accent-cyan); margin-top: 2px;">
+                                    <i class="fa-regular fa-envelope"></i> {{ complaint.citizen_email }}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--admin-text-secondary); margin-top: 2px;">
+                                    <i class="fa-solid fa-location-dot"></i> {{ complaint.area }}, {{ complaint.district }}
+                                </div>
+                                {% if complaint.is_anonymous %}
+                                    <span style="font-size: 0.65rem; background: rgba(255,183,0,0.15); color: #ffb700; border: 1px solid rgba(255,183,0,0.3); border-radius: 4px; padding: 1px 5px; display: inline-block; margin-top: 3px;">
+                                        <i class="fa-solid fa-user-secret"></i> Anonymous on Public Feed
+                                    </span>
+                                {% endif %}
                             </td>
                             <td>
                                 <div>{{ complaint.issue_type }}</div>
-                                <div style="font-size: 0.75rem; color: var(--admin-text-secondary); max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ complaint.description }}">{{ complaint.description }}</div>
+                                <div style="font-size: 0.75rem; color: var(--admin-text-secondary); max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ complaint.description }}">{{ complaint.description }}</div>
                             </td>
                             <td>
-                                {% if complaint.image_path %}
-                                    <a href="/static/uploads/{{ complaint.image_path }}" target="_blank" style="display: block; width: 45px; height: 45px; border-radius: 8px; overflow: hidden; border: 1px solid var(--admin-border); position: relative;" class="evidence-link">
-                                        <img src="/static/uploads/{{ complaint.image_path }}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/static/img/placeholder.png'">
-                                        <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.7); text-align: center; color: white; font-size: 0.6rem; padding: 2px 0;"><i class="fa-solid fa-expand"></i></div>
-                                    </a>
+                                {% if complaint.image_url or complaint.image_path %}
+                                    <div onclick="openPhotoIntelModal({{ complaint.complaint_id }})" style="cursor: pointer; display: block; width: 45px; height: 45px; border-radius: 8px; overflow: hidden; border: 1px solid var(--admin-border); position: relative;" class="evidence-link" title="Click for Forensic Analysis">
+                                        <img src="{% if complaint.image_url %}{{ complaint.image_url }}{% else %}/static/uploads/{{ complaint.image_path }}{% endif %}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/static/img/placeholder.png'">
+                                        <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.75); text-align: center; color: var(--admin-accent-cyan); font-size: 0.6rem; padding: 2px 0;"><i class="fa-solid fa-microscope"></i></div>
+                                    </div>
                                 {% else %}
                                     <div style="width: 45px; height: 45px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: var(--admin-text-secondary); font-size: 0.7rem;"><i class="fa-solid fa-eye-slash"></i></div>
                                 {% endif %}
                             </td>
                             <td>
+                                {% set vstat = complaint.photo_verification_status or 'No Photo Attached' %}
+                                {% set vcolor = '#888' %}
+                                {% set vbg = 'rgba(255,255,255,0.05)' %}
+                                {% set vicon = 'fa-circle-question' %}
+                                
+                                {% if 'GPS Verified' in vstat %}
+                                    {% set vcolor = '#10b981' %}
+                                    {% set vbg = 'rgba(16, 185, 129, 0.12)' %}
+                                    {% set vicon = 'fa-satellite-dish' %}
+                                {% elif 'Mismatch' in vstat %}
+                                    {% set vcolor = '#f59e0b' %}
+                                    {% set vbg = 'rgba(245, 158, 11, 0.12)' %}
+                                    {% set vicon = 'fa-triangle-exclamation' %}
+                                {% elif 'AI-Generated' in vstat or 'Fake' in vstat %}
+                                    {% set vcolor = '#ef4444' %}
+                                    {% set vbg = 'rgba(239, 68, 68, 0.15)' %}
+                                    {% set vicon = 'fa-robot' %}
+                                {% elif 'Camera Photo' in vstat %}
+                                    {% set vcolor = '#00f5ff' %}
+                                    {% set vbg = 'rgba(0, 245, 255, 0.1)' %}
+                                    {% set vicon = 'fa-camera' %}
+                                {% endif %}
+
+                                {% if complaint.image_url or complaint.image_path %}
+                                    <button type="button" onclick="openPhotoIntelModal({{ complaint.complaint_id }})" style="background: {{ vbg }}; border: 1px solid {{ vcolor }}; color: {{ vcolor }}; border-radius: 6px; padding: 4px 8px; font-size: 0.72rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; text-align: left; transition: all 0.2s;">
+                                        <i class="fa-solid {{ vicon }}"></i>
+                                        <span>{{ vstat }}</span>
+                                    </button>
+                                    {% if complaint.photo_camera_device %}
+                                        <div style="font-size: 0.68rem; color: var(--admin-text-secondary); margin-top: 3px;">
+                                            <i class="fa-solid fa-mobile-screen"></i> {{ complaint.photo_camera_device }}
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="font-size: 0.7rem; color: #666;"><i class="fa-solid fa-ban"></i> No Image</span>
+                                {% endif %}
+                            </td>
+                            <td>
                                 <div style="display: flex; gap: 8px; align-items: center;">
-                                    <select class="admin-input" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; width: 130px; 
+                                    <select class="admin-input" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; width: 120px; 
                                         {% if complaint.status == 'Pending' %}border-color: var(--admin-accent-warning); color: var(--admin-accent-warning);{% endif %}
                                         {% if complaint.status == 'Resolved' %}border-color: var(--admin-accent-success); color: var(--admin-accent-success);{% endif %}
                                         {% if complaint.status == 'In Progress' %}border-color: var(--admin-accent-cyan); color: var(--admin-accent-cyan);{% endif %}
@@ -114,8 +163,8 @@
                                     <div id="loader-{{ complaint.complaint_id }}" style="display: none; color: var(--admin-text-secondary);"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
                                 </div>
                                 {% if complaint.rating %}
-                                <div style="margin-top: 8px; font-size: 0.75rem; background: rgba(255, 204, 0, 0.1); color: #ffcc00; padding: 2px 6px; border-radius: 4px; display: inline-block;">
-                                    <i class="fa-solid fa-star"></i> {{ complaint.rating }}/5 Citizen Rating
+                                <div style="margin-top: 6px; font-size: 0.72rem; background: rgba(255, 204, 0, 0.1); color: #ffcc00; padding: 2px 6px; border-radius: 4px; display: inline-block;">
+                                    <i class="fa-solid fa-star"></i> {{ complaint.rating }}/5 Rating
                                 </div>
                                 {% endif %}
                             </td>
@@ -144,7 +193,30 @@
     </div>
 </div>
 
-<!-- Premium Dark Modal -->
+<!-- Photo & GPS Forensic Intel Modal -->
+<div id="photoIntelModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; align-items: center; justify-content: center;">
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(4, 8, 20, 0.85); backdrop-filter: blur(8px);" onclick="closePhotoIntelModal()"></div>
+    <div class="admin-card" style="width: 100%; max-width: 760px; max-height: 90vh; overflow-y: auto; position: relative; z-index: 1001; animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid rgba(0, 245, 255, 0.3);">
+        <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 245, 255, 0.2); padding-bottom: 0.8rem;">
+            <div>
+                <h3 class="admin-card-title" style="color: var(--admin-accent-cyan); display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-satellite-dish"></i> Photo & GPS Forensic Intel
+                </h3>
+                <span id="intelDisplayId" style="font-family: monospace; font-size: 0.85rem; color: #fff;"></span>
+            </div>
+            <button onclick="closePhotoIntelModal()" style="background: none; border: none; color: var(--admin-text-secondary); font-size: 1.4rem; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        <div class="admin-card-body" id="photoIntelBody">
+            <div id="intelLoading" style="text-align: center; padding: 3rem 0; color: var(--admin-text-secondary);">
+                <i class="fa-solid fa-circle-notch fa-spin fa-2x" style="color: var(--admin-accent-cyan);"></i>
+                <p style="margin-top: 1rem; font-size: 0.9rem;">Extracting EXIF GPS telemetry & analyzing authenticity...</p>
+            </div>
+            <div id="intelContent" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Premium Dark Resolution Modal -->
 <div id="resolveModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; align-items: center; justify-content: center;">
     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(4, 8, 20, 0.8); backdrop-filter: blur(5px);" onclick="closeModal()"></div>
     <div class="admin-card" style="width: 100%; max-width: 500px; position: relative; z-index: 1001; animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
@@ -178,12 +250,201 @@
 
 {% block scripts %}
 <script>
+function openPhotoIntelModal(complaintId) {
+    const modal = document.getElementById('photoIntelModal');
+    const loading = document.getElementById('intelLoading');
+    const content = document.getElementById('intelContent');
+    const displayIdEl = document.getElementById('intelDisplayId');
+    
+    modal.style.display = 'flex';
+    loading.style.display = 'block';
+    content.style.display = 'none';
+    if(displayIdEl) displayIdEl.textContent = 'Loading...';
+    
+    fetch(`/api/admin/photo-intel/${complaintId}`)
+        .then(r => r.json())
+        .then(data => {
+            loading.style.display = 'none';
+            if (!data.success) {
+                content.innerHTML = `<div style="color: #ff2a55; padding: 1.5rem; text-align: center;"><i class="fa-solid fa-triangle-exclamation"></i> ${data.message}</div>`;
+                content.style.display = 'block';
+                return;
+            }
+            
+            const c = data.complaint;
+            const det = c.details || {};
+            if(displayIdEl) displayIdEl.textContent = `${c.display_id} • Reported by ${c.citizen_name}`;
+            
+            const aiScore = c.photo_ai_risk_score || 0;
+            let scoreColor = '#10b981';
+            let scoreLabel = 'Low AI Risk / Likely Authentic';
+            if (aiScore >= 65) {
+                scoreColor = '#ef4444';
+                scoreLabel = 'High AI Generation / Synthetic Risk';
+            } else if (aiScore >= 35) {
+                scoreColor = '#f59e0b';
+                scoreLabel = 'Moderate Risk / Edited or Downloaded';
+            }
+            
+            let distHtml = '';
+            if (c.photo_distance_km !== null && c.photo_distance_km !== undefined) {
+                const dist = c.photo_distance_km;
+                const isMismatch = dist > 20;
+                distHtml = `
+                    <div style="background: ${isMismatch ? 'rgba(239,68,68,0.18)' : 'rgba(16,185,129,0.18)'}; border: 1px solid ${isMismatch ? '#ef4444' : '#10b981'}; border-radius: 8px; padding: 10px; margin-top: 10px;">
+                        <div style="font-weight: 800; color: ${isMismatch ? '#ef4444' : '#10b981'}; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid ${isMismatch ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i> 
+                            ${isMismatch ? 'CRITICAL LOCATION FRAUD WARNING' : 'GPS LOCATION & MAP VERIFIED'}
+                        </div>
+                        <div style="font-size: 0.8rem; color: #ddd; margin-top: 4px;">
+                            Distance Delta: <strong>${dist} km</strong> between photo GPS and reported area (<em>${c.area}, ${c.district}</em>).
+                        </div>
+                    </div>
+                `;
+            }
+
+            let appBadgeHtml = '';
+            if (det.is_gps_app_detected || det.has_visual_banner) {
+                appBadgeHtml = `
+                    <div style="background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; color: #10b981; margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-satellite-dish"></i>
+                        <span><strong>GPS Photo App Verified:</strong> Image has verified geotag location & map stamp.</span>
+                    </div>
+                `;
+            } else if (!c.photo_lat && !c.photo_taken_time) {
+                appBadgeHtml = `
+                    <div style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; color: #ef4444; margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span><strong>Missing Telemetry:</strong> Photo does NOT contain GPS coordinates, map overlay, or capture timing.</span>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem;">
+                    <div>
+                        <div style="width: 100%; height: 260px; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--admin-border); position: relative;">
+                            ${c.image_url ? `
+                                <img src="${c.image_url}" alt="Evidence Photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                <a href="${c.image_url}" target="_blank" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); color: #00f5ff; border: 1px solid rgba(0,245,255,0.4); padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; text-decoration: none;">
+                                    <i class="fa-solid fa-expand"></i> Full Res
+                                </a>
+                            ` : '<div style="display: flex; height: 100%; align-items: center; justify-content: center; color: #666;">No Image Attached</div>'}
+                        </div>
+
+                        ${appBadgeHtml}
+
+                        <!-- Citizen Contact Dossier -->
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--admin-border); border-radius: 8px; padding: 12px; margin-top: 1rem;">
+                            <div style="font-size: 0.75rem; color: var(--admin-accent-cyan); font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">
+                                <i class="fa-solid fa-id-card"></i> Citizen Contact Telemetry
+                            </div>
+                            <div style="font-size: 0.85rem; color: #fff; font-weight: 600;">${c.citizen_name}</div>
+                            <div style="font-size: 0.8rem; color: #00f5ff; margin-top: 2px;">
+                                <i class="fa-regular fa-envelope"></i> <a href="mailto:${c.citizen_email}" style="color: #00f5ff; text-decoration: none;">${c.citizen_email}</a>
+                            </div>
+                            ${c.citizen_phone ? `<div style="font-size: 0.8rem; color: #aaa; margin-top: 2px;"><i class="fa-solid fa-phone"></i> ${c.citizen_phone}</div>` : ''}
+                            <div style="font-size: 0.78rem; color: #aaa; margin-top: 4px;">
+                                <i class="fa-solid fa-location-dot"></i> ${c.area}, ${c.district}, ${c.state}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!-- AI Risk Assessment Score -->
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--admin-border); border-radius: 8px; padding: 12px; margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-size: 0.75rem; color: var(--admin-text-secondary); font-weight: 700; text-transform: uppercase;">
+                                    <i class="fa-solid fa-robot"></i> AI / Synthetic Detection
+                                </span>
+                                <span style="font-size: 0.85rem; font-weight: 800; color: ${scoreColor};">${aiScore}% Risk</span>
+                            </div>
+                            <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-bottom: 6px;">
+                                <div style="width: ${aiScore}%; height: 100%; background: ${scoreColor}; transition: width 0.5s;"></div>
+                            </div>
+                            <div style="font-size: 0.78rem; color: ${scoreColor}; font-weight: 600;">${scoreLabel}</div>
+                        </div>
+
+                        <!-- EXIF Telemetry -->
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--admin-border); border-radius: 8px; padding: 12px;">
+                            <div style="font-size: 0.75rem; color: var(--admin-accent-cyan); font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">
+                                <i class="fa-solid fa-camera"></i> Camera & GPS Telemetry
+                            </div>
+                            
+                            <table style="width: 100%; font-size: 0.8rem; border-collapse: collapse;">
+                                <tr>
+                                    <td style="color: #888; padding: 3px 0;">Device / App:</td>
+                                    <td style="color: #fff; font-weight: 600; text-align: right;">${c.photo_camera_device || (det.is_gps_app_detected ? 'GPS Map Camera App' : 'Unknown / Stripped')}</td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #888; padding: 3px 0;">Date/Time Taken:</td>
+                                    <td style="color: #fff; text-align: right;">${c.photo_taken_time || 'Not Available'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #888; padding: 3px 0;">Photo GPS:</td>
+                                    <td style="color: ${c.photo_lat ? '#10b981' : '#888'}; font-family: monospace; text-align: right;">
+                                        ${c.photo_lat ? `${c.photo_lat}, ${c.photo_lng}` : 'No GPS Tag'}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #888; padding: 3px 0;">Reported GPS:</td>
+                                    <td style="color: #00f5ff; font-family: monospace; text-align: right;">
+                                        ${c.latitude ? `${parseFloat(c.latitude).toFixed(4)}, ${parseFloat(c.longitude).toFixed(4)}` : 'Auto-Resolved'}
+                                    </td>
+                                </tr>
+                                ${det.dimensions ? `
+                                <tr>
+                                    <td style="color: #888; padding: 3px 0;">Dimensions:</td>
+                                    <td style="color: #ccc; text-align: right;">${det.dimensions} (${det.image_format || 'IMG'})</td>
+                                </tr>` : ''}
+                                ${det.software ? `
+                                <tr>
+                                    <td style="color: #888; padding: 3px 0;">Software Tag:</td>
+                                    <td style="color: #f59e0b; text-align: right;">${det.software}</td>
+                                </tr>` : ''}
+                            </table>
+
+                            ${distHtml}
+                        </div>
+
+                        <!-- Verification Diagnostics -->
+                        <div style="margin-top: 1rem; font-size: 0.75rem;">
+                            ${(det.risk_factors && det.risk_factors.length > 0) ? `
+                                <div style="color: #ef4444; margin-bottom: 4px;">
+                                    <strong><i class="fa-solid fa-circle-exclamation"></i> Risk Findings:</strong>
+                                    <ul style="margin: 2px 0 6px 16px; padding: 0;">
+                                        ${det.risk_factors.map(r => `<li>${r}</li>`).join('')}
+                                    </ul>
+                                </div>` : ''}
+                            ${(det.positive_factors && det.positive_factors.length > 0) ? `
+                                <div style="color: #10b981;">
+                                    <strong><i class="fa-solid fa-circle-check"></i> Authentic Markers:</strong>
+                                    <ul style="margin: 2px 0 0 16px; padding: 0;">
+                                        ${det.positive_factors.map(p => `<li>${p}</li>`).join('')}
+                                    </ul>
+                                </div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            content.style.display = 'block';
+        })
+        .catch(err => {
+            loading.style.display = 'none';
+            content.innerHTML = `<div style="color: #ff2a55; padding: 1.5rem; text-align: center;">Forensic Sync Interrupted.</div>`;
+            content.style.display = 'block';
+        });
+}
+
+function closePhotoIntelModal() {
+    document.getElementById('photoIntelModal').style.display = 'none';
+}
+
 function handleStatusChange(complaintId, newStatus) {
     if (newStatus === 'Resolved') {
         openResolveModal(complaintId);
-        // Reset select visually until confirmed
         const select = document.querySelector(`select[onchange*="${complaintId}"]`);
-        select.value = select.querySelector('option[selected]').value; // Revert visually
+        if(select) select.value = select.querySelector('option[selected]').value;
         return;
     }
     updateStatusAPI(complaintId, newStatus);

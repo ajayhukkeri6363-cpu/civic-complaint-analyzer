@@ -138,125 +138,166 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+(function() {
+    function initMapPage() {
+        var mapContainer = document.getElementById('map');
+        if (!mapContainer || typeof L === 'undefined') return;
 
-    // India's strictly defined geographic bounding box
-    var INDIA_BOUNDS = L.latLngBounds(
-        L.latLng(6.0,  68.0),   // South-West
-        L.latLng(37.5, 98.0)    // North-East
-    );
-
-    var map = L.map('map', {
-        maxBounds:           INDIA_BOUNDS,
-        maxBoundsViscosity:  1.0,           
-        zoomSnap:            0.1,
-        zoomDelta:           0.5,
-        attributionControl: false           
-    });
-
-    map.fitBounds(INDIA_BOUNDS, { padding: [10, 10] });
-    map.setMinZoom(map.getZoom() - 0.2);     
-    map.setMaxZoom(18);
-
-    var indiaGeoJSON = {
-        "type": "Feature",
-        "properties": {},
-        "geometry": {
-            "type": "Polygon",
-            "coordinates": [
-                [
-                    [-180, 90], [180, 90], [180, -90], [-180, -90], [-180, 90]
-                ],
-                [
-                    [68.1, 23.7], [70.5, 24.9], [71.5, 26.5], [74.5, 30.5], [77.5, 35.5],
-                    [80.5, 36.5], [82.5, 33.5], [85.5, 30.5], [88.5, 29.5], [92.5, 28.5],
-                    [97.5, 28.5], [96.5, 24.5], [92.5, 22.5], [88.5, 21.5], [85.5, 18.5],
-                    [82.5, 15.5], [80.5, 12.5], [78.5, 8.5],  [77.5, 8.1],  [75.5, 12.5],
-                    [73.5, 15.5], [72.5, 18.5], [70.5, 20.5], [68.1, 23.7]
-                ]
-            ]
+        // Clean up previous instance to prevent "Map container is already initialized"
+        if (window.liveMapInstance) {
+            try { window.liveMapInstance.remove(); } catch(e) {}
+            window.liveMapInstance = null;
         }
-    };
-
-    L.geoJSON(indiaGeoJSON, {
-        style: {
-            color: "#000",
-            weight: 0,
-            fillColor: "#080b15",
-            fillOpacity: 0.85
+        if (mapContainer._leaflet_id) {
+            mapContainer._leaflet_id = null;
         }
-    }).addTo(map);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19
-    }).addTo(map);
+        var INDIA_BOUNDS = L.latLngBounds(
+            L.latLng(6.0,  68.0),   // South-West
+            L.latLng(37.5, 98.0)    // North-East
+        );
 
-    // Fetch and plot heatmap
-    fetch('/api/live_complaints')
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            var heatData = [];
-            data.forEach(function (c) {
-                if (c.latitude && c.longitude) {
-                    var lat   = parseFloat(c.latitude);
-                    var lng   = parseFloat(c.longitude);
-                    
-                    var intensity = 0.5;
-                    if(c.priority === 'High') intensity = 1.0;
-                    if(c.priority === 'Low') intensity = 0.2;
-                    
-                    // We also consider support_score to multiply intensity
-                    intensity += (c.support_score || 0) * 0.1;
-                    if(intensity > 1.0) intensity = 1.0;
-                    
-                    heatData.push([lat, lng, intensity]);
-                }
-            });
-            
-            L.heatLayer(heatData, {
-                radius: 30,
-                blur: 20,
-                maxZoom: 10,
-                gradient: {0.3: 'green', 0.6: 'yellow', 1.0: 'red'}
-            }).addTo(map);
-
-            // Add interactive markers for Accountability transparency
-            data.forEach(function (c) {
-                if (c.latitude && c.longitude) {
-                    var lat = parseFloat(c.latitude);
-                    var lng = parseFloat(c.longitude);
-                    
-                    var popupHtml = `
-                        <div style="font-family: var(--font-main); min-width: 200px;">
-                            <div style="font-weight: 700; color: var(--primary-color); margin-bottom: 5px;">${c.issue_type}</div>
-                            <div style="font-size: 0.85rem; margin-bottom: 10px;">${c.area}</div>
-                            <div style="background: rgba(0,0,0,0.05); padding: 8px; border-radius: 4px; font-size: 0.8rem;">
-                                <strong>MLA:</strong> ${c.mla || 'Pending'}<br>
-                                <strong>MP:</strong> ${c.mp || 'Pending'}
-                            </div>
-                            <div style="margin-top: 10px; text-align: center;">
-                                <a href="/track?id=${c.display_id}" style="color: var(--primary-color); text-decoration: none; font-weight: 600; font-size: 0.85rem;">Track Issue &rarr;</a>
-                            </div>
-                        </div>
-                    `;
-                    
-                    L.circleMarker([lat, lng], {
-                        radius: 6,
-                        fillColor: c.priority === 'High' ? 'red' : (c.priority === 'Medium' ? 'yellow' : 'green'),
-                        color: '#000',
-                        weight: 1,
-                        opacity: 0.5,
-                        fillOpacity: 0.8
-                    }).addTo(map).bindPopup(popupHtml);
-                }
-            });
-        })
-        .catch(function (e) { 
-            console.error('Complaints fetch error:', e); 
+        var map = L.map('map', {
+            maxBounds:           INDIA_BOUNDS,
+            maxBoundsViscosity:  1.0,           
+            zoomSnap:            0.1,
+            zoomDelta:           0.5,
+            attributionControl: false           
         });
+        window.liveMapInstance = map;
 
-});
+        map.fitBounds(INDIA_BOUNDS, { padding: [10, 10] });
+        map.setMinZoom(map.getZoom() - 0.2);     
+        map.setMaxZoom(18);
+
+        var indiaGeoJSON = {
+            "type": "Feature",
+            "properties": {},
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [-180, 90], [180, 90], [180, -90], [-180, -90], [-180, 90]
+                    ],
+                    [
+                        [68.1, 23.7], [70.5, 24.9], [71.5, 26.5], [74.5, 30.5], [77.5, 35.5],
+                        [80.5, 36.5], [82.5, 33.5], [85.5, 30.5], [88.5, 29.5], [92.5, 28.5],
+                        [97.5, 28.5], [96.5, 24.5], [92.5, 22.5], [88.5, 21.5], [85.5, 18.5],
+                        [82.5, 15.5], [80.5, 12.5], [78.5, 8.5],  [77.5, 8.1],  [75.5, 12.5],
+                        [73.5, 15.5], [72.5, 18.5], [70.5, 20.5], [68.1, 23.7]
+                    ]
+                ]
+            }
+        };
+
+        L.geoJSON(indiaGeoJSON, {
+            style: {
+                color: "#000",
+                weight: 0,
+                fillColor: "#080b15",
+                fillOpacity: 0.85
+            }
+        }).addTo(map);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Fetch and plot heatmap & interactive photo markers
+        fetch('/api/live_complaints')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var heatData = [];
+                data.forEach(function (c) {
+                    var lat = parseFloat(c.lat || c.latitude);
+                    var lng = parseFloat(c.lng || c.longitude);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        var intensity = 0.5;
+                        if(c.priority === 'High') intensity = 1.0;
+                        if(c.priority === 'Low') intensity = 0.2;
+                        intensity += (c.support_score || 0) * 0.1;
+                        if(intensity > 1.0) intensity = 1.0;
+                        heatData.push([lat, lng, intensity]);
+                    }
+                });
+                
+                if (typeof L.heatLayer === 'function' && heatData.length > 0) {
+                    L.heatLayer(heatData, {
+                        radius: 28,
+                        blur: 18,
+                        maxZoom: 10,
+                        gradient: {0.3: '#00f5ff', 0.6: '#ffb700', 1.0: '#ff2a55'}
+                    }).addTo(map);
+                }
+
+                // Add rich interactive markers with Evidence Photo and details
+                data.forEach(function (c) {
+                    var lat = parseFloat(c.lat || c.latitude);
+                    var lng = parseFloat(c.lng || c.longitude);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        var prioColor = c.priority === 'High' ? '#ff2a55' : (c.priority === 'Medium' ? '#ffb700' : '#00f5ff');
+                        var displayId = c.display_id || ('CIV-' + (1000 + c.complaint_id));
+                        
+                        var imgHtml = c.image_url ? `
+                            <div style="width: 100%; height: 130px; background: #0b0f19; overflow: hidden; position: relative;">
+                                <img src="${c.image_url}" alt="Evidence Photo" class="cp-popup-img" onerror="this.parentElement.style.display='none';">
+                                <span style="position: absolute; bottom: 6px; right: 6px; font-size: 0.65rem; background: rgba(0,0,0,0.8); color: #00f5ff; padding: 2px 6px; border-radius: 4px; font-weight: 600;">
+                                    <i class="fa-solid fa-camera"></i> Photo Attached
+                                </span>
+                            </div>
+                        ` : '';
+
+                        var popupHtml = `
+                            <div class="cp-popup">
+                                ${imgHtml}
+                                <div class="cp-popup-body">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span class="cp-popup-type" style="color: ${prioColor};">${c.type || c.issue_type}</span>
+                                        <span class="cp-popup-status" style="background: rgba(255,255,255,0.1); color: ${prioColor};">${c.status || 'Pending'}</span>
+                                    </div>
+                                    <div class="cp-popup-id">${displayId}</div>
+                                    <div class="cp-popup-area"><i class="fa-solid fa-location-dot"></i> ${c.area || ''}${c.district ? ', ' + c.district : ''}</div>
+                                    <div class="cp-popup-desc">${(c.description || '').substring(0, 90)}${(c.description && c.description.length > 90) ? '...' : ''}</div>
+                                    <div style="background: rgba(255,255,255,0.05); border-left: 2px solid ${prioColor}; padding: 6px 8px; border-radius: 4px; font-size: 0.75rem; margin-top: 8px; color: #ccc;">
+                                        <strong>MLA:</strong> ${c.mla || 'Pending'}<br>
+                                        <strong>MP:</strong> ${c.mp || 'Pending'}
+                                    </div>
+                                    <div style="margin-top: 10px; text-align: center;">
+                                        <a href="/track/${displayId}" style="display: inline-block; width: 100%; text-align: center; background: rgba(0,245,255,0.15); color: #00f5ff; border: 1px solid rgba(0,245,255,0.3); border-radius: 6px; padding: 6px 0; font-weight: 600; font-size: 0.8rem; text-decoration: none;">Track Issue &rarr;</a>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        var customMarkerIcon = L.divIcon({
+                            className: 'custom-map-pin',
+                            html: `<div style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; background: ${prioColor}; box-shadow: 0 0 10px 2px ${prioColor};"></div>`,
+                            iconSize: [14, 14],
+                            iconAnchor: [7, 7]
+                        });
+
+                        L.marker([lat, lng], { icon: customMarkerIcon }).addTo(map).bindPopup(popupHtml);
+                    }
+                });
+            })
+            .catch(function (e) { 
+                console.error('Complaints fetch error:', e); 
+            });
+
+        setTimeout(function() {
+            if (map) map.invalidateSize();
+        }, 300);
+    }
+
+    window.initLiveMapPage = initMapPage;
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initMapPage);
+    } else {
+        initMapPage();
+    }
+})();
 </script>
 {% endblock %}

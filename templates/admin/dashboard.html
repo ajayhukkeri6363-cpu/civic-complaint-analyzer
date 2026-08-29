@@ -53,7 +53,7 @@
     <div class="admin-card">
         <div class="admin-card-header">
             <h3 class="admin-card-title"><i class="fa-solid fa-bolt-lightning" style="margin-right: 10px;"></i> CRITICAL ACTION QUEUE</h3>
-            <a href="{{ url_for('admin_dashboard') }}" style="font-size: 0.7rem; color: var(--admin-accent-cyan); text-decoration: none; font-family: var(--admin-font-futuristic);">EXPAND MATRIX &rarr;</a>
+            <a href="{{ url_for('admin_complaints') }}" style="font-size: 0.7rem; color: var(--admin-accent-cyan); text-decoration: none; font-family: var(--admin-font-futuristic);">EXPAND MATRIX &rarr;</a>
         </div>
 
         <div class="admin-card-body" style="padding: 0;">
@@ -63,22 +63,45 @@
                         <thead>
                             <tr>
                                 <th>IDENTIFIER</th>
-                                <th>VECTOR</th>
-                                <th>COORDINATES</th>
-                                <th>PRIORITY</th>
+                                <th>CITIZEN & LOCATION</th>
+                                <th>ANOMALY</th>
+                                <th>GPS & AI STATUS</th>
                                 <th>INTERCEPT</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for c in urgent_complaints %}
                             <tr class="row-urgent">
-                                <td style="font-family: monospace; color: var(--admin-accent-cyan);">#{{ c.display_id }}</td>
-                                <td style="font-weight: 700;">{{ c.issue_type }}</td>
-                                <td style="color: var(--admin-text-secondary); font-size: 0.85rem;">{{ c.area }}</td>
-                                <td><span class="badge badge-urgent">CRITICAL</span></td>
+                                <td style="font-family: monospace; color: var(--admin-accent-cyan); font-weight: 700;">{{ c.display_id }}</td>
                                 <td>
-                                    <a href="{{ url_for('admin_dashboard') }}" class="admin-btn admin-btn-danger" style="padding: 0.4rem 1rem; font-size: 0.7rem;">
-                                        RESOLVE
+                                    <div style="font-weight: 600; color: #fff;">{{ c.citizen_name }}</div>
+                                    <div style="font-size: 0.75rem; color: var(--admin-accent-cyan);"><i class="fa-regular fa-envelope"></i> {{ c.citizen_email }}</div>
+                                    <div style="color: var(--admin-text-secondary); font-size: 0.75rem;"><i class="fa-solid fa-location-dot"></i> {{ c.area }}</div>
+                                </td>
+                                <td style="font-weight: 700;">{{ c.issue_type }}</td>
+                                <td>
+                                    {% set vstat = c.photo_verification_status or 'No Photo' %}
+                                    {% if 'GPS Verified' in vstat %}
+                                        <span style="font-size: 0.7rem; color: #10b981; background: rgba(16,185,129,0.1); padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(16,185,129,0.3); font-weight: 600;">
+                                            <i class="fa-solid fa-satellite-dish"></i> GPS Verified
+                                        </span>
+                                    {% elif 'Mismatch' in vstat %}
+                                        <span style="font-size: 0.7rem; color: #f59e0b; background: rgba(245,158,11,0.1); padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(245,158,11,0.3); font-weight: 600;">
+                                            <i class="fa-solid fa-triangle-exclamation"></i> Location Mismatch
+                                        </span>
+                                    {% elif 'AI-Generated' in vstat or 'Fake' in vstat %}
+                                        <span style="font-size: 0.7rem; color: #ef4444; background: rgba(239,68,68,0.1); padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(239,68,68,0.3); font-weight: 600;">
+                                            <i class="fa-solid fa-robot"></i> Suspected Fake
+                                        </span>
+                                    {% else %}
+                                        <span style="font-size: 0.7rem; color: #aaa; background: rgba(255,255,255,0.05); padding: 3px 6px; border-radius: 4px;">
+                                            {{ vstat }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('admin_complaints') }}" class="admin-btn admin-btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; text-decoration: none;">
+                                        INSPECT
                                     </a>
                                 </td>
                             </tr>

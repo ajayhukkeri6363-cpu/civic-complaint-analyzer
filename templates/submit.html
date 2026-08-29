@@ -12,7 +12,7 @@
     <p class="mb-4" style="color: var(--text-muted); opacity: 0.8;">Takes under 30 seconds. No login required.</p>
 
 
-    <form action="{{ url_for('submit') }}" method="POST" id="complaintForm" enctype="multipart/form-data" data-no-spa>
+    <form action="{{ url_for('submit') }}" method="POST" id="complaintForm" enctype="multipart/form-data" data-no-spa onsubmit="return validateComplaintForm(event)">
         <div class="form-group">
             <label for="name" class="form-label">Full Name <span style="color:var(--text-muted); font-size:0.8rem;">(Optional)</span></label>
             <input type="text" id="name" name="name" class="form-control" placeholder="Anonymous Citizen">
@@ -291,14 +291,317 @@
             <input type="text" id="honeypot" name="confirm_identity" value="">
         </div>
 
+        <!-- Evidence Photo Section -->
         <div class="form-group">
             <label for="image" class="form-label"><i class="fa-solid fa-camera" style="color:var(--primary-color);"></i>
-                Attach Evidence Photo <span style="color:var(--text-muted); font-size:0.8rem;">(Optional)</span></label>
+                Attach Evidence Photo <span style="color:var(--text-muted); font-size:0.8rem;">(Optional)</span>
+            </label>
             <input type="file" id="image" name="image" accept="image/*" class="form-control"
-                style="padding: 0.6rem; cursor:pointer;">
-            <small style="color:var(--text-muted); margin-top:0.3rem; display:block;">Upload a photo showing the issue.
-                Max 5MB.</small>
+                style="padding: 0.6rem; cursor:pointer;" onchange="handleEvidenceFileSelect(this)">
+            <div style="color: red; font-size: 0.95rem; font-weight: bold; margin-top: 0.5rem; letter-spacing: 0.3px;">
+                upload photo from  GPS map camera app only
+            </div>
+            
+            <!-- Photo / Telemetry Scan Preview Card -->
+            <div id="imagePreviewBox" style="display: none; margin-top: 1rem; border-radius: 10px; overflow: hidden; border: 1px solid rgba(0,245,255,0.3); background: rgba(8,12,24,0.95); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem;">
+                    <div style="width: 160px; height: 130px; border-radius: 6px; overflow: hidden; background: #000; flex-shrink: 0; position: relative; border: 1px solid rgba(255,255,255,0.1);">
+                        <img id="imagePreviewImg" src="" alt="Photo Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                        <button type="button" onclick="clearSelectedImage()" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.8); border: 1px solid #ff2a55; color: #ff2a55; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                    
+                    <div style="flex: 1; min-width: 220px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-size: 0.75rem; font-weight: 700; color: #00f5ff; text-transform: uppercase; letter-spacing: 1px;">
+                                <i class="fa-solid fa-satellite-dish"></i> GPS & Gmap Telemetry Scan
+                            </span>
+                            <span id="scanStatusBadge" style="font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; background: rgba(0,245,255,0.1); color: #00f5ff; font-weight: 600;">
+                                <i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing...
+                            </span>
+                        </div>
+                        
+                        <div id="scanResults" style="font-size: 0.78rem; line-height: 1.5; color: #ccc;">
+                            <div><i class="fa-solid fa-map-pin" style="width: 16px; color: #00f5ff;"></i> <span id="scanLocation">Checking GPS tags & Map stamp...</span></div>
+                            <div><i class="fa-regular fa-clock" style="width: 16px; color: #00f5ff;"></i> <span id="scanTime">Checking capture timing...</span></div>
+                            <div><i class="fa-solid fa-mobile-screen" style="width: 16px; color: #00f5ff;"></i> <span id="scanDevice">Checking camera / app...</span></div>
+                            <div><i class="fa-solid fa-shield-check" style="width: 16px; color: #00f5ff;"></i> <span id="scanAi">Evaluating image authenticity...</span></div>
+                        </div>
+
+                        <div id="scanAiAlert" style="display: none; margin-top: 8px; padding: 6px 10px; border-radius: 6px; background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #ef4444; font-size: 0.75rem; font-weight: 600;">
+                            <i class="fa-solid fa-ban"></i> <span id="scanAiAlertText"></span>
+                        </div>
+
+                        <div id="scanMismatchAlert" style="display: none; margin-top: 8px; padding: 6px 10px; border-radius: 6px; background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #ef4444; font-size: 0.75rem; font-weight: 600;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> <span id="scanMismatchText"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <script>
+        window.currentPhotoScan = { isAiSuspected: false, isMismatch: false, aiRiskScore: 0, distanceKm: 0, reason: '', isGmap: false };
+
+        function switchEvidenceMode(mode) {
+            const fileBox = document.getElementById('evidenceFileMode');
+            const gmapBox = document.getElementById('evidenceGmapMode');
+            const btnFile = document.getElementById('btnModeFile');
+            const btnGmap = document.getElementById('btnModeGmap');
+            
+            if (mode === 'file') {
+                fileBox.style.display = 'block';
+                gmapBox.style.display = 'none';
+                btnFile.style.background = 'var(--primary-color)';
+                btnFile.style.color = '#000';
+                btnGmap.style.background = 'rgba(255,255,255,0.08)';
+                btnGmap.style.color = 'var(--text-muted)';
+            } else {
+                fileBox.style.display = 'none';
+                gmapBox.style.display = 'block';
+                btnGmap.style.background = 'var(--primary-color)';
+                btnGmap.style.color = '#000';
+                btnFile.style.background = 'rgba(255,255,255,0.08)';
+                btnFile.style.color = 'var(--text-muted)';
+            }
+        }
+
+        function parseGmapLink() {
+            const urlInput = document.getElementById('gmap_url_input');
+            const statusBox = document.getElementById('gmapLinkStatus');
+            const url = (urlInput?.value || '').trim();
+            
+            if (!url) {
+                alert("Please paste a Google Maps or Gmap app link.");
+                return;
+            }
+
+            statusBox.style.display = 'block';
+            statusBox.style.background = 'rgba(0,245,255,0.1)';
+            statusBox.style.color = '#00f5ff';
+            statusBox.style.border = '1px solid rgba(0,245,255,0.2)';
+            statusBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Resolving Gmap app location coordinates...';
+
+            fetch('/api/parse-gmap-link', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.lat && data.lng) {
+                    statusBox.style.background = 'rgba(16,185,129,0.15)';
+                    statusBox.style.color = '#10b981';
+                    statusBox.style.border = '1px solid rgba(16,185,129,0.3)';
+                    let matchedMsg = data.closest_area ? ` (Matched nearby area: <strong>${data.closest_area}</strong>)` : '';
+                    statusBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Verified Gmap Location:</strong> Coordinates ${data.lat}, ${data.lng}${matchedMsg}`;
+                    
+                    // If closest area found and area select is available, auto-suggest or set
+                    if (data.closest_area && window.areaSS) {
+                        try {
+                            window.areaSS.setSelected(data.closest_area);
+                        } catch(e){}
+                    }
+                } else {
+                    statusBox.style.background = 'rgba(239,68,68,0.15)';
+                    statusBox.style.color = '#ef4444';
+                    statusBox.style.border = '1px solid rgba(239,68,68,0.3)';
+                    statusBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${data.message || 'Could not parse coordinates from this link.'}`;
+                }
+            })
+            .catch(err => {
+                statusBox.style.background = 'rgba(239,68,68,0.15)';
+                statusBox.style.color = '#ef4444';
+                statusBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Connection error resolving link.';
+            });
+        }
+
+        function handleEvidenceFileSelect(input) {
+            previewSelectedImage(input);
+            if (input.files && input.files[0]) {
+                runLivePhotoScan(input.files[0]);
+            }
+        }
+
+        function previewSelectedImage(input) {
+            const previewBox = document.getElementById('imagePreviewBox');
+            const previewImg = document.getElementById('imagePreviewImg');
+            
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewBox.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                clearSelectedImage();
+            }
+        }
+
+        function clearSelectedImage() {
+            const input = document.getElementById('image');
+            const previewBox = document.getElementById('imagePreviewBox');
+            const previewImg = document.getElementById('imagePreviewImg');
+            const aiAlert = document.getElementById('scanAiAlert');
+            const mismatchBox = document.getElementById('scanMismatchAlert');
+            if (input) input.value = '';
+            if (previewImg) previewImg.src = '';
+            if (previewBox) previewBox.style.display = 'none';
+            if (aiAlert) aiAlert.style.display = 'none';
+            if (mismatchBox) mismatchBox.style.display = 'none';
+            window.currentPhotoScan = { isAiSuspected: false, isMismatch: false, aiRiskScore: 0, distanceKm: 0, reason: '', isGmap: false };
+            resetSubmitButton();
+        }
+
+        function resetSubmitButton() {
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-regular fa-paper-plane"></i> Transmit Report';
+                submitBtn.style.background = '';
+                submitBtn.style.cursor = 'pointer';
+            }
+        }
+
+        function runLivePhotoScan(file) {
+            const badge = document.getElementById('scanStatusBadge');
+            const locEl = document.getElementById('scanLocation');
+            const timeEl = document.getElementById('scanTime');
+            const devEl = document.getElementById('scanDevice');
+            const aiEl = document.getElementById('scanAi');
+            const aiAlert = document.getElementById('scanAiAlert');
+            const aiAlertText = document.getElementById('scanAiAlertText');
+            const mismatchBox = document.getElementById('scanMismatchAlert');
+            const mismatchText = document.getElementById('scanMismatchText');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            badge.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Scanning Gmap & EXIF Telemetry...';
+            badge.style.color = '#00f5ff';
+            badge.style.background = 'rgba(0,245,255,0.1)';
+            if (aiAlert) aiAlert.style.display = 'none';
+            if (mismatchBox) mismatchBox.style.display = 'none';
+            resetSubmitButton();
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('area', document.getElementById('area')?.value || '');
+            formData.append('district', document.getElementById('district')?.value || '');
+            formData.append('state', document.getElementById('state')?.value || '');
+            
+            fetch('/api/verify-photo', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    badge.textContent = 'Scan Incomplete';
+                    return;
+                }
+
+                const hasGpsProof = Boolean(data.has_gps_proof || (data.photo_lat && data.photo_lng) || data.is_gps_app_detected);
+                const isFake = !hasGpsProof || Boolean(data.is_fake_or_unverified) || Boolean(data.is_ai_suspected) || Boolean(data.ai_risk_score && data.ai_risk_score >= 50);
+                const isMismatch = Boolean(data.is_location_mismatch && (data.distance_km || 0) > 25);
+                const firstRiskFactor = (data.risk_factors && data.risk_factors.length > 0) ? data.risk_factors[0] : 'Fake or unverified photo';
+
+                window.currentPhotoScan = {
+                    isFake: isFake,
+                    isAiSuspected: isFake,
+                    isMismatch: isMismatch,
+                    aiRiskScore: isFake ? 99 : 0,
+                    distanceKm: data.distance_km || 0,
+                    reason: firstRiskFactor,
+                    hasGpsProof: hasGpsProof
+                };
+                
+                // Location & GPS status
+                if (data.photo_lat && data.photo_lng) {
+                    locEl.innerHTML = `GPS Coordinates: <strong style="color:#10b981;">${data.photo_lat}, ${data.photo_lng}</strong> (${data.location_match_status})`;
+                } else if (hasGpsProof) {
+                    locEl.innerHTML = `<strong style="color:#10b981;"><i class="fa-solid fa-map-location-dot"></i> GPS Map Camera Stamp Verified</strong>`;
+                } else {
+                    locEl.innerHTML = `<span style="color:#ef4444;"><i class="fa-solid fa-ban"></i> No GPS Map Camera geotag found (Fake Photo)</span>`;
+                }
+                
+                // Timing
+                if (data.datetime_taken) {
+                    timeEl.innerHTML = `Captured: <strong style="color:#fff;">${data.datetime_taken}</strong>`;
+                } else if (hasGpsProof) {
+                    timeEl.innerHTML = `<span style="color:#888;">Live / Recent Capture</span>`;
+                } else {
+                    timeEl.innerHTML = `<span style="color:#ef4444;">Missing GPS capture timing</span>`;
+                }
+                
+                // Device / App
+                if (hasGpsProof) {
+                    devEl.innerHTML = `App: <strong style="color:#10b981;"><i class="fa-solid fa-circle-check"></i> ${data.device_name || 'GPS Map Camera App'} (Verified)</strong>`;
+                } else {
+                    devEl.innerHTML = `<span style="color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Not from GPS Map Camera app</span>`;
+                }
+                
+                // Authenticity & Enforcement: STRICT BLOCKING OF FAKE PHOTOS
+                if (isFake) {
+                    aiEl.innerHTML = `Authenticity: <strong style="color:#ef4444;"><i class="fa-solid fa-ban"></i> REJECTED: Fake / Unverified Photo</strong>`;
+                    badge.innerHTML = '<i class="fa-solid fa-ban"></i> Fake Photo Blocked';
+                    badge.style.color = '#ef4444';
+                    badge.style.background = 'rgba(239,68,68,0.2)';
+                    
+                    if (aiAlert && aiAlertText) {
+                        aiAlertText.innerHTML = `<strong>SUBMISSION BLOCKED:</strong> Fake photo detected! <span style="color:#ff2a55; text-decoration:underline;">upload photo from  GPS map camera app only</span>.`;
+                        aiAlert.style.display = 'block';
+                    }
+                    
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<i class="fa-solid fa-ban"></i> Blocked: upload photo from  GPS map camera app only';
+                        submitBtn.style.background = '#ef4444';
+                        submitBtn.style.cursor = 'not-allowed';
+                    }
+                } else {
+                    aiEl.innerHTML = `Authenticity: <strong style="color:#10b981;"><i class="fa-solid fa-shield-check"></i> 100% Authentic (Verified GPS Map Camera)</strong>`;
+                    badge.innerHTML = '<i class="fa-solid fa-circle-check"></i> GPS Map Camera Verified';
+                    badge.style.color = '#10b981';
+                    badge.style.background = 'rgba(16,185,129,0.15)';
+                }
+                
+                // Mismatch check & BLOCKING
+                if (isMismatch && !isFake) {
+                    mismatchText.textContent = `CRITICAL MISMATCH: Photo GPS was captured ${data.distance_km} km away from your selected area. Submission blocked.`;
+                    mismatchBox.style.display = 'block';
+                    badge.innerHTML = `<i class="fa-solid fa-ban"></i> Mismatch Blocked (${data.distance_km} km)`;
+                    badge.style.color = '#ef4444';
+                    badge.style.background = 'rgba(239,68,68,0.18)';
+                    
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = `<i class="fa-solid fa-ban"></i> Blocked: Location Mismatch (${data.distance_km} km)`;
+                        submitBtn.style.background = '#ef4444';
+                        submitBtn.style.cursor = 'not-allowed';
+                    }
+                }
+            })
+            .catch(err => {
+                badge.textContent = 'Scan Complete';
+            });
+        }
+
+        function validateComplaintForm(e) {
+            if (window.currentPhotoScan.isFake) {
+                if (e) e.preventDefault();
+                alert("❌ Submission Blocked: Fake photo detected!\n\nupload photo from  GPS map camera app only.");
+                return false;
+            }
+            if (window.currentPhotoScan.isMismatch) {
+                if (e) e.preventDefault();
+                alert(`❌ Submission Blocked: Location Mismatch. Your photo was taken ${window.currentPhotoScan.distanceKm} km away from the selected locality.`);
+                return false;
+            }
+            return true;
+        }
+        </script>
 
         <div class="form-group checkbox-group"
             style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem;">
@@ -317,7 +620,7 @@
         </div>
 
         <div class="mt-4">
-            <button type="submit" class="btn btn-primary btn-glow" style="width: 100%;">
+            <button type="submit" id="submitBtn" class="btn btn-primary btn-glow" style="width: 100%;">
                 <i class="fa-regular fa-paper-plane"></i> Transmit Report
             </button>
         </div>
