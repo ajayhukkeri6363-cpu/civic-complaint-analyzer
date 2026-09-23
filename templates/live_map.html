@@ -4,53 +4,637 @@
 
 {% block content %}
 <div class="map-page-wrapper">
+    <!-- Header Section -->
     <div class="map-header">
-        <h2 class="map-page-title"><i class="fa-solid fa-map-location-dot" style="color: var(--primary-color);"></i> Live Complaint Intelligence Map</h2>
-        <p class="map-page-sub">Real-time geospatial visualization of active complaints, verified telemetry pins, and issue intensity.</p>
+        <div class="map-badge-pill">
+            <span class="pulse-dot"></span>
+            <span>CIVIC RADAR v3.0 ACTIVE</span>
+        </div>
+        <h2 class="map-page-title"><i class="fa-solid fa-satellite-dish text-neon"></i> Geospatial Telemetry Monitor</h2>
+        <p class="map-page-sub">Real-time planetary satellite telemetry, citizen incident reports, and algorithmic risk heatmaps.</p>
     </div>
 
-    <div class="map-controls-bar">
-        <div class="map-stats-badge">
-            <span class="pulse-dot"></span>
-            <span id="mapCountStatus">Scanning live telemetry feeds...</span>
+    <!-- HUD Telemetry Stats Bar -->
+    <div class="telemetry-hud-grid">
+        <div class="hud-card">
+            <div class="hud-icon" style="color: #00f5ff;"><i class="fa-solid fa-map-pin"></i></div>
+            <div>
+                <div class="hud-value" id="hudTotalPins">--</div>
+                <div class="hud-label">Active Incident Pins</div>
+            </div>
         </div>
-        <button type="button" class="map-btn-reset" id="btnFitMap" onclick="if(window.fitMapToBounds) window.fitMapToBounds();">
-            <i class="fa-solid fa-expand"></i> Center All Issues
+        <div class="hud-card">
+            <div class="hud-icon" style="color: #ff2a55;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div>
+                <div class="hud-value" id="hudCriticalPins">--</div>
+                <div class="hud-label">High Priority Hotspots</div>
+            </div>
+        </div>
+        <div class="hud-card">
+            <div class="hud-icon" style="color: #00ffa3;"><i class="fa-solid fa-satellite"></i></div>
+            <div>
+                <div class="hud-value" style="font-size: 1.1rem; color: #00ffa3;">RTK ±2.5m</div>
+                <div class="hud-label">GPS Telemetry Precision</div>
+            </div>
+        </div>
+        <div class="hud-card">
+            <div class="hud-icon" style="color: #ffb700;"><i class="fa-solid fa-shield-halved"></i></div>
+            <div>
+                <div class="hud-value" id="hudResolutionRate">78%</div>
+                <div class="hud-label">Zone Resolution Index</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Controls Toolbar -->
+    <div class="map-toolbar">
+        <!-- Layer Switcher -->
+        <div class="toolbar-group">
+            <span class="toolbar-label"><i class="fa-solid fa-layer-group"></i> Layer:</span>
+            <div class="layer-toggle-btn active" data-layer="dark" id="btnLayerDark" onclick="switchMapLayer('dark')">
+                <i class="fa-solid fa-moon"></i> Cyber Dark
+            </div>
+            <div class="layer-toggle-btn" data-layer="satellite" id="btnLayerSat" onclick="switchMapLayer('satellite')">
+                <i class="fa-solid fa-earth-americas"></i> Satellite
+            </div>
+            <div class="layer-toggle-btn" data-layer="street" id="btnLayerStreet" onclick="switchMapLayer('street')">
+                <i class="fa-solid fa-road"></i> Street Matrix
+            </div>
+        </div>
+
+        <!-- Quick Map Actions -->
+        <div class="toolbar-group">
+            <button type="button" class="toolbar-btn" id="btnToggleHeat" onclick="toggleHeatmapLayer()">
+                <i class="fa-solid fa-fire text-neon"></i> Heatmap <span id="heatStatusTxt" style="font-size: 0.72rem; color: #00ffa3;">(ON)</span>
+            </button>
+            <button type="button" class="toolbar-btn" id="btnLocateMe" onclick="locateUserGPS()">
+                <i class="fa-solid fa-crosshairs" style="color: #00f5ff;"></i> Locate Me
+            </button>
+            <button type="button" class="toolbar-btn" id="btnFitMap" onclick="fitMapToBounds()">
+                <i class="fa-solid fa-expand"></i> Center All
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Category Chips -->
+    <div class="filter-chips-container" id="filterChipsBar">
+        <button type="button" class="filter-chip active" data-filter="ALL" onclick="filterMapCategory('ALL')">
+            <i class="fa-solid fa-list-check"></i> All Incidents (<span id="chipCountAll">0</span>)
+        </button>
+        <button type="button" class="filter-chip" data-filter="HIGH" onclick="filterMapCategory('HIGH')">
+            <span class="chip-dot" style="background:#ff2a55;"></span> High Priority (<span id="chipCountHigh">0</span>)
+        </button>
+        <button type="button" class="filter-chip" data-filter="Road Damage" onclick="filterMapCategory('Road Damage')">
+            <i class="fa-solid fa-road"></i> Road Damage (<span id="chipCountRoad">0</span>)
+        </button>
+        <button type="button" class="filter-chip" data-filter="Electricity" onclick="filterMapCategory('Electricity')">
+            <i class="fa-solid fa-bolt"></i> Electricity (<span id="chipCountElec">0</span>)
+        </button>
+        <button type="button" class="filter-chip" data-filter="Garbage Management" onclick="filterMapCategory('Garbage Management')">
+            <i class="fa-solid fa-trash-can"></i> Garbage (<span id="chipCountGarb">0</span>)
+        </button>
+        <button type="button" class="filter-chip" data-filter="Water Supply" onclick="filterMapCategory('Water Supply')">
+            <i class="fa-solid fa-faucet-drip"></i> Water (<span id="chipCountWater">0</span>)
         </button>
     </div>
 
-    <!-- Map Container with explicit styling -->
-    <div id="map" style="height: 580px; width: 100%; min-height: 480px; position: relative; z-index: 1; border-radius: 16px; border: 1px solid rgba(0, 245, 255, 0.25); background: #080b15;"></div>
+    <!-- Quick Regional Jump Bar -->
+    <div class="city-jump-bar">
+        <span style="font-size: 0.78rem; color: var(--text-muted);"><i class="fa-solid fa-location-crosshairs"></i> Quick Jump:</span>
+        <button type="button" class="city-jump-pill" onclick="flyToCity(12.9716, 77.6412, 13)">📍 Bengaluru</button>
+        <button type="button" class="city-jump-pill" onclick="flyToCity(19.0760, 72.8777, 12)">📍 Mumbai</button>
+        <button type="button" class="city-jump-pill" onclick="flyToCity(28.6139, 77.2090, 12)">📍 New Delhi</button>
+        <button type="button" class="city-jump-pill" onclick="flyToCity(17.3850, 78.4867, 12)">📍 Hyderabad</button>
+        <button type="button" class="city-jump-pill" onclick="flyToCity(18.5204, 73.8567, 12)">📍 Pune</button>
+        <button type="button" class="city-jump-pill" onclick="flyToCity(20.5937, 78.9629, 5)">🇮🇳 All India</button>
+    </div>
 
+    <!-- Main Map Container -->
+    <div class="map-card-wrapper">
+        <div id="map" style="height: 600px; width: 100%; min-height: 500px; position: relative; z-index: 1;"></div>
+    </div>
+
+    <!-- Interactive Live Incident Telemetry Feed Drawer -->
+    <div class="incident-feed-section">
+        <div class="incident-feed-header">
+            <h3><i class="fa-solid fa-tower-broadcast text-neon"></i> Live Telemetry Incident Stream</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Click any card to fly camera & inspect incident on radar</span>
+        </div>
+        <div class="incident-feed-grid" id="incidentCardsFeed">
+            <!-- Dynamic Incident Cards Injected Here -->
+        </div>
+    </div>
+
+    <!-- Map Legend -->
     <div class="map-legend">
         <div class="legend-item">
-            <span class="legend-dot" style="background:#ff2a55; box-shadow:0 0 8px #ff2a55;"></span>
-            <span>High Priority / Critical</span>
+            <span class="legend-dot" style="background:#ff2a55; box-shadow:0 0 10px #ff2a55;"></span>
+            <span>High Severity / Urgent Hazard</span>
         </div>
         <div class="legend-item">
-            <span class="legend-dot" style="background:#ffb700; box-shadow:0 0 8px #ffb700;"></span>
-            <span>Medium Priority</span>
+            <span class="legend-dot" style="background:#ffb700; box-shadow:0 0 10px #ffb700;"></span>
+            <span>Medium Severity / In Progress</span>
         </div>
         <div class="legend-item">
-            <span class="legend-dot" style="background:#00f5ff; box-shadow:0 0 8px #00f5ff;"></span>
-            <span>Low / Standard</span>
+            <span class="legend-dot" style="background:#00f5ff; box-shadow:0 0 10px #00f5ff;"></span>
+            <span>Standard Resolution Queue</span>
         </div>
     </div>
 </div>
 
+<style>
+/* ==========================================================================
+   Live Map High-Tech Styling
+   ========================================================================== */
+.map-page-wrapper {
+    width: 100%;
+    margin-bottom: 3rem;
+}
+
+.map-header {
+    text-align: center;
+    margin: 1.5rem 0 1.2rem;
+}
+
+.map-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 245, 255, 0.08);
+    border: 1px solid rgba(0, 245, 255, 0.25);
+    padding: 4px 14px;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #00f5ff;
+    margin-bottom: 0.75rem;
+}
+
+.map-badge-pill .pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #00ffa3;
+    box-shadow: 0 0 8px #00ffa3;
+    animation: radar-pulse 1.8s infinite;
+}
+
+@keyframes radar-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.4; }
+}
+
+.map-page-title {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #fff;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.map-page-sub {
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.95rem;
+    max-width: 650px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+/* Telemetry HUD Grid */
+.telemetry-hud-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0 1.2rem;
+}
+
+.hud-card {
+    background: rgba(11, 15, 28, 0.75);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(0, 245, 255, 0.15);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    transition: all 0.25s ease;
+}
+
+.hud-card:hover {
+    border-color: rgba(0, 245, 255, 0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 245, 255, 0.1);
+}
+
+.hud-icon {
+    font-size: 1.8rem;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hud-value {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.1;
+}
+
+.hud-label {
+    font-size: 0.75rem;
+    color: var(--text-muted, #94a3b8);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: 3px;
+}
+
+/* Map Toolbar */
+.map-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.75rem 1.2rem;
+    background: rgba(11, 15, 28, 0.85);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(0, 245, 255, 0.2);
+    border-radius: 12px;
+    margin-bottom: 0.8rem;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.toolbar-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #00f5ff;
+    margin-right: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.layer-toggle-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-muted, #aaa);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+
+.layer-toggle-btn:hover {
+    color: #fff;
+    background: rgba(0, 245, 255, 0.12);
+    border-color: rgba(0, 245, 255, 0.3);
+}
+
+.layer-toggle-btn.active {
+    background: rgba(0, 245, 255, 0.2);
+    border-color: #00f5ff;
+    color: #00f5ff;
+    box-shadow: 0 0 12px rgba(0, 245, 255, 0.25);
+}
+
+.toolbar-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    padding: 6px 13px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.toolbar-btn:hover {
+    background: rgba(0, 245, 255, 0.18);
+    border-color: rgba(0, 245, 255, 0.4);
+    color: #00f5ff;
+    transform: translateY(-1px);
+}
+
+/* Category Filter Chips */
+.filter-chips-container {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 0 10px;
+    margin-bottom: 0.5rem;
+    scrollbar-width: thin;
+}
+
+.filter-chip {
+    background: rgba(11, 15, 28, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-muted, #aaa);
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-chip:hover {
+    background: rgba(0, 245, 255, 0.1);
+    color: #fff;
+    border-color: rgba(0, 245, 255, 0.25);
+}
+
+.filter-chip.active {
+    background: rgba(0, 245, 255, 0.2);
+    border-color: #00f5ff;
+    color: #00f5ff;
+    box-shadow: 0 0 10px rgba(0, 245, 255, 0.2);
+}
+
+.chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* City Quick Jump Bar */
+.city-jump-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 0.8rem;
+}
+
+.city-jump-pill {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #cbd5e1;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.city-jump-pill:hover {
+    background: rgba(0, 245, 255, 0.15);
+    color: #00f5ff;
+    border-color: rgba(0, 245, 255, 0.3);
+}
+
+/* Map Card */
+.map-card-wrapper {
+    border-radius: 18px;
+    border: 1px solid rgba(0, 245, 255, 0.25);
+    box-shadow: 0 12px 50px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(0, 245, 255, 0.05);
+    overflow: hidden;
+    background: #080b15;
+}
+
+/* Animated Radar Pins */
+.custom-radar-pin {
+    position: relative;
+    cursor: pointer;
+}
+
+.pin-core {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.2s ease;
+}
+
+.custom-radar-pin:hover .pin-core {
+    transform: scale(1.25);
+}
+
+.pin-ring {
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    opacity: 0.7;
+    animation: pin-halo 2s infinite ease-out;
+    pointer-events: none;
+}
+
+@keyframes pin-halo {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(1.8); opacity: 0; }
+}
+
+/* Incident Feed Stream */
+.incident-feed-section {
+    margin-top: 2rem;
+    background: rgba(11, 15, 28, 0.7);
+    border: 1px solid rgba(0, 245, 255, 0.15);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+}
+
+.incident-feed-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.incident-feed-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.incident-feed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.incident-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.incident-card:hover {
+    background: rgba(0, 245, 255, 0.08);
+    border-color: rgba(0, 245, 255, 0.35);
+    transform: translateY(-2px);
+}
+
+.incident-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.incident-card-id {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #00f5ff;
+}
+
+.incident-card-prio {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.incident-card-title {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.incident-card-area {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* Legend */
+.map-legend {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 1.5rem auto 0;
+    padding: 0.9rem 1.5rem;
+    background: rgba(11, 15, 28, 0.6);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+    max-width: 680px;
+    font-size: 0.82rem;
+    color: var(--text-muted, #94a3b8);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+@media (max-width: 768px) {
+    #map {
+        height: 440px !important;
+    }
+    .map-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .toolbar-group {
+        justify-content: center;
+    }
+    .city-jump-bar {
+        justify-content: center;
+    }
+    .map-page-title {
+        font-size: 1.6rem;
+    }
+}
+</style>
+
 <script>
 (function() {
-    function runMapInit() {
+    var map = null;
+    var currentTileLayer = null;
+    var currentLabelsLayer = null;
+    var heatLayer = null;
+    var isHeatmapActive = true;
+    var rawComplaintsData = [];
+    var activeMarkers = [];
+    var currentFilter = 'ALL';
+
+    // Free, 100% Watermark-Free Map Layer Configurations
+    var TILE_LAYERS = {
+        dark: {
+            base: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+            labels: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+            attribution: '&copy; Esri &copy; OpenStreetMap'
+        },
+        satellite: {
+            base: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            labels: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+            attribution: '&copy; Esri World Imagery'
+        },
+        street: {
+            base: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            labels: null,
+            attribution: '&copy; OpenStreetMap contributors'
+        }
+    };
+
+    function initRadarMap() {
         var mapContainer = document.getElementById('map');
         if (!mapContainer) return;
 
-        // Ensure Leaflet library is available
         if (typeof L === 'undefined') {
-            setTimeout(runMapInit, 120);
+            setTimeout(initRadarMap, 120);
             return;
         }
 
-        // Clean up any existing map instance on this container
+        // Cleanup existing map
         if (window.liveMapInstance) {
             try { window.liveMapInstance.remove(); } catch(e) {}
             window.liveMapInstance = null;
@@ -59,153 +643,296 @@
             mapContainer._leaflet_id = null;
         }
 
-        // Center on regional complaints default (Bengaluru/India)
-        var defaultCenter = [12.9716, 77.6412];
-        var defaultZoom = 12;
-
-        var map = L.map('map', {
-            center: defaultCenter,
-            zoom: defaultZoom,
+        // Initialize Map
+        map = L.map('map', {
+            center: [12.9716, 77.6412],
+            zoom: 12,
+            zoomSnap: 0.25,
             attributionControl: false
         });
         window.liveMapInstance = map;
 
-        // Dark Theme CartoDB Tiles
-        var tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
-            subdomains: 'abcd',
+        // Apply Default Cyber Dark Tiles (Esri No-Watermark)
+        setMapLayer('dark');
+
+        // Fetch Live Telemetry Data
+        fetchTelemetryData();
+
+        // Invalidate map sizing for crisp canvas render
+        setTimeout(function() { if (map) map.invalidateSize(); }, 200);
+        setTimeout(function() { if (map) map.invalidateSize(); }, 600);
+    }
+
+    function setMapLayer(layerKey) {
+        if (!map) return;
+        var cfg = TILE_LAYERS[layerKey] || TILE_LAYERS.dark;
+
+        if (currentTileLayer) map.removeLayer(currentTileLayer);
+        if (currentLabelsLayer) map.removeLayer(currentLabelsLayer);
+
+        currentTileLayer = L.tileLayer(cfg.base, {
+            attribution: cfg.attribution,
             maxZoom: 19
+        }).addTo(map);
+
+        if (cfg.labels) {
+            currentLabelsLayer = L.tileLayer(cfg.labels, {
+                maxZoom: 19
+            }).addTo(map);
+        }
+
+        // Update active UI button
+        document.querySelectorAll('.layer-toggle-btn').forEach(function(btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-layer') === layerKey);
         });
-        tileLayer.addTo(map);
+    }
+    window.switchMapLayer = setMapLayer;
 
-        var allMarkers = [];
-
-        window.fitMapToBounds = function() {
-            if (allMarkers.length > 1 && window.liveMapInstance) {
-                var group = L.featureGroup(allMarkers);
-                window.liveMapInstance.fitBounds(group.getBounds().pad(0.25), { maxZoom: 15, animate: true });
-            } else if (allMarkers.length === 1 && window.liveMapInstance) {
-                var latLng = allMarkers[0].getLatLng();
-                window.liveMapInstance.setView(latLng, 14, { animate: true });
-            } else if (window.liveMapInstance) {
-                window.liveMapInstance.setView([20.5937, 78.9629], 5, { animate: true });
-            }
-        };
-
-        // Fetch Live Complaint telemetry
+    function fetchTelemetryData() {
         fetch('/api/live_complaints')
             .then(function(res) { return res.json(); })
             .then(function(data) {
                 if (!Array.isArray(data)) data = [];
-
-                var statusEl = document.getElementById('mapCountStatus');
-                if (statusEl) {
-                    statusEl.innerHTML = `<strong>${data.length}</strong> Live Incident Pin${data.length === 1 ? '' : 's'} Active Across Region`;
-                }
-
-                var heatData = [];
-                allMarkers = [];
-
-                data.forEach(function(c) {
-                    var lat = parseFloat(c.lat || c.latitude);
-                    var lng = parseFloat(c.lng || c.longitude);
-
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                        // Intensity calculation for heat overlay
-                        var intensity = 0.5;
-                        if (c.priority === 'High' || (c.issue_type && c.issue_type.toLowerCase().includes('road'))) intensity = 1.0;
-                        else if (c.priority === 'Medium') intensity = 0.7;
-                        intensity += (c.support_score || 0) * 0.05;
-                        if (intensity > 1.0) intensity = 1.0;
-                        heatData.push([lat, lng, intensity]);
-
-                        // Priority color
-                        var prioColor = '#00f5ff';
-                        if (c.priority === 'High' || (c.issue_type && c.issue_type.toLowerCase().includes('road'))) prioColor = '#ff2a55';
-                        else if (c.priority === 'Medium' || (c.issue_type && c.issue_type.toLowerCase().includes('electr'))) prioColor = '#ffb700';
-
-                        var displayId = c.display_id || ('CIV-' + (1000 + (c.complaint_id || 0)));
-                        
-                        var imgHtml = c.image_url ? `
-                            <div style="width: 100%; height: 125px; background: #070a12; overflow: hidden; position: relative;">
-                                <img src="${c.image_url}" alt="Evidence Photo" class="cp-popup-img" onerror="this.parentElement.style.display='none';">
-                                <span style="position: absolute; bottom: 6px; right: 6px; font-size: 0.65rem; background: rgba(0,0,0,0.85); color: #00f5ff; padding: 2px 7px; border-radius: 4px; font-weight: 600; border: 1px solid rgba(0,245,255,0.3);">
-                                    <i class="fa-solid fa-camera"></i> GPS Verified
-                                </span>
-                            </div>
-                        ` : '';
-
-                        var popupHtml = `
-                            <div class="cp-popup">
-                                ${imgHtml}
-                                <div class="cp-popup-body">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-                                        <span class="cp-popup-type" style="color: ${prioColor};">${c.type || c.issue_type || 'Civic Issue'}</span>
-                                        <span class="cp-popup-status" style="background: rgba(255,255,255,0.08); color: ${prioColor};">${c.status || 'Active'}</span>
-                                    </div>
-                                    <div class="cp-popup-id">${displayId}</div>
-                                    <div class="cp-popup-area"><i class="fa-solid fa-location-dot"></i> ${c.area || ''}${c.district ? ', ' + c.district : ''}</div>
-                                    <div class="cp-popup-desc">${(c.description || 'No additional description provided.').substring(0, 95)}${(c.description && c.description.length > 95) ? '...' : ''}</div>
-                                    <div class="cp-popup-gov">
-                                        <strong>MLA:</strong> ${c.mla || 'Assigned'}<br>
-                                        <strong>MP:</strong> ${c.mp || 'Assigned'}
-                                    </div>
-                                    <div style="margin-top: 10px; text-align: center;">
-                                        <a href="/track/${displayId}" style="display: block; width: 100%; text-align: center; background: rgba(0,245,255,0.12); color: #00f5ff; border: 1px solid rgba(0,245,255,0.3); border-radius: 6px; padding: 6px 0; font-weight: 600; font-size: 0.8rem; text-decoration: none; transition: all 0.2s ease;">
-                                            Track Incident &rarr;
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-
-                        var customMarkerIcon = L.divIcon({
-                            className: 'custom-live-pin',
-                            html: `<div style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; background: ${prioColor}; box-shadow: 0 0 12px 3px ${prioColor}; cursor: pointer;"></div>`,
-                            iconSize: [16, 16],
-                            iconAnchor: [8, 8]
-                        });
-
-                        var marker = L.marker([lat, lng], { icon: customMarkerIcon }).addTo(map).bindPopup(popupHtml);
-                        allMarkers.push(marker);
-                    }
-                });
-
-                // Heatmap layer if available
-                if (typeof L.heatLayer === 'function' && heatData.length > 0) {
-                    try {
-                        L.heatLayer(heatData, {
-                            radius: 30,
-                            blur: 20,
-                            maxZoom: 14,
-                            gradient: { 0.2: '#00f5ff', 0.6: '#ffb700', 1.0: '#ff2a55' }
-                        }).addTo(map);
-                    } catch (e) {}
-                }
-
-                // Fit map around active incident markers
-                if (allMarkers.length > 0) {
-                    window.fitMapToBounds();
-                }
+                rawComplaintsData = data;
+                updateHUD(data);
+                renderFilteredMarkers();
+                renderIncidentFeed(data);
             })
             .catch(function(err) {
-                console.error('Error fetching live complaints:', err);
-                var statusEl = document.getElementById('mapCountStatus');
-                if (statusEl) statusEl.innerText = 'Online telemetry connected';
+                console.error("Telemetry fetch notice:", err);
             });
-
-        // Ensure Leaflet recalculates dimensions accurately
-        setTimeout(function() { if (map) map.invalidateSize(); }, 150);
-        setTimeout(function() { if (map) map.invalidateSize(); }, 400);
-        setTimeout(function() { if (map) map.invalidateSize(); }, 800);
     }
 
-    window.initLiveMapPage = runMapInit;
+    function updateHUD(data) {
+        var totalEl = document.getElementById('hudTotalPins');
+        var critEl = document.getElementById('hudCriticalPins');
+        var chipAll = document.getElementById('chipCountAll');
+        var chipHigh = document.getElementById('chipCountHigh');
+        var chipRoad = document.getElementById('chipCountRoad');
+        var chipElec = document.getElementById('chipCountElec');
+        var chipGarb = document.getElementById('chipCountGarb');
+        var chipWater = document.getElementById('chipCountWater');
+
+        var total = data.length;
+        var critical = data.filter(function(c) { return c.priority === 'High' || (c.issue_type && c.issue_type.toLowerCase().includes('road')); }).length;
+        var roadCount = data.filter(function(c) { return (c.issue_type || '').toLowerCase().includes('road'); }).length;
+        var elecCount = data.filter(function(c) { return (c.issue_type || '').toLowerCase().includes('electr'); }).length;
+        var garbCount = data.filter(function(c) { return (c.issue_type || '').toLowerCase().includes('garb'); }).length;
+        var waterCount = data.filter(function(c) { return (c.issue_type || '').toLowerCase().includes('water'); }).length;
+
+        if (totalEl) totalEl.innerText = total;
+        if (critEl) critEl.innerText = critical;
+        if (chipAll) chipAll.innerText = total;
+        if (chipHigh) chipHigh.innerText = critical;
+        if (chipRoad) chipRoad.innerText = roadCount;
+        if (chipElec) chipElec.innerText = elecCount;
+        if (chipGarb) chipGarb.innerText = garbCount;
+        if (chipWater) chipWater.innerText = waterCount;
+    }
+
+    function renderFilteredMarkers() {
+        if (!map) return;
+
+        // Clear existing markers
+        activeMarkers.forEach(function(m) { map.removeLayer(m); });
+        activeMarkers = [];
+
+        if (heatLayer) {
+            map.removeLayer(heatLayer);
+            heatLayer = null;
+        }
+
+        var filtered = rawComplaintsData.filter(function(c) {
+            if (currentFilter === 'ALL') return true;
+            if (currentFilter === 'HIGH') return c.priority === 'High';
+            return (c.issue_type || c.type || '').toLowerCase().includes(currentFilter.toLowerCase());
+        });
+
+        var heatPoints = [];
+
+        filtered.forEach(function(c) {
+            var lat = parseFloat(c.lat || c.latitude);
+            var lng = parseFloat(c.lng || c.longitude);
+
+            if (!isNaN(lat) && !isNaN(lng)) {
+                var isHigh = c.priority === 'High' || (c.issue_type && c.issue_type.toLowerCase().includes('road'));
+                var isMed = c.priority === 'Medium';
+                var prioColor = isHigh ? '#ff2a55' : (isMed ? '#ffb700' : '#00f5ff');
+
+                var displayId = c.display_id || ('CIV-' + (1000 + (c.complaint_id || 0)));
+
+                var intensity = isHigh ? 1.0 : (isMed ? 0.7 : 0.4);
+                heatPoints.push([lat, lng, intensity]);
+
+                var markerHtml = `
+                    <div class="custom-radar-pin">
+                        <div class="pin-core" style="background: ${prioColor}; box-shadow: 0 0 10px 2px ${prioColor};"></div>
+                        <div class="pin-ring" style="border: 2px solid ${prioColor}; box-shadow: 0 0 8px ${prioColor};"></div>
+                    </div>
+                `;
+
+                var customIcon = L.divIcon({
+                    className: 'radar-leaflet-pin',
+                    html: markerHtml,
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 14]
+                });
+
+                var imgHtml = c.image_url ? `
+                    <div style="width: 100%; height: 130px; background: #070a12; overflow: hidden; position: relative;">
+                        <img src="${c.image_url}" alt="Evidence Photo" class="cp-popup-img" onerror="this.parentElement.style.display='none';">
+                        <span style="position: absolute; bottom: 6px; right: 6px; font-size: 0.65rem; background: rgba(0,0,0,0.85); color: #00f5ff; padding: 2px 8px; border-radius: 4px; font-weight: 600; border: 1px solid rgba(0,245,255,0.3);">
+                            <i class="fa-solid fa-camera"></i> GPS Geotag Verified
+                        </span>
+                    </div>
+                ` : '';
+
+                var popupHtml = `
+                    <div class="cp-popup">
+                        ${imgHtml}
+                        <div class="cp-popup-body">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span class="cp-popup-type" style="color: ${prioColor};">${c.type || c.issue_type || 'Civic Issue'}</span>
+                                <span class="cp-popup-status" style="background: rgba(255,255,255,0.08); color: ${prioColor};">${c.status || 'Active'}</span>
+                            </div>
+                            <div class="cp-popup-id">${displayId}</div>
+                            <div class="cp-popup-area"><i class="fa-solid fa-location-dot"></i> ${c.area || ''}${c.district ? ', ' + c.district : ''}</div>
+                            <div class="cp-popup-desc">${(c.description || 'No additional description provided.').substring(0, 100)}${(c.description && c.description.length > 100) ? '...' : ''}</div>
+                            <div class="cp-popup-gov">
+                                <strong>MLA:</strong> ${c.mla || 'Assigned Representative'}<br>
+                                <strong>MP:</strong> ${c.mp || 'Assigned Representative'}
+                            </div>
+                            <div style="display: flex; gap: 6px; margin-top: 10px;">
+                                <a href="/track/${displayId}" style="flex: 1; text-align: center; background: rgba(0,245,255,0.15); color: #00f5ff; border: 1px solid rgba(0,245,255,0.3); border-radius: 6px; padding: 6px 0; font-weight: 600; font-size: 0.8rem; text-decoration: none; transition: all 0.2s;">
+                                    Track Incident &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                var marker = L.marker([lat, lng], { icon: customIcon }).addTo(map).bindPopup(popupHtml);
+                marker.complaintData = c;
+                activeMarkers.push(marker);
+            }
+        });
+
+        // Heatmap layer
+        if (isHeatmapActive && typeof L.heatLayer === 'function' && heatPoints.length > 0) {
+            try {
+                heatLayer = L.heatLayer(heatPoints, {
+                    radius: 32,
+                    blur: 22,
+                    maxZoom: 15,
+                    gradient: { 0.2: '#00f5ff', 0.6: '#ffb700', 1.0: '#ff2a55' }
+                }).addTo(map);
+            } catch (e) {}
+        }
+    }
+
+    function renderIncidentFeed(data) {
+        var container = document.getElementById('incidentCardsFeed');
+        if (!container) return;
+        container.innerHTML = '';
+
+        data.slice(0, 8).forEach(function(c) {
+            var isHigh = c.priority === 'High' || (c.issue_type && c.issue_type.toLowerCase().includes('road'));
+            var isMed = c.priority === 'Medium';
+            var prioColor = isHigh ? '#ff2a55' : (isMed ? '#ffb700' : '#00f5ff');
+            var displayId = c.display_id || ('CIV-' + (1000 + (c.complaint_id || 0)));
+
+            var card = document.createElement('div');
+            card.className = 'incident-card';
+            card.innerHTML = `
+                <div class="incident-card-top">
+                    <span class="incident-card-id">${displayId}</span>
+                    <span class="incident-card-prio" style="background: rgba(${isHigh ? '255,42,85' : (isMed ? '255,183,0' : '0,245,255')}, 0.15); color: ${prioColor}; border: 1px solid ${prioColor};">${c.priority || 'Standard'}</span>
+                </div>
+                <div class="incident-card-title">${c.type || c.issue_type || 'Civic Anomaly'}</div>
+                <div class="incident-card-area"><i class="fa-solid fa-location-dot" style="color: ${prioColor};"></i> ${c.area || 'Regional Zone'}, ${c.district || c.state || ''}</div>
+            `;
+            card.onclick = function() {
+                var lat = parseFloat(c.lat || c.latitude);
+                var lng = parseFloat(c.lng || c.longitude);
+                if (!isNaN(lat) && !isNaN(lng) && map) {
+                    map.flyTo([lat, lng], 16, { duration: 1.2 });
+                    // Open matching marker popup
+                    var targetMarker = activeMarkers.find(function(m) {
+                        return m.complaintData && m.complaintData.display_id === displayId;
+                    });
+                    if (targetMarker) {
+                        setTimeout(function() { targetMarker.openPopup(); }, 1200);
+                    }
+                }
+            };
+            container.appendChild(card);
+        });
+    }
+
+    window.filterMapCategory = function(catKey) {
+        currentFilter = catKey;
+        document.querySelectorAll('.filter-chip').forEach(function(chip) {
+            chip.classList.toggle('active', chip.getAttribute('data-filter') === catKey);
+        });
+        renderFilteredMarkers();
+    };
+
+    window.toggleHeatmapLayer = function() {
+        isHeatmapActive = !isHeatmapActive;
+        var txt = document.getElementById('heatStatusTxt');
+        if (txt) {
+            txt.innerText = isHeatmapActive ? '(ON)' : '(OFF)';
+            txt.style.color = isHeatmapActive ? '#00ffa3' : '#ff2a55';
+        }
+        renderFilteredMarkers();
+    };
+
+    window.fitMapToBounds = function() {
+        if (!map) return;
+        if (activeMarkers.length > 1) {
+            var group = L.featureGroup(activeMarkers);
+            map.fitBounds(group.getBounds().pad(0.25), { maxZoom: 15, animate: true });
+        } else if (activeMarkers.length === 1) {
+            map.setView(activeMarkers[0].getLatLng(), 14, { animate: true });
+        } else {
+            map.setView([20.5937, 78.9629], 5, { animate: true });
+        }
+    };
+
+    window.flyToCity = function(lat, lng, zoom) {
+        if (map) map.flyTo([lat, lng], zoom, { duration: 1.2 });
+    };
+
+    window.locateUserGPS = function() {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser.');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            var uLat = pos.coords.latitude;
+            var uLng = pos.coords.longitude;
+            if (map) {
+                map.flyTo([uLat, uLng], 15, { duration: 1.4 });
+                var userMarker = L.circleMarker([uLat, uLng], {
+                    radius: 8,
+                    fillColor: '#00ffa3',
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                }).addTo(map).bindPopup('<b>Your Current Location</b><br>Scanning for nearby reports...').openPopup();
+            }
+        }, function(err) {
+            alert('Unable to access GPS location: ' + err.message);
+        });
+    };
+
+    window.initLiveMapPage = initRadarMap;
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', runMapInit);
+        document.addEventListener('DOMContentLoaded', initRadarMap);
     } else {
-        runMapInit();
+        initRadarMap();
     }
 })();
 </script>

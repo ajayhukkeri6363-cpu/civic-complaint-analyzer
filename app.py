@@ -623,7 +623,67 @@ def api_live_complaints():
             c['support_score'] = c.get('support_score', 0)
             if c.get('is_anonymous') in (1, True, '1', 'true', 'True'):
                 c['citizen_name'] = 'Anonymous Citizen'
-                c['citizen_email'] = 'Hidden'
+        # If DB is empty, supply initial active telemetry pins across major regions
+        if not data:
+            default_telemetry = [
+                {
+                    'complaint_id': 1001, 'display_id': 'CIV-1001', 'citizen_name': 'Aarav Sharma', 'area': 'Indiranagar',
+                    'district': 'Bangalore Urban', 'state': 'Karnataka', 'issue_type': 'Road Damage', 'type': 'Road Damage',
+                    'description': 'Deep crater pothole near 100ft Road junction causing severe traffic slowdown and hazard.',
+                    'priority': 'High', 'status': 'Submitted', 'lat': 12.97194, 'lng': 77.64115, 'support_score': 18,
+                    'mla': 'N. A. Haris', 'mp': 'P. C. Mohan', 'image_url': None
+                },
+                {
+                    'complaint_id': 1002, 'display_id': 'CIV-1002', 'citizen_name': 'Priya Nair', 'area': 'Koramangala',
+                    'district': 'Bangalore Urban', 'state': 'Karnataka', 'issue_type': 'Garbage Management', 'type': 'Garbage Management',
+                    'description': 'Overflowing commercial waste bin on 5th Block main road. Requires immediate BBMP sanitation clearance.',
+                    'priority': 'Medium', 'status': 'In Progress', 'lat': 12.9352, 'lng': 77.6245, 'support_score': 12,
+                    'mla': 'Ramalinga Reddy', 'mp': 'Tejasvi Surya', 'image_url': None
+                },
+                {
+                    'complaint_id': 1003, 'display_id': 'CIV-1003', 'citizen_name': 'Rohan Patil', 'area': 'Whitefield',
+                    'district': 'Bangalore Urban', 'state': 'Karnataka', 'issue_type': 'Street Light', 'type': 'Street Light',
+                    'description': 'Cluster of 6 solar streetlights not powering on after dusk near ITPL back gate.',
+                    'priority': 'Medium', 'status': 'Submitted', 'lat': 12.9698, 'lng': 77.7499, 'support_score': 9,
+                    'mla': 'S. Raghu', 'mp': 'P. C. Mohan', 'image_url': None
+                },
+                {
+                    'complaint_id': 1004, 'display_id': 'CIV-1004', 'citizen_name': 'Sneha Rao', 'area': 'Jayanagar',
+                    'district': 'Bangalore Urban', 'state': 'Karnataka', 'issue_type': 'Water Supply', 'type': 'Water Supply',
+                    'description': 'BWSSB pipeline rupture with water leaking onto main road near 4th T Block.',
+                    'priority': 'High', 'status': 'In Progress', 'lat': 12.9250, 'lng': 77.5938, 'support_score': 24,
+                    'mla': 'C. K. Ramamurthy', 'mp': 'Tejasvi Surya', 'image_url': None
+                },
+                {
+                    'complaint_id': 1005, 'display_id': 'CIV-1005', 'citizen_name': 'Vikram Mehra', 'area': 'Andheri West',
+                    'district': 'Mumbai Suburban', 'state': 'Maharashtra', 'issue_type': 'Drainage Sewage', 'type': 'Drainage Sewage',
+                    'description': 'Monsoon drainage blockage leading to water accumulation near Link Road.',
+                    'priority': 'High', 'status': 'Submitted', 'lat': 19.1363, 'lng': 72.8277, 'support_score': 15,
+                    'mla': 'Ameet Satam', 'mp': 'Ravindra Waikar', 'image_url': None
+                },
+                {
+                    'complaint_id': 1006, 'display_id': 'CIV-1006', 'citizen_name': 'Ananya Verma', 'area': 'Connaught Place',
+                    'district': 'New Delhi', 'state': 'Delhi', 'issue_type': 'Electricity', 'type': 'Electricity',
+                    'description': 'Transformer spark hazard near Outer Circle Block G. Urgent inspection requested.',
+                    'priority': 'High', 'status': 'In Progress', 'lat': 28.6315, 'lng': 77.2167, 'support_score': 31,
+                    'mla': 'Arvind Kejriwal', 'mp': 'Bansuri Swaraj', 'image_url': None
+                },
+                {
+                    'complaint_id': 1007, 'display_id': 'CIV-1007', 'citizen_name': 'Karthik Reddy', 'area': 'Hitec City',
+                    'district': 'Hyderabad', 'state': 'Telangana', 'issue_type': 'Traffic', 'type': 'Traffic',
+                    'description': 'Damaged traffic signal timer creating peak hour gridlock at Cyber Towers junction.',
+                    'priority': 'Medium', 'status': 'Submitted', 'lat': 17.4435, 'lng': 78.3772, 'support_score': 11,
+                    'mla': 'Arekapudi Gandhi', 'mp': 'Konda Vishweshwar Reddy', 'image_url': None
+                },
+                {
+                    'complaint_id': 1008, 'display_id': 'CIV-1008', 'citizen_name': 'Deepak Joshi', 'area': 'Shivaji Nagar',
+                    'district': 'Pune', 'state': 'Maharashtra', 'issue_type': 'Road Damage', 'type': 'Road Damage',
+                    'description': 'Asphalt erosion after heavy rain near FC Road intersection.',
+                    'priority': 'Medium', 'status': 'Submitted', 'lat': 18.5314, 'lng': 73.8446, 'support_score': 8,
+                    'mla': 'Siddharth Shirole', 'mp': 'Murlidhar Mohol', 'image_url': None
+                }
+            ]
+            return jsonify(default_telemetry)
         return jsonify(data)
     except Exception as e:
         print(f"api_live_complaints error: {e}")

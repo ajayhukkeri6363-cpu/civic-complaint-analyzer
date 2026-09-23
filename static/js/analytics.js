@@ -263,10 +263,12 @@ function renderHeatmap(areaData) {
     const map = L.map('issueMap', { attributionControl: false }).setView([20.5937, 78.9629], 5);
     window.heatmap = map;
     
-    // Add CartoDB dark tiles or OpenStreetMap
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; CARTO &copy; OSM',
-        subdomains: 'abcd',
+    // Add Esri Dark Canvas tiles (100% watermark-free)
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri &copy; OpenStreetMap',
+        maxZoom: 19
+    }).addTo(map);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19
     }).addTo(map);
     
