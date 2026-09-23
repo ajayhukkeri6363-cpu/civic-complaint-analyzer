@@ -249,51 +249,60 @@ function renderTrendChart(trendData) {
 
 function renderHeatmap(areaData) {
     const container = document.getElementById('issueMap');
-    if(!container) return;
+    if(!container || typeof L === 'undefined') return;
     
     if(window.heatmap) {
-        window.heatmap.remove();
+        try { window.heatmap.remove(); } catch(e) {}
         window.heatmap = null;
+    }
+    if(container._leaflet_id) {
+        container._leaflet_id = null;
     }
     
     // Default center
-    const map = L.map('issueMap').setView([20.5937, 78.9629], 5);
-
+    const map = L.map('issueMap', { attributionControl: false }).setView([20.5937, 78.9629], 5);
     window.heatmap = map;
     
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
+    // Add CartoDB dark tiles or OpenStreetMap
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; CARTO &copy; OSM',
+        subdomains: 'abcd',
+        maxZoom: 19
     }).addTo(map);
     
-    // Add dark filter to the map tiles for cinematic feel
-    document.querySelector('.leaflet-layer').style.filter = "invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)";
-    
     const markers = [];
-    areaData.forEach(area => {
-        let color = '#00e676'; // Neon Green (<5)
-        if(area.volume >= 10) color = '#ff2a55'; // Neon Red
-        else if(area.volume >= 5) color = '#ffb700'; // Neon Yellow
-        
-        const radius = Math.min(200 + (area.volume * 50), 1000); // meters
-        
-        const circle = L.circle(area.coords, {
-            color: color,
-            fillColor: color,
-            fillOpacity: 0.6,
-            radius: radius
-        }).addTo(map)
-        .bindPopup(`<b>${area.area}</b><br>${area.volume} Complaints Reported`);
-        
-        markers.push(circle);
-    });
+    if (Array.isArray(areaData)) {
+        areaData.forEach(area => {
+            const lat = parseFloat(area.lat || area.latitude || (area.coords && area.coords[0]));
+            const lng = parseFloat(area.lng || area.longitude || (area.coords && area.coords[1]));
+            
+            if (!isNaN(lat) && !isNaN(lng)) {
+                let color = '#00f5ff'; // Cyan
+                if(area.priority === 'High' || (area.volume && area.volume >= 10)) color = '#ff2a55'; // Neon Red
+                else if(area.priority === 'Medium' || (area.volume && area.volume >= 5)) color = '#ffb700'; // Neon Yellow
+                
+                const vol = area.volume || area.support_score || 1;
+                const radius = Math.min(300 + (vol * 50), 1200); // meters
+                
+                const circle = L.circle([lat, lng], {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.6,
+                    radius: radius
+                }).addTo(map)
+                .bindPopup(`<b>${area.area || 'Incident Location'}</b><br>${area.type || area.issue_type || ''}<br>${vol} Complaints Reported`);
+                
+                markers.push(circle);
+            }
+        });
+    }
 
     if (markers.length > 0) {
         const group = new L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.5));
+        map.fitBounds(group.getBounds().pad(0.3));
     }
 
-    setTimeout(() => { map.invalidateSize(); }, 200);
+    setTimeout(() => { if (map) map.invalidateSize(); }, 250);
 }
 
 function renderPredictions(predictions) {

@@ -388,56 +388,66 @@ class SpaRouter {
         console.log("Central SPA Router: Initializing Live Monitor...");
 
         try {
-            const map = L.map('map').setView([20.5937, 78.9629], 5);
+            const map = L.map('map', { attributionControl: false }).setView([20.5937, 78.9629], 5);
             window.liveMapInstance = map;
 
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; CARTO'
+                attribution: '&copy; CARTO &copy; OSM',
+                subdomains: 'abcd',
+                maxZoom: 19
             }).addTo(map);
 
             fetch('/api/live_complaints')
                 .then(res => res.json())
                 .then(data => {
+                    if (!Array.isArray(data)) return;
+                    const markers = [];
                     data.forEach(c => {
                         let color = "#00f5ff";
-                        if(c.priority === 'High' || (c.issue_type && c.issue_type.includes('Road'))) color = "#ff2a55";
-                        else if(c.priority === 'Medium' || (c.issue_type && c.issue_type.includes('Electricity'))) color = "#ffb700";
-                        else if(c.issue_type && c.issue_type.includes('Garbage')) color = "#22c55e";
+                        if(c.priority === 'High' || (c.issue_type && c.issue_type.toLowerCase().includes('road'))) color = "#ff2a55";
+                        else if(c.priority === 'Medium' || (c.issue_type && c.issue_type.toLowerCase().includes('electr'))) color = "#ffb700";
+                        else if(c.issue_type && c.issue_type.toLowerCase().includes('garb')) color = "#22c55e";
 
                         const icon = L.divIcon({
-                            className: 'custom-div-icon',
-                            html: `<div style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; background: ${color}; box-shadow: 0 0 12px 2px ${color}, inset 0 0 4px rgba(0,0,0,0.5);"></div>`,
-                            iconSize: [14, 14],
-                            iconAnchor: [7, 7]
+                            className: 'custom-live-pin',
+                            html: `<div style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; background: ${color}; box-shadow: 0 0 12px 2px ${color}; cursor:pointer;"></div>`,
+                            iconSize: [16, 16],
+                            iconAnchor: [8, 8]
                         });
 
-                        const displayId = c.display_id || ('CIV-' + (1000 + c.complaint_id));
+                        const displayId = c.display_id || ('CIV-' + (1000 + (c.complaint_id || 0)));
                         const popupHTML = `
-                            <div style="min-width: 220px; font-family: 'Poppins', sans-serif;">
+                            <div style="min-width: 230px; font-family: 'Outfit', sans-serif;">
                                 ${c.image_url ? `
-                                <div style="width: 100%; height: 130px; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                <div style="width: 100%; height: 125px; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);">
                                     <img src="${c.image_url}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.style.display='none';">
                                 </div>` : ''}
-                                <div style="color: ${color}; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;">${c.type || c.issue_type} REPORT</div>
+                                <div style="color: ${color}; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;">${c.type || c.issue_type || 'Civic Issue'}</div>
                                 <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 4px; color: #fff;">${displayId}</div>
-                                <div style="font-size: 0.85rem; margin-bottom: 8px; color: #00f5ff; font-weight: 500;"><i class="fa-solid fa-location-dot"></i> ${c.area || ''}</div>
-                                <div style="font-size: 0.82rem; line-height: 1.5; color: rgba(255,255,255,0.8); max-height: 90px; overflow-y: auto; margin-bottom: 8px;">
+                                <div style="font-size: 0.85rem; margin-bottom: 8px; color: #00f5ff; font-weight: 500;"><i class="fa-solid fa-location-dot"></i> ${c.area || ''}${c.district ? ', ' + c.district : ''}</div>
+                                <div style="font-size: 0.82rem; line-height: 1.5; color: rgba(255,255,255,0.8); max-height: 80px; overflow-y: auto; margin-bottom: 8px;">
                                     ${c.description || ''}
                                 </div>
-                                <a href="/track/${displayId}" style="display: block; text-align: center; background: rgba(0,245,255,0.15); color: #00f5ff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; text-decoration: none;">Track Status &rarr;</a>
+                                <a href="/track/${displayId}" style="display: block; text-align: center; background: rgba(0,245,255,0.15); color: #00f5ff; padding: 6px 8px; border-radius: 6px; font-size: 0.8rem; text-decoration: none; font-weight: 600;">Track Status &rarr;</a>
                             </div>
                         `;
 
-                        const lat = parseFloat(c.lat || c.latitude || 20.5937);
-                        const lng = parseFloat(c.lng || c.longitude || 78.9629);
+                        const lat = parseFloat(c.lat || c.latitude);
+                        const lng = parseFloat(c.lng || c.longitude);
                         if (!isNaN(lat) && !isNaN(lng)) {
-                            L.marker([lat, lng], { icon }).addTo(map).bindPopup(popupHTML);
+                            const m = L.marker([lat, lng], { icon }).addTo(map).bindPopup(popupHTML);
+                            markers.push(m);
                         }
                     });
+
+                    if (markers.length > 0) {
+                        const group = L.featureGroup(markers);
+                        map.fitBounds(group.getBounds().pad(0.2), { maxZoom: 14 });
+                    }
                 })
                 .catch(err => console.error("Map Data Sync Error:", err));
 
-            setTimeout(() => { map.invalidateSize(); }, 300);
+            setTimeout(() => { if (map) map.invalidateSize(); }, 300);
         } catch (e) {
             console.error("Map Initialization Failed:", e);
         }
