@@ -835,7 +835,21 @@
         if (!container) return;
         container.innerHTML = '';
 
-        data.slice(0, 8).forEach(function(c) {
+        if (!data || data.length === 0) {
+            container.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 2.5rem 1.5rem; background: rgba(255,255,255,0.02); border: 1px dashed rgba(0,245,255,0.25); border-radius: 12px;">
+                    <i class="fa-solid fa-satellite-dish text-neon" style="font-size: 2.2rem; margin-bottom: 0.8rem; display: block; opacity: 0.8;"></i>
+                    <h4 style="color: #fff; font-size: 1.1rem; margin-bottom: 0.4rem;">No Active Complaints in Database</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; max-width: 480px; margin: 0 auto 1.2rem;">
+                        Database has been cleared. Submit a real civic issue using the GPS Map Camera to see it pinned here on the live radar in real time.
+                    </p>
+                    <a href="/submit" class="btn" style="background: rgba(0,245,255,0.15); color: #00f5ff; border: 1px solid rgba(0,245,255,0.4); border-radius: 30px; padding: 0.6rem 1.8rem; font-weight: 700; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-plus"></i> Submit First Issue
+                    </a>
+                </div>
+            `;
+            return;
+        }
             var isHigh = c.priority === 'High' || (c.issue_type && c.issue_type.toLowerCase().includes('road'));
             var isMed = c.priority === 'Medium';
             var prioColor = isHigh ? '#ff2a55' : (isMed ? '#ffb700' : '#00f5ff');
